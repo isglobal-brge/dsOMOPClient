@@ -168,7 +168,7 @@ cat(grep("censor|follow|survival", recipe_explain(comparison)$text, value = TRUE
 ```
 
 ``` r
-print(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
 ```
 
 ```

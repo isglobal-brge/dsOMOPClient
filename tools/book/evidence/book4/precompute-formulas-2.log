@@ -1,0 +1,13 @@
+PRECOMPUTE vignettes/book-15-formulas.Rmd.orig
+
+Quitting from vignettes/book-15-formulas.Rmd.orig:300-315 [egfr-practice-discovery]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: OMOP session 'omop' is already active; disconnect it before reusing the symbol.
+Execution halted
+Error: Fresh-process chapters failed: vignettes/book-15-formulas.Rmd.orig
+Execution halted

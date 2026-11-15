@@ -179,7 +179,7 @@ give any = 0 and all = NA: without measurements there is no all-value result.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
+book_symbols(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
 ```
 
 ```
@@ -274,7 +274,7 @@ last_result
 </details>
 
 Later readings can change the last-value summary. The source dataset contains
-hemoglobin measurements for all 28 fictional people.
+hemoglobin measurements for everyone in this practice dataset.
 
 
 ``` r
@@ -563,7 +563,7 @@ means closest within a chosen tolerance; it need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-print(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
+book_symbols(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
 ```
 
 ```
@@ -657,7 +657,7 @@ ranges. Use the same target and conversion map across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
+book_symbols(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
 ```
 
 ```
@@ -723,7 +723,7 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-print(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
+book_symbols(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
 ```
 
 ```
@@ -844,7 +844,7 @@ ranges <- omop_recipe(variables = list(
   high_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_high")),
   low_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_low"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
+book_symbols(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
 ```
 
 ```
@@ -922,7 +922,7 @@ with the measurement-day summary above.
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
+book_symbols(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
 ```
 
 ```
@@ -984,7 +984,7 @@ summarise the differences. Is this the same quantity as a slope?
 
 ``` r
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-print(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
+book_symbols(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
 ```
 
 ```

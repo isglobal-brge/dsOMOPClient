@@ -20,10 +20,8 @@ ratio, and check the inputs needed for eGFR and duplicate handling.
 from [chapter 6](book-06-events.html). Start a fresh R session in `book-work`.
 Run the sections in order: each uses objects defined immediately above it.
 
-These are **public synthetic Synthea27Nj patients**, from the pinned Eunomia
-archive used by the numeric validation loader. There are 28 fictional people,
-not 27. GiBleed is the other practice resource and has no populated numeric
-measurement values. All results below were executed with dsOMOP 2.10.5.
+This chapter uses **synthetic Synthea27Nj measurements**, described in
+[Getting started](book-00-start.html#load-two-public-synthetic-datasets).
 
 Concept selections refer to the searches and saved definitions in
 [chapter 4](book-04-vocabulary.html), including the separate questionnaire
@@ -95,7 +93,7 @@ knitr::kable(height_units)
 | 495|centimeter   |8582  |
 
 The unit IDs used below were returned by those protected inventories. In the
-pinned source they mean kilogram and centimetre, as also inspected in chapter 4.
+practice source they mean kilogram and centimetre, as also inspected in chapter 4.
 
 ## Bind weight and height on the same day
 
@@ -106,63 +104,26 @@ the formula's meaning. Synthea includes children, so do not apply adult BMI band
 
 ``` r
 weight_event <- omop_event("measurement", body_sets$weight)
-weight <- omop_value_at_index("measurement", body_sets$weight, tolerance = c(0, 0), unit = 9529L)
-height <- omop_value_at_index("measurement", body_sets$height, tolerance = c(0, 0), unit = 8582L)
+weight <- omop_value_at_index("measurement", body_sets$weight, tolerance = c(0, 0), unit = omop_unit(9529L))
+height <- omop_value_at_index("measurement", body_sets$height, tolerance = c(0, 0), unit = omop_unit(8582L))
 ```
 
-## Declare BMI with the closed expression grammar
+## Declare a named BMI formula
 
-The small `book_col`, `book_lit`, `book_op` and `book_expr` helpers construct
-plain data lists; their source is in the downloadable helpers. For example:
+The formula requires kilograms and metres. Declare the conversion from each
+recorded unit into its physical coordinate. A factor of 0.01 converts centimetres
+to metres; it is not a display-only rename.
 
 
 ``` r
-book_expr(book_op("/", book_col("weight"), book_col("height")))
-```
-
-```
-#> $version
-#> [1] 1
-#> 
-#> $assign
-#> $assign[[1]]
-#> $assign[[1]]$name
-#> [1] "result"
-#> 
-#> $assign[[1]]$expr
-#> $assign[[1]]$expr$op
-#> [1] "/"
-#> 
-#> $assign[[1]]$expr$args
-#> $assign[[1]]$expr$args[[1]]
-#> $assign[[1]]$expr$args[[1]]$col
-#> [1] "weight"
-#> 
-#> 
-#> $assign[[1]]$expr$args[[2]]
-#> $assign[[1]]$expr$args[[2]]$col
-#> [1] "height"
-```
-
-No arbitrary R or SQL runs on the server. BMI is kg divided by metres squared.
-The expression below converts cm squared to metres squared with a factor of 10,000.
-
-
-``` r
-bmi <- omop_number_derive(list(weight = weight, height = height),
-  book_expr(book_op("/", book_op("*", book_col("weight"), book_lit(10000)),
-    book_op("*", book_col("height"), book_col("height")))), unit = "coordinate:bmi_kg_m2")
+weight_kg <- omop_number(weight, omop_number_spec(unit =
+  omop_number_unit("unit:9529", "coordinate:kg", factor = 1)))
+height_m <- omop_number(height, omop_number_spec(unit =
+  omop_number_unit("unit:8582", "coordinate:metres", factor = 0.01)))
+bmi <- omop_formula_bmi(weight_kg, height_m)
 body <- omop_study(weight_event, outputs = "baseline",
   baseline = list(weight = weight, height = height, bmi = bmi))
-print(recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns))
-```
-
-```
-#>         baseline 
-#> "D_formula_body"
-```
-
-``` r
+body_result <- recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns)
 knitr::kable(book_summary(dsBaseClient::ds.summary("D_formula_body$bmi", datasources = conns)))
 ```
 
@@ -179,10 +140,10 @@ knitr::kable(book_summary(dsBaseClient::ds.summary("D_formula_body$bmi", datasou
 |site |95%       | 30.36386|
 |site |Mean      | 22.11315|
 
-Inputs default to their canonical numeric stage. Presentation rounding does not
-silently round a formula input. Division by zero and missing inputs yield missing
-values. A coordinate name documents the derived result; it does not validate a
-clinical formula or create a unit conversion automatically.
+BMI is kg divided by metres squared. The helper uses the presented coordinates,
+requires positive finite inputs and records its equation and definition version
+in the codebook. Missing or invalid inputs become missing privately. Same-day
+alignment remains a study decision; a formula does not create it automatically.
 
 **Exercise 1.** Round BMI to one decimal for presentation while keeping the
 unrounded formula available.
@@ -194,7 +155,7 @@ unrounded formula available.
 body_rounded <- omop_study(weight_event, outputs = "baseline",
   baseline = list(bmi = bmi, rounded = omop_number(bmi,
     omop_number_spec(rounding = omop_number_round("decimals", 1)))))
-print(recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns))
+book_symbols(recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns))
 ```
 
 ```
@@ -262,15 +223,16 @@ knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id =
 
 ``` r
 sbp_event <- omop_event("measurement", omop_concept_set(sbp_id))
-sbp <- omop_value_at_index("measurement", sbp_id, tolerance = c(0, 0), unit = 8876L)
-dbp <- omop_value_at_index("measurement", dbp_id, tolerance = c(0, 0), unit = 8876L)
-map <- omop_number_derive(list(sbp = sbp, dbp = dbp),
-  book_expr(book_op("/", book_op("+", book_col("sbp"),
-    book_op("*", book_lit(2), book_col("dbp"))), book_lit(3))), unit = "unit:8876")
-ratio <- omop_number_derive(list(sbp = sbp, dbp = dbp),
-  book_expr(book_op("/", book_col("sbp"), book_col("dbp"))), unit = "1")
+sbp <- omop_value_at_index("measurement", sbp_id, tolerance = c(0, 0), unit = omop_unit(8876L))
+dbp <- omop_value_at_index("measurement", dbp_id, tolerance = c(0, 0), unit = omop_unit(8876L))
+sbp_mmhg <- omop_number(sbp, omop_number_spec(unit =
+  omop_number_unit("unit:8876", "coordinate:mmHg", factor = 1)))
+dbp_mmhg <- omop_number(dbp, omop_number_spec(unit =
+  omop_number_unit("unit:8876", "coordinate:mmHg", factor = 1)))
+map <- omop_formula_map(sbp_mmhg, dbp_mmhg)
+ratio <- omop_formula_ratio(sbp_mmhg, dbp_mmhg, unit = "1")
 pressure <- omop_study(sbp_event, outputs = "baseline", baseline = list(map = map, ratio = ratio))
-print(recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns))
+book_symbols(recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns))
 ```
 
 ```
@@ -329,7 +291,7 @@ age and sex. Its public formula is
 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.2 × 0.9938^age,
 with κ = 0.7 and α = −0.241 for female, κ = 0.9 and α = −0.302
 for male, and a further factor 1.012 for female. Scr is in mg/dL.
-See the [National Kidney Foundation equation](https://www.kidney.org/professionals/ckd-epi-creatinine-equation-2021).
+See the [National Kidney Foundation equation](https://www.kidney.org/ckd-epi-creatinine-equation-2021).
 
 Do not substitute a different specimen because the correct source is sparse.
 This check distinguishes vocabulary availability from observed use:
@@ -356,13 +318,18 @@ serum_set <- omop_concept_set(serum_id)
 knitr::kable(ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)$pooled)
 ```
 
-The pinned subset's populated creatinine concept is **Blood**, while the formula
+The available creatinine concept is **Blood**, while the formula
 requests Serum or Plasma. This lesson therefore does not report patient eGFR.
-The A-29 build used here has no named CKD-EPI helper: `omop_number_derive` accepts
-closed arithmetic, while powers can be composed from log, affine and exp stages.
-A production definition still needs validated specimen equivalence, aligned age
-and sex, adult eligibility and formula validation. A published formula alone is
-not permission to change the source semantics.
+The named helper `omop_formula_egfr_ckdepi2021()` requires standardized creatinine
+in `coordinate:idms_creatinine_mg_dl`, completed calendar age at that same
+measurement, and an explicit public mapping from the study's sex categories to
+the equation branches. A field named gender does not establish that mapping.
+The formula returns missing for children, nonpositive creatinine and unmapped sex.
+
+The source check above is a reason to stop this Synthea calculation: neither
+renaming Blood as Serum nor declaring an assay coordinate establishes specimen
+or assay suitability. The worked formula below uses a separate synthetic teaching example with known
+input meaning. It does not reinterpret the Synthea records.
 
 **Exercise 3.** Why would using the first creatinine search hit be unsafe? Save
 the intended serum definition instead.
@@ -387,6 +354,76 @@ must all agree before formula execution.
 
 </details>
 
+## Collapse duplicate readings within a recorded day
+
+An ordinary mean weights every reading. If the protocol gives each observed day
+equal weight, reduce within person, concept, unit and recorded date first, then
+reduce those daily values. Absent days are not filled.
+
+
+``` r
+daily_mean <- omop_number_daily(omop_number_rows(omop_event("measurement", body_sets$weight, unit = omop_unit(9529L))),
+  reducer = omop_reduce("mean"), within_day = "mean")
+daily_recipe <- omop_recipe(variables = list(weight = daily_mean))
+daily_result <- recipe_execute(daily_recipe, out = "D_daily_weights", conns = conns)
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_daily_weights$weight", datasources = conns)))
+```
+
+
+
+|Site |Statistic |     Value|
+|:----|:---------|---------:|
+|site |5%        |  7.757244|
+|site |10%       |  9.730625|
+|site |25%       | 35.703630|
+|site |50%       | 75.000000|
+|site |75%       | 80.890000|
+|site |90%       | 86.648000|
+|site |95%       | 90.504000|
+|site |Mean      | 59.820033|
+
+`within_day = "max"` asks a different question; `"first"` uses deterministic event
+order. The outer reducer still controls how observed days contribute to the result.
+
+**Exercise.** Compare a daily maximum followed by a mean.
+
+<details><summary>Solution: change the within-day rule</summary>
+
+
+``` r
+daily_max <- omop_number_daily(omop_number_rows(omop_event("measurement", body_sets$weight, unit = omop_unit(9529L))),
+  reducer = omop_reduce("mean"), within_day = "max")
+daily_max_recipe <- omop_recipe(variables = list(weight = daily_max))
+book_symbols(recipe_execute(daily_max_recipe, out = "D_daily_max_weights", conns = conns))
+```
+
+```
+#>                output 
+#> "D_daily_max_weights"
+```
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_daily_max_weights$weight", datasources = conns)))
+```
+
+
+
+|Site |Statistic |     Value|
+|:----|:---------|---------:|
+|site |5%        |  7.757244|
+|site |10%       |  9.730625|
+|site |25%       | 35.703630|
+|site |50%       | 75.000000|
+|site |75%       | 80.890000|
+|site |90%       | 86.648000|
+|site |95%       | 90.504000|
+|site |Mean      | 59.820033|
+
+Equality here would only mean that these particular observations give the same
+result. It would not make mean and maximum interchangeable in the protocol.
+
+</details>
+
 ## Collapse repeated episodes deliberately
 
 A person may have several eligible measurement episodes. Requesting person grain
@@ -408,7 +445,7 @@ cat(grep("collapse|grain", recipe_explain(collapsed)$text, value = TRUE), sep = 
 ```
 
 ``` r
-print(recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns))
+book_symbols(recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns))
 ```
 
 ```
@@ -448,7 +485,7 @@ before comparing its summary with the first-episode output.
 ``` r
 last_episode <- collapsed
 last_episode$outputs$people$collapse <- "last_episode"
-print(recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns))
+book_symbols(recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns))
 ```
 
 ```
@@ -478,11 +515,137 @@ measurement average, and it need not equal an average over all episodes.
 
 </details>
 
+## Execute eGFR with declared synthetic inputs
+
+The questionnaire helper can create synthetic standardized serum creatinine
+measurements and explicitly named equation-sex categories. This is formula
+practice, separate from the two clinical practice resources. Its partial birth
+dates remain incomplete so that missing age still produces missing eGFR.
+
+
+``` r
+source("tools/book/fixture.R")
+formula_practice <- book_fixture(formulas = TRUE, symbol = "book_formula")
+formula_conns <- formula_practice$conns
+formula_hits <- ds.omop.concept.search("Teaching standardized serum creatinine",
+  domain = "Measurement", conns = formula_conns, symbol = "book_formula")$pooled
+sex_hits <- ds.omop.concept.search(NULL, domain = "Gender", conns = formula_conns, symbol = "book_formula")$pooled
+knitr::kable(rbind(formula_hits, sex_hits)[c("concept_name", "standard_concept", "vocabulary_id")])
+```
+
+
+
+|concept_name                           |standard_concept |vocabulary_id |
+|:--------------------------------------|:----------------|:-------------|
+|Teaching standardized serum creatinine |S                |Fixture       |
+|Female equation branch                 |S                |Fixture       |
+|Male equation branch                   |S                |Fixture       |
+
+``` r
+formula_id <- formula_hits$concept_id
+formula_set <- omop_concept_set(formula_id)
+knitr::kable(ds.omop.concept.locate(formula_id, scope = "pooled", conns = formula_conns, symbol = "book_formula")$pooled)
+```
+
+
+
+| concept_id|table_name  |concept_column         | n_records| n_persons|
+|----------:|:-----------|:----------------------|---------:|---------:|
+|     970001|measurement |measurement_concept_id |        20|        20|
+
+``` r
+knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = formula_id,
+  scope = "pooled", conns = formula_conns, symbol = "book_formula")$pooled)
+```
+
+
+
+|  n|concept_name            |value |
+|--:|:-----------------------|:-----|
+| 20|milligram per deciliter |8840  |
+
+``` r
+sex_ids <- setNames(sex_hits$concept_id, sex_hits$concept_name)
+saveRDS(list(creatinine = formula_set, sex = sex_ids), formula_file)
+```
+
+These are local teaching concepts with no external mappings or ancestors.
+The synthetic source explicitly defines standardized serum measurements in mg/dL.
+The clinical equivalents would require assay and source validation.
+
+
+``` r
+serum_event <- omop_event("measurement", formula_set, unit = omop_unit(8840L))
+creatinine <- omop_variable(event = serum_event,
+  reducer = omop_reduce("first_value", missing = "keep"))
+creatinine <- omop_number(creatinine, omop_number_spec(unit =
+  omop_number_unit("unit:8840", "coordinate:idms_creatinine_mg_dl", factor = 1)))
+egfr <- omop_formula_egfr_ckdepi2021(creatinine,
+  age = omop_age_at(omop_anchor(serum_event, which = "first", scope = "episode")),
+  sex = omop_variable(table = "person", column = "gender_concept_id"),
+  sex_map = list(female = paste0("concept:", sex_ids[["Female equation branch"]]),
+    male = paste0("concept:", sex_ids[["Male equation branch"]])))
+egfr_recipe <- omop_recipe(
+  populations = omop_population("measurements", index = omop_index(serum_event)),
+  variables = list(egfr = egfr),
+  outputs = omop_output("people", rows = "measurements", format = "wide"))
+egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", conns = formula_conns, symbol = "book_formula")
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_egfr$egfr", datasources = formula_conns)))
+```
+
+
+
+|Site |Statistic |     Value|
+|:----|:---------|---------:|
+|site |5%        |  45.57251|
+|site |10%       |  45.57251|
+|site |25%       |  45.57251|
+|site |50%       | 109.98299|
+|site |75%       | 114.93547|
+|site |90%       | 114.93547|
+|site |95%       | 114.93547|
+|site |Mean      |  90.16366|
+
+The output is an adult estimate in mL/min/1.73 m². Age is completed calendar years
+at the selected creatinine measurement. Missing age or an unmapped equation-sex
+category remains missing; the helper never guesses a branch or adds a race term.
+
+**Exercise.** Inspect the formula provenance retained with the table.
+
+<details><summary>Solution: retain the equation and its eligibility rules</summary>
+
+
+``` r
+formula_record <- recipe_codebook(egfr_result)[[1]]$formulas[[1]]
+print(formula_record[c("id", "version", "equation", "unit", "eligibility")])
+```
+
+```
+#> $id
+#> [1] "dsomop.formula.egfr_ckdepi2021"
+#> 
+#> $version
+#> [1] "1.0.0"
+#> 
+#> $equation
+#> [1] "142*min(Scr/k,1)^alpha*max(Scr/k,1)^(-1.200)*0.9938^age*sex_factor"
+#> 
+#> $unit
+#> [1] "coordinate:ml_min_1_73m2"
+#> 
+#> $eligibility
+#> [1] "age >=18 completed calendar years at creatinine measurement; positive finite standardized creatinine; exactly one explicitly mapped sex branch"
+```
+
+The formula definition version is separate from package version. Saving this
+record makes the units, equation and adult eligibility explicit for a reviewer.
+
+</details>
+
 ## Recap
 
 Align meanings, units and dates before arithmetic. Native expressions preserve
-private inputs and declared coordinates. BMI, MAP and ratios use the closed
-grammar; missing prerequisites are a reason to stop a formula study. Collapse
+private inputs and declared coordinates. BMI, MAP and ratios use named formula definitions; missing prerequisites are a reason to stop a formula study. Collapse
 repeated episodes explicitly instead of letting duplicate rows change an analysis.
 
 **Next:** [16. Longitudinal data: from events to analysis](book-16-longitudinal.html).

@@ -93,10 +93,10 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   change = omop_number_change(glucose),
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 140, op = "le")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
-print(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
+book_symbols(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
 ```
 
-    #>      people
+    #>      people 
     #> "D_glucose"
 
 ``` r
@@ -214,13 +214,13 @@ trajectory$variables$target_days$derived[c("method", "threshold", "op", "referen
 
     #> $method
     #> [1] "time_to_threshold"
-    #>
+    #> 
     #> $threshold
     #> [1] 140
-    #>
+    #> 
     #> $op
     #> [1] "le"
-    #>
+    #> 
     #> $reference
     #> [1] "first"
 
@@ -238,13 +238,13 @@ glucose_fit[c("Nvalid", "Nmissing", "iter", "errorMessage")]
 
     #> $Nvalid
     #> [1] 10
-    #>
+    #> 
     #> $Nmissing
     #> [1] 0
-    #>
+    #> 
     #> $iter
     #> [1] 3
-    #>
+    #> 
     #> $errorMessage
     #>      ERROR MESSAGES
     #> site "No errors"

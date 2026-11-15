@@ -80,19 +80,19 @@ required setting is supplied.
 
 ``` r
 outpatient <- recipe_bind(template, setting = 9202L)
-recipe_explain(outpatient)$selected
+class(outpatient)
 ```
 
-    #> [1] "v2"
+    #> [1] "omop_recipe" "list"
 
 Binding fills the placeholder while preserving the template. Concept
 9202 is the outpatient visit setting, not the record’s provenance type.
 
 ``` r
-print(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
+book_symbols(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
 ```
 
-    #>             baseline
+    #>             baseline 
     #> "D_param_outpatient"
 
 ``` r
@@ -102,12 +102,12 @@ dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean 
     #>  0.000000  0.000000  0.750000  3.500000 17.000000 18.000000 18.000000  8.071429
 
 The server computes annual age (index year minus birth year) at the
@@ -123,17 +123,17 @@ print(outpatient)
     #> Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.
     #> Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.
     #> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
-    #> variables.prior_visits: concept origin follows reducer count over the declared source value; explicit variable name is retained.
+    #> variables.prior_visits: concept origin follows reducer count over the declared source value; explicit variable name is retained. 
     #> === omop_recipe ===
     #> Populations ( 2 ):
-    #>    base  :  All Persons
-    #>    study  :  Base Population
+    #>    base  :  All Persons 
+    #>    study  :  Base Population 
     #> Variables ( 2 ):
-    #>    prior_visits :  count of visit_occurrence
-    #>    age :  derived age (exact annual age)
+    #>    prior_visits :  count of visit_occurrence 
+    #>    age :  derived age (exact annual age) 
     #> Filters ( 0 ):
     #> Outputs ( 1 ):
-    #>    baseline  [ wide ] pop: study
+    #>    baseline  [ wide ] pop: study 
     #> Study 'study' (omop_study()) defaults chosen:
     #>   - index selection "first" (default): the first candidate per person, selected before the requirements
     #>   - observation coverage unique/drop/drop (default)
@@ -161,10 +161,10 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
+book_symbols(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
 ```
 
-    #>      baseline
+    #>      baseline 
     #> "D_shortcuts"
 
 ``` r
@@ -176,28 +176,28 @@ dsBaseClient::ds.table("D_shortcuts$ever", useNA = "no", datasources = conns)
     #>                 study
     #> D_shortcuts$ever site
     #>                1    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                 study
     #> D_shortcuts$ever site
     #>                1    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                 study
     #> D_shortcuts$ever site
     #>                1   28
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_shortcuts$ever
-    #> 1
-    #> 1
-    #>
+    #> 1 
+    #> 1 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_shortcuts$ever
-    #>  1
-    #> 28
-    #>
-    #>
+    #>  1 
+    #> 28 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -207,11 +207,11 @@ omop_window(-365, -1)` instead. First/last/mean/min/max-value shortcuts
 use the same event and window model. `omop_history()` bundles named ever
 variables; it does not define a new language.
 
-## What the mutate-v1 contract means
+## What the mutate contract means
 
 `ds.omop.mutate()` creates or replaces columns on a private
 `omop.table`. Although its notation looks like R, the client sends a
-**mutate-v1** data request: the server validates a closed grammar and
+**mutate** data request: the server validates a closed grammar and
 column types. It never runs arbitrary R code. Bare names refer to
 columns, including earlier assignments in the same call; literal
 numbers, strings, booleans and missing values are allowed.
@@ -250,10 +250,10 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-print(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
+book_symbols(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
 ```
 
-    #> baseline
+    #> baseline 
     #> "D_body"
 
 These are synthetic Synthea measurements, including children. Calculated
@@ -295,7 +295,7 @@ c(original_has_bmi = "bmi" %in% body_columns$site,
   new_has_bmi = "bmi" %in% bmi_columns$site)
 ```
 
-    #> original_has_bmi      new_has_bmi
+    #> original_has_bmi      new_has_bmi 
     #>            FALSE             TRUE
 
 The original has no BMI column, and the new object does.
@@ -421,8 +421,8 @@ units, not completed birthdays; use `omop_age_at` for completed age.
 
 ## Recode with case\_when
 
-Cases are checked in order. The first true condition wins. In mutate-v1,
-an unknown condition gives a missing result immediately, rather than
+Cases are checked in order. The first true condition wins. In mutate, an
+unknown condition gives a missing result immediately, rather than
 falling through to the default. Handle missingness explicitly when your
 study needs it.
 
@@ -503,7 +503,7 @@ c(copy_added = "bmi_copy" %in% before_columns$site,
   bmi_unchanged = identical(bmi_result, before_bmi))
 ```
 
-    #>    copy_added bmi_unchanged
+    #>    copy_added bmi_unchanged 
     #>          TRUE          TRUE
 
 The replacement adds `bmi_copy` while preserving BMI. The client keeps a
@@ -588,7 +588,7 @@ c(columns_preserved = identical(before_columns, after_columns),
     DSI::datashield.symbols(conns)$site))
 ```
 
-    #>     columns_preserved         bmi_preserved refused_copies_absent
+    #>     columns_preserved         bmi_preserved refused_copies_absent 
     #>                  TRUE                  TRUE                  TRUE
 
 All checks are true. Even the earlier `bmi + 1` assignment was not
@@ -672,10 +672,10 @@ Solution
 
 ``` r
 inpatient <- recipe_bind(template, setting = 9201L)
-print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
+book_symbols(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
 ```
 
-    #>            baseline
+    #>            baseline 
     #> "D_param_inpatient"
 
 ``` r
@@ -685,12 +685,12 @@ dsBaseClient::ds.summary("D_param_inpatient$prior_visits", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 7
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean 
     #>  2.000000  2.000000  2.500000  6.000000  8.500000 11.000000 12.500000  6.285714
 
 Each binding is a separate recipe. Its own index changes which earlier

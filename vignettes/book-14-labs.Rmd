@@ -20,10 +20,8 @@ and flags; measure change; and pool summaries and a model across two connections
 from [chapter 6](book-06-events.html). Start a fresh R session in `book-work`.
 Run the sections in order: each uses objects defined immediately above it.
 
-These are **public synthetic Synthea27Nj patients**, from the pinned Eunomia
-archive used by the numeric validation loader. There are 28 fictional people,
-not 27. GiBleed is the other practice resource and has no populated numeric
-measurement values. All results below were executed with dsOMOP 2.10.5.
+This chapter uses **synthetic Synthea27Nj measurements**, described in
+[Getting started](book-00-start.html#load-two-public-synthetic-datasets).
 
 Concept selections refer to the searches and saved definitions in
 [chapter 4](book-04-vocabulary.html), including the separate questionnaire
@@ -103,8 +101,7 @@ knitr::kable(unit_counts$pooled[c("concept_name", "n")])
 |gram per deciliter | 105|
 
 The record count is disclosure-banded; it is not an exact patient count.
-The pinned public source contains 108 hemoglobin readings in grams per deciliter
-(g/dL), independently verified by the administrator loader. The analyst sees only
+The recorded unit is grams per deciliter (g/dL). The analyst sees
 the protected aggregate above.
 
 **Exercise.** Look up the name of unit 8713. Does a vocabulary lookup prove that
@@ -182,7 +179,7 @@ Assign a wide table, with one private row per person. Only its symbol returns.
 values <- omop_recipe(variables = list(first = first, last = last,
   mean = average, minimum = minimum, maximum = maximum),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(values, out = c(people = "D_labs"), conns = conns))
+book_symbols(recipe_execute(values, out = c(people = "D_labs"), conns = conns))
 ```
 
 ```
@@ -340,7 +337,7 @@ grouped <- omop_recipe(variables = list(first = first, last = last,
     labels = c("below 14.5", "14.5 or above")),
   last_group = omop_number_bins(last, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-print(recipe_execute(grouped, out = c(output = "D_reducer_groups"), conns = conns))
+book_symbols(recipe_execute(grouped, out = c(output = "D_reducer_groups"), conns = conns))
 ```
 
 ```
@@ -377,7 +374,7 @@ knitr::kable(rbind(book_group_comparison(first_groups, first_mean, "first", "g/d
 grouped_mean <- omop_recipe(variables = list(mean = average,
   mean_group = omop_number_bins(average, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-print(recipe_execute(grouped_mean, out = c(output = "D_mean_groups"), conns = conns))
+book_symbols(recipe_execute(grouped_mean, out = c(output = "D_mean_groups"), conns = conns))
 ```
 
 ```
@@ -428,7 +425,7 @@ later reading. The shortcut selects the closest eligible nonmissing value.
 indexed <- omop_study(index, outputs = "baseline", baseline = list(
   at_index = omop_value_at_index("measurement", lab_id,
     tolerance = c(-7, 0), unit = 8713L)))
-print(recipe_execute(indexed, out = c(baseline = "D_lab_index"), conns = conns))
+book_symbols(recipe_execute(indexed, out = c(baseline = "D_lab_index"), conns = conns))
 ```
 
 ```
@@ -467,7 +464,7 @@ all eligible readings, unlike first-to-last subtraction. The unit here is g/dL
 slopes <- omop_recipe(variables = list(per_day = omop_variable(event = lab,
   reducer = omop_reduce("slope"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(slopes, out = c(people = "D_lab_slopes"), conns = conns))
+book_symbols(recipe_execute(slopes, out = c(people = "D_lab_slopes"), conns = conns))
 ```
 
 ```
@@ -505,7 +502,7 @@ knitr::kable(book_summary(slope_summary))
 annual <- omop_recipe(variables = list(per_365_days = omop_number(
   omop_number_change(lab, "slope", time_unit = "days"),
   omop_number_spec(transform = omop_number_transform("affine", factor = 365)))))
-print(recipe_execute(annual, out = c(output = "D_lab_annual"), conns = conns))
+book_symbols(recipe_execute(annual, out = c(output = "D_lab_annual"), conns = conns))
 ```
 
 ```
@@ -577,7 +574,7 @@ actual values, not inventing a mixed-unit source.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(converted, out = c(people = "D_lab_gl"), conns = conns))
+book_symbols(recipe_execute(converted, out = c(people = "D_lab_gl"), conns = conns))
 ```
 
 ```
@@ -629,7 +626,7 @@ flags <- omop_recipe(variables = list(mean = average,
   band = omop_number_bins(average, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(average, "ge", 15),
   low = omop_number_flag(average, "lt", 14)))
-print(recipe_execute(flags, out = c(output = "D_lab_flags"), conns = conns))
+book_symbols(recipe_execute(flags, out = c(output = "D_lab_flags"), conns = conns))
 ```
 
 ```
@@ -700,7 +697,7 @@ means the middle interval of this teaching rule. It is not a diagnosis.
 ``` r
 category_recipe <- omop_recipe(variables = list(control =
   omop_number_category(average, range = "thresholds", thresholds = c(14, 15))))
-print(recipe_execute(category_recipe, out = c(output = "D_control"), conns = conns))
+book_symbols(recipe_execute(category_recipe, out = c(output = "D_control"), conns = conns))
 ```
 
 ```
@@ -723,7 +720,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_control$control", datasources
 
 Reference mode instead uses the bounds paired with the selected observation.
 Synthea27Nj records no bounds for haemoglobin, so this example deliberately
-shows the current publication refusal for an all-missing reference factor.
+shows the source-validation refusal for missing reference bounds.
 The missing bounds cannot establish normality. Do not invent bounds or weaken
 the release check to obtain categories. The declared-threshold example above
 is the runnable alternative when those cutoffs are part of the protocol.
@@ -744,7 +741,7 @@ reference_message <- tryCatch({
 ```
 
 ```
-#> Warning in rm(list = c(name), envir = private$.session(sid)): object 'dsOexec.IBFsk9'
+#> Warning in rm(list = c(name), envir = private$.session(sid)): object 'dsOexec.tHBajA'
 #> not found
 ```
 
@@ -753,7 +750,7 @@ cat(reference_message, "\n")
 ```
 
 ```
-#> Invalid plan publication status. Execution-owned artifacts were revoked and removed.
+#> Plan publication refused: site:output [validation_error] (number_source_invalid). Execution-owned artifacts were revoked and removed.
 ```
 <!-- expected-reference-cleanup:end -->
 
@@ -815,7 +812,7 @@ private distribution is needed to explain a public presentation rule.
 
 
 ``` r
-print(recipe_execute(pipeline_recipe, out = c(output = "D_pipeline"), conns = conns))
+book_symbols(recipe_execute(pipeline_recipe, out = c(output = "D_pipeline"), conns = conns))
 ```
 
 ```
@@ -844,7 +841,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_pipeline$band", datasources =
 ``` r
 log_recipe <- omop_recipe(variables = list(raw = average,
   logged = omop_number(average, omop_number_spec(transform = omop_number_transform("log")))))
-print(recipe_execute(log_recipe, out = c(output = "D_log"), conns = conns))
+book_symbols(recipe_execute(log_recipe, out = c(output = "D_log"), conns = conns))
 ```
 
 ```
@@ -891,7 +888,7 @@ changes <- omop_recipe(variables = list(
   per_day = omop_number_change(lab, "slope", time_unit = "days"),
   target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
     op = "ge", reference = "first", time_unit = "days")))
-print(recipe_execute(changes, out = c(output = "D_lab_change"), conns = conns))
+book_symbols(recipe_execute(changes, out = c(output = "D_lab_change"), conns = conns))
 ```
 
 ```
@@ -960,7 +957,7 @@ column_recipe <- omop_recipe(variables = list(mean = average),
   outputs = omop_output("people", format = "wide", grain = "person", columns = c("mean", "mean_rounded"),
     number_columns = list(mean_rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
-print(recipe_execute(column_recipe, out = c(people = "D_number_columns"), conns = conns))
+book_symbols(recipe_execute(column_recipe, out = c(people = "D_number_columns"), conns = conns))
 ```
 
 ```
@@ -1034,7 +1031,7 @@ unit, missing-value rule and person-level grain at each site.
 
 
 ``` r
-print(recipe_execute(values, out = c(people = "D_pool_labs"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(values, out = c(people = "D_pool_labs"), conns = two_conns, symbol = "book_pool"))
 ```
 
 ```
@@ -1095,7 +1092,7 @@ covariate. Fit last hemoglobin as the outcome and first hemoglobin as the
 covariate, both in g/dL. The servers keep the person-level data; the analyst sees
 model coefficients and diagnostics.
 
-With the pinned dsBase 6.3.5, the call emits the warnings shown below: its local
+With dsBase 6.3.5, the call emits the warnings shown below: its local
 setup fits use `maxit = 1`. The distributed algorithm then iterates across sites;
 this example finishes in three iterations. The book's independent checks compare
 its final coefficients, standard errors and deviance with a central Gaussian fit

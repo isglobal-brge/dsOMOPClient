@@ -16,19 +16,19 @@ omop_category_reduce(
 ## Arguments
 
   - variable:
-
+    
     Typed event category or indicator projection.
 
   - reducer:
-
+    
     Existing typed selector, mode, count, distinct or flag reducer.
 
   - category\_spec:
-
+    
     Optional final presentation (after reduction).
 
   - broadcast:
-
+    
     Explicit scalar broadcast.
 
 ## Value

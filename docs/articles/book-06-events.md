@@ -161,10 +161,10 @@ Otherwise an unknown remains missing. Empty windows give any = 0 and all
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
+book_symbols(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
 ```
 
-    #>       people
+    #>       people 
     #> "D_reducers"
 
 Only the symbol mapping returns. Request one approved aggregate at a
@@ -195,12 +195,12 @@ first_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 
 This summarises the first nonmissing measurement per person.
@@ -230,16 +230,16 @@ last_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 12.34000 12.74000 13.60000 15.00000 16.25000 16.83000 17.03000 14.89286
 
 Later readings can change the last-value summary. The source dataset
-contains hemoglobin measurements for all 28 fictional people.
+contains hemoglobin measurements for everyone in this practice dataset.
 
 ``` r
 days_result <- dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
@@ -266,12 +266,12 @@ days_result
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 
 This summarises one measurement-day count per person. A frequency table
@@ -300,28 +300,28 @@ ever_result
     #>                study
     #> D_reducers$ever site
     #>               1    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                study
     #> D_reducers$ever site
     #>               1    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                study
     #> D_reducers$ever site
     #>               1   28
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_reducers$ever
-    #> 1
-    #> 1
-    #>
+    #> 1 
+    #> 1 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_reducers$ever
-    #>  1
-    #> 28
-    #>
-    #>
+    #>  1 
+    #> 28 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -352,32 +352,32 @@ any_result
     #>                  0     1
     #>                  1     1
     #>                  NA  NaN
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                    study
     #> D_reducers$any_high      site
     #>                  0  0.3214286
     #>                  1  0.6785714
     #>                  NA 0.0000000
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                    study
     #> D_reducers$any_high site
     #>                  0     9
     #>                  1    19
     #>                  NA    0
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_reducers$any_high
-    #>     0     1    NA
-    #> 0.321 0.679 0.000
-    #>
+    #>     0     1    NA 
+    #> 0.321 0.679 0.000 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_reducers$any_high
-    #>  0  1 NA
-    #>  9 19  0
-    #>
-    #>
+    #>  0  1 NA 
+    #>  9 19  0 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -409,32 +409,32 @@ all_result
     #>                  0     1
     #>                  1     1
     #>                  NA  NaN
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                    study
     #> D_reducers$all_high      site
     #>                  0  0.8571429
     #>                  1  0.1428571
     #>                  NA 0.0000000
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                    study
     #> D_reducers$all_high site
     #>                  0    24
     #>                  1     4
     #>                  NA    0
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_reducers$all_high
-    #>     0     1    NA
-    #> 0.857 0.143 0.000
-    #>
+    #>     0     1    NA 
+    #> 0.857 0.143 0.000 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_reducers$all_high
-    #>  0  1 NA
-    #> 24  4  0
-    #>
-    #>
+    #>  0  1 NA 
+    #> 24  4  0 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -468,12 +468,12 @@ mean_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679
 
 This summarises one mean per person. It is not the pooled mean of all
@@ -490,10 +490,10 @@ need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-print(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
+book_symbols(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
 ```
 
-    #>     baseline
+    #>     baseline 
     #> "D_at_index"
 
 The tolerance excludes later measurements. The shortcut uses
@@ -525,12 +525,12 @@ at_index_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 
 Only people with an eligible hemoglobin measurement enter this indexed
@@ -571,10 +571,10 @@ across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
+book_symbols(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
 ```
 
-    #>        people
+    #>        people 
     #> "D_converted"
 
 ``` r
@@ -602,12 +602,12 @@ conversion_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 129.0500 131.4667 137.8500 143.2500 153.3542 157.0000 159.2375 144.6679
 
 The means are ten times the g/dL means. This run uses the dataset’s
@@ -627,10 +627,10 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-print(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
+book_symbols(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
 ```
 
-    #>       output
+    #>       output 
     #> "D_lab_bins"
 
 The band is an ordered factor directly on the server. No mutate-plus-cut
@@ -665,12 +665,12 @@ dsBaseClient::ds.mean("D_lab_bins$mean", type = "combine", datasources = conns)
     #> $Global.Mean
     #>                 EstimatedMean Nmissing Nvalid Ntotal
     #> studiesCombined      14.46679        0     28     28
-    #>
+    #> 
     #> $Nstudies
     #> [1] 1
-    #>
+    #> 
     #> $ValidityMessage
-    #>      ValidityMessage
+    #>      ValidityMessage 
     #> site "VALID ANALYSIS"
 
 Full aggregate response
@@ -687,7 +687,7 @@ bins_result
     #>   14 to below 15    1
     #>   15 or above       1
     #>   NA              NaN
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                 study
     #> D_lab_bins$band       site
@@ -695,7 +695,7 @@ bins_result
     #>   14 to below 15 0.3214286
     #>   15 or above    0.3571429
     #>   NA             0.0000000
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                 study
     #> D_lab_bins$band  site
@@ -703,18 +703,18 @@ bins_result
     #>   14 to below 15    9
     #>   15 or above      10
     #>   NA                0
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_lab_bins$band
-    #>       below 14 14 to below 15    15 or above             NA
-    #>          0.321          0.321          0.357          0.000
-    #>
+    #>       below 14 14 to below 15    15 or above             NA 
+    #>          0.321          0.321          0.357          0.000 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_lab_bins$band
-    #>       below 14 14 to below 15    15 or above             NA
-    #>              9              9             10              0
-    #>
-    #>
+    #>       below 14 14 to below 15    15 or above             NA 
+    #>              9              9             10              0 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -735,10 +735,10 @@ ranges <- omop_recipe(variables = list(
   high_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_high")),
   low_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_low"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
+book_symbols(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
 ```
 
-    #>         people
+    #>         people 
     #> "D_lab_ranges"
 
 ``` r
@@ -761,28 +761,28 @@ ranges_result
     #>                        study
     #> D_lab_ranges$high_count site
     #>                       0    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                        study
     #> D_lab_ranges$high_count site
     #>                       0    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                        study
     #> D_lab_ranges$high_count site
     #>                       0   28
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_lab_ranges$high_count
-    #> 0
-    #> 1
-    #>
+    #> 0 
+    #> 1 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_lab_ranges$high_count
-    #>  0
-    #> 28
-    #>
-    #>
+    #>  0 
+    #> 28 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -803,10 +803,10 @@ Solution
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
+book_symbols(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
 ```
 
-    #>        people
+    #>        people 
     #> "D_row_count"
 
 ``` r
@@ -834,12 +834,12 @@ solution_result
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 28
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 
 Compare the released summaries: records on the same day would count
@@ -855,10 +855,10 @@ Solution
 
 ``` r
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-print(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
+book_symbols(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
 ```
 
-    #>           output
+    #>           output 
     #> "D_event_change"
 
 ``` r
@@ -903,19 +903,19 @@ lab_gl$unit
 
     #> $target
     #> [1] 8636
-    #>
+    #> 
     #> $convert
     #> $convert$`8713`
-    #> factor offset
-    #>     10      0
-    #>
-    #>
+    #> factor offset 
+    #>     10      0 
+    #> 
+    #> 
     #> $unknown
     #> [1] "missing"
-    #>
+    #> 
     #> $censored
     #> [1] "keep"
-    #>
+    #> 
     #> attr(,"class")
     #> [1] "omop_unit" "list"
 

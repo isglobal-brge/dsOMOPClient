@@ -60,7 +60,7 @@ omop_index_event(
     observation-period end, as in Circe).
 
   - validity\_policy:
-
+    
     NULL for native semantics, or `"ohdsi-import-1"` for the
     server-enforced imported-vocabulary validity contract.
 

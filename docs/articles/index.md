@@ -38,15 +38,15 @@
     formulas](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.md):
   - [16. Longitudinal data: from events to
     analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md):
-  - [17. Reproduction and migration
-    notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md):
-  - [18. Capstone: a verbal-autopsy wide
-    table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-verbal-autopsy.md):
+  - [17. Checking and recording a
+    study](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md):
+  - [18. Capstone: a cause-of-death wide
+    table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-capstone.md):
 
 ### Case studies
 
-  - [19. Case study: HDSS-style
-    mortality](https://isglobal-brge.github.io/dsOMOPClient/articles/book-19-case-mortality.md):
+  - [19. Case study: cause-specific mortality by age, sex and
+    period](https://isglobal-brge.github.io/dsOMOPClient/articles/book-19-case-mortality.md):
   - [20. Case study: celecoxib versus
     diclofenac](https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.md):
   - [21. Case study: glucose
@@ -58,8 +58,8 @@
 
 ### Earlier reference guides
 
-  - [Getting Started with dsOMOP
-    v2](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
+  - [Getting Started with
+    dsOMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
     
     Connect to OMOP CDM resources and run a first reviewed workflow.
 

@@ -85,12 +85,12 @@ for the scope and utility of each protected route.
 ``` r
 catalog <- omop_querylibrary_sticky_catalog()
 table(catalog$statistic)
-#>
-#>           binary_rate      bounded_distinct          bounded_mean
-#>                     7                     1                     7
-#>  bounded_record_count categorical_histogram                 count
-#>                     4                    31                     8
-#>     numeric_histogram
+#> 
+#>           binary_rate      bounded_distinct          bounded_mean 
+#>                     7                     1                     7 
+#>  bounded_record_count categorical_histogram                 count 
+#>                     4                    31                     8 
+#>     numeric_histogram 
 #>                    71
 ```
 
@@ -110,10 +110,10 @@ age_at_2025 <- omop_querylibrary_sticky(
   breaks = seq(0, 120, by = 10)
 )
 age_at_2025
-#> OHDSI QueryLibrary sticky redesign: PE12
-#>   Primitive: numeric_histogram
-#>   Reducer: mean
-#>   Input: a table prepared with ds.omop.dp.prepare()
+#> OHDSI QueryLibrary sticky redesign: PE12 
+#>   Primitive: numeric_histogram 
+#>   Reducer: mean 
+#>   Input: a table prepared with ds.omop.dp.prepare() 
 #>   Automatic equivalent: ds.omop.analysis.run("dsomop:person.year_of_birth_distribution") (no preparation)
 #>   Upstream SQL authorized: no
 ```

@@ -169,11 +169,11 @@ omop_variable(
     Native date presentation; variable fields override recipe defaults.
 
   - number\_spec:
-
+    
     Native numeric presentation created with omop\_number\_spec().
 
   - category\_spec:
-
+    
     Native category identity and presentation.
 
 ## Value

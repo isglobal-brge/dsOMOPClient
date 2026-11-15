@@ -106,7 +106,7 @@ ds.omop.table.stats("person", conns = conns)$per_site$site
 
     #> $rows
     #> [1] 2690
-    #>
+    #> 
     #> $persons
     #> [1] 2690
 
@@ -204,7 +204,7 @@ ds.omop.table.stats("person", conns = conns)$per_site$site
 
     #> $rows
     #> [1] 2690
-    #>
+    #> 
     #> $persons
     #> [1] 2690
 

@@ -54,9 +54,9 @@
     <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
     <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
     <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
-    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
-    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Checking and recording a study</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-capstone.html">18. Capstone: a cause-of-death wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: cause-specific mortality by age, sex and period</a></li>
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
@@ -101,7 +101,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>dsOMOP v2 applies endpoint-specific disclosure controls to its assignment and aggregate methods. It reads standard DataSHIELD thresholds plus <code>dsomop.*</code> server options configured by the administrator; the client cannot change these options through the dsOMOP API.</p>
+<p>dsOMOP applies endpoint-specific disclosure controls to its assignment and aggregate methods. It reads standard DataSHIELD thresholds plus <code>dsomop.*</code> server options configured by the administrator; the client cannot change these options through the dsOMOP API.</p>
 <p>These controls are one layer of a DataSHIELD deployment, not a complete security boundary by themselves. The administrator must also review the complete method allowlist: the <code>omop.table</code> class and <code>dsomop_protected</code> attributes are enforced by dsOMOP methods, but do not constrain arbitrary methods exported by another server package.</p>
 <p><code><a href="../reference/ds.omop.connect.html">ds.omop.connect()</a></code> enforces one non-negotiable allowlist preflight: every connected node must return a complete AggregateMethods inventory, and the connection is rejected if a method is named <code>c</code>/<code>list</code> or aliases an unqualified or qualified <code>c</code>/<code>list</code> target (<code>c</code>, <code>list</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c</a></code> or <code><a href="https://rdrr.io/r/base/list.html" class="external-link">base::list</a></code>). Those generic containers can otherwise wrap and return a protected object without passing through a reviewed disclosure endpoint. This check applies even with <code>strict = FALSE</code>; administrators must remove such methods from all server profiles before dsOMOPClient will assign the resource. It is defence in depth rather than a server sandbox: a caller using DSI directly does not pass through this client preflight.</p>
 </div>

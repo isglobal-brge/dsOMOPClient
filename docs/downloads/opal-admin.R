@@ -18,7 +18,7 @@ local({
   stopifnot(dsadmin.install_github_package(opal, "dsBase", username = "datashield",
     ref = "6.3.5", profile = opal_profile))
   stopifnot(dsadmin.install_github_package(opal, "dsOMOP", username = "isglobal-brge",
-    ref = "2.10.4", profile = opal_profile))
+    ref = "2.10.5", profile = opal_profile))
   dsadmin.publish_package(opal, "dsBase", profile = opal_profile)
   dsadmin.publish_package(opal, "dsOMOP", profile = opal_profile)
   dsadmin.profile_enable(opal, opal_profile)

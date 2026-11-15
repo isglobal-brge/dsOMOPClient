@@ -1,0 +1,11 @@
+dsOMOP v2.10.5 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+PASS: exact chapter 2 attach/switch chunks with renamed project and both resources
+Error in loadNamespace(x) : there is no package called ‘opalr’
+Calls: check ... loadNamespace -> withRestarts -> withOneRestart -> doWithOneRestart
+Execution halted

@@ -1,0 +1,42 @@
+[1] ".categoryReject"
+Tracing function ".categoryReject" in package "namespace:dsOMOP"
+
+Quitting from vignettes/book-10-harmonise.Rmd.orig:343-358 [category-rollups]
+Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.
+ROLLUP VARIABLE: atc_first
+[dsomop-audit] 2026-11-15T02:45:05+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"rx_950001":{"table":"drug_exposure","concept_set":{"concepts":[950001],"include_descendants":false}}},"populations":{"base":{"kind":"criteria"}},"variables":{"atc_first":{"source":{"event":"rx_950001"},"reducer":{"fn":"last_value","value":"drug_concept_id"},"category_spec":{"rollup":{"kind":"atc","level":1,"domain":{"concepts":[950001],"include_descendants":false},"multiple":"error","unmatched":"keep"}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
+[1] "Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+<simpleError: Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.>
+Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.
+In addition: Warning message:
+In rm(list = c(name), envir = private$.session(sid)) :
+  object 'dsOexec.nR7ZhC' not found
+ROLLUP VARIABLE: atc_second
+[dsomop-audit] 2026-11-15T02:45:05+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"rx_950001":{"table":"drug_exposure","concept_set":{"concepts":[950001],"include_descendants":false}}},"populations":{"base":{"kind":"criteria"}},"variables":{"atc_second":{"source":{"event":"rx_950001"},"reducer":{"fn":"last_value","value":"drug_concept_id"},"category_spec":{"rollup":{"kind":"atc","level":2,"domain":{"concepts":[950001],"include_descendants":false},"multiple":"error","unmatched":"keep"}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
+[1] "Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+<simpleError: Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.>
+Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.
+In addition: Warning message:
+In rm(list = c(name), envir = private$.session(sid)) :
+  object 'dsOexec.k9yn23' not found
+ROLLUP VARIABLE: chapter
+[dsomop-audit] 2026-11-15T02:45:05+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"death":{"table":"death"}},"populations":{"base":{"kind":"criteria"}},"variables":{"chapter":{"source":{"event":"death"},"reducer":{"fn":"first_value","value":"cause_concept_id"},"category_spec":{"rollup":{"kind":"icd10","level":"chapter","vocabulary":"ICD10","domain":{"concepts":[900201,900202],"include_descendants":false},"multiple":"error","unmatched":"keep"}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
+[1] "Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+<simpleError: Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.>
+Error : Plan publication refused: site:output [validation_error] (category_spec_invalid). Execution-owned artifacts were revoked and removed.
+In addition: Warning message:
+In rm(list = c(name), envir = private$.session(sid)) :
+  object 'dsOexec.Npam6G' not found
+CATEGORY DETAIL:  Vocabulary presentation requires concept identities. 
+CATEGORY DETAIL:  Vocabulary presentation requires concept identities. 
+CATEGORY DETAIL:  Vocabulary presentation requires concept identities. 
+CATEGORY DETAIL:  Vocabulary presentation requires concept identities. 

@@ -1,4 +1,4 @@
-# 19\. Case study: HDSS-style mortality
+# 19\. Case study: cause-specific mortality by age, sex and period
 
 **What you will learn**
 
@@ -16,12 +16,12 @@ teaching data; the numerical results are not clinical evidence.
 ## Research question and data boundary
 
 How many deaths from each recorded cause occur in 2024, and how much
-observed person-time supports those counts? This APHRC-like worked
-example uses the 24-person **questionnaire fixture**, not APHRC records.
-Every person is observed throughout 2024 until death or the year end.
-Its sex codes are unknown, so it cannot supply a defensible
-sex-stratified mortality estimate. We show that boundary explicitly
-rather than manufacture female/male assignments.
+observed person-time supports those counts? This worked example uses the
+synthetic **questionnaire fixture**. Every person is observed throughout
+2024 until death or the year end. Its sex codes are unknown, so it
+cannot supply a defensible sex-stratified mortality estimate. We show
+that boundary explicitly rather than manufacture female/male
+assignments.
 
 ``` r
 library(dsOMOPClient)
@@ -71,7 +71,7 @@ knitr::kable(death_prevalence[setdiff(names(death_prevalence), "concept_id")])
 |         10 | Myocardial infarction |
 |          5 | Pneumonia             |
 
-## Define the private verbal-autopsy table
+## Define the private cause-of-death table
 
 The all-person population retains survivors. Completed age at death
 preserves missing birth components. The cause is the coded answer, not
@@ -82,6 +82,8 @@ in this fixture occur in 2024.
 mi <- omop_event("death", cause_sets[["Myocardial infarction"]])
 pneumonia <- omop_event("death", cause_sets[["Pneumonia"]])
 mortality <- omop_recipe(variables = list(
+  sex = omop_category(omop_variable(name = "sex", table = "person", column = "gender_concept_id"),
+    omop_category_spec(missing = omop_category_missing(unknown = "level"))),
   cause = omop_variable(event = omop_event("death"), reducer = omop_reduce("first_value", value = "cause_concept_id")),
   age_band = omop_number_bins(omop_age_at("death"), breaks = c(0, 40, 121),
     labels = c("under 40", "40 and over")),
@@ -89,10 +91,10 @@ mortality <- omop_recipe(variables = list(
   death_days = omop_time_between("2024-01-01", "death"),
   mi = omop_variable(event = mi, reducer = omop_reduce("binary")),
   pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary"))))
-print(recipe_execute(mortality, out = c(output = "D_mortality"), conns = conns))
+book_symbols(recipe_execute(mortality, out = c(output = "D_mortality"), conns = conns))
 ```
 
-    #>        output
+    #>        output 
     #> "D_mortality"
 
 ``` r
@@ -100,13 +102,13 @@ ds.omop.table("D_mortality", "cause", conns = conns)
 ```
 
     #> D_mortality$cause
-    #> Myocardial infarction             Pneumonia
+    #> Myocardial infarction             Pneumonia 
     #>                    12                     6
 
 The output keeps missing cause separate from an observed cause. In a
-real HDSS, restrict cause events to the analysis period and intersect
-residency intervals with follow-up. Do not borrow this fixture’s
-complete residency assumption.
+mortality study, restrict cause events to the analysis period and
+intersect residency intervals with follow-up. Do not borrow this
+fixture’s complete residency assumption.
 
 ## Count causes by age band
 
@@ -122,43 +124,43 @@ dsBaseClient::ds.table("D_mortality$cause", "D_mortality$age_band",
     #>   Myocardial infarction        0         0.5 0.5
     #>   Pneumonia                    1         0.0 0.0
     #>   NA                           0         0.0 1.0
-    #>
+    #> 
     #> $output.list$TABLE.STUDY.site_col.props
     #>                        D_mortality$age_band
     #> D_mortality$cause       under 40 40 and over  NA
     #>   Myocardial infarction        0           1 0.5
     #>   Pneumonia                    1           0 0.0
     #>   NA                           0           0 0.5
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_row.props
     #>                        D_mortality$age_band
     #> D_mortality$cause       under 40 40 and over  NA
     #>   Myocardial infarction        0         0.5 0.5
     #>   Pneumonia                    1         0.0 0.0
     #>   NA                           0         0.0 1.0
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_col.props
     #>                        D_mortality$age_band
     #> D_mortality$cause       under 40 40 and over  NA
     #>   Myocardial infarction        0           1 0.5
     #>   Pneumonia                    1           0 0.0
     #>   NA                           0           0 0.5
-    #>
+    #> 
     #> $output.list$TABLE_STUDY.site_counts
     #>                        D_mortality$age_band
     #> D_mortality$cause       under 40 40 and over NA
     #>   Myocardial infarction        0           6  6
     #>   Pneumonia                    6           0  0
     #>   NA                           0           0  6
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #>                        D_mortality$age_band
     #> D_mortality$cause       under 40 40 and over NA
     #>   Myocardial infarction        0           6  6
     #>   Pneumonia                    6           0  0
     #>   NA                           0           0  6
-    #>
-    #>
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -166,6 +168,69 @@ Missing age remains visible. Dropping it would silently lose deaths with
 partial birth dates. Fine age-by-sex-by-period cells may be withheld:
 combine categories only when the study question supports the broader
 estimand.
+
+## Check whether sex stratification is supported
+
+Concept zero means unknown, not a female or male equation category.
+Retain it explicitly rather than distributing these people between
+invented sex groups.
+
+``` r
+dsBaseClient::ds.table("D_mortality$cause", "D_mortality$sex",
+  useNA = "always", datasources = conns)
+```
+
+    #> $output.list
+    #> $output.list$TABLE.STUDY.site_row.props
+    #>                        D_mortality$sex
+    #> D_mortality$cause       Unknown NA
+    #>   Myocardial infarction       1  0
+    #>   Pneumonia                   1  0
+    #>   NA                          1  0
+    #> 
+    #> $output.list$TABLE.STUDY.site_col.props
+    #>                        D_mortality$sex
+    #> D_mortality$cause       Unknown  NA
+    #>   Myocardial infarction    0.50 NaN
+    #>   Pneumonia                0.25 NaN
+    #>   NA                       0.25 NaN
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_row.props
+    #>                        D_mortality$sex
+    #> D_mortality$cause       Unknown NA
+    #>   Myocardial infarction       1  0
+    #>   Pneumonia                   1  0
+    #>   NA                          1  0
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_col.props
+    #>                        D_mortality$sex
+    #> D_mortality$cause       Unknown  NA
+    #>   Myocardial infarction    0.50 NaN
+    #>   Pneumonia                0.25 NaN
+    #>   NA                       0.25 NaN
+    #> 
+    #> $output.list$TABLE_STUDY.site_counts
+    #>                        D_mortality$sex
+    #> D_mortality$cause       Unknown NA
+    #>   Myocardial infarction      12  0
+    #>   Pneumonia                   6  0
+    #>   NA                          6  0
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #>                        D_mortality$sex
+    #> D_mortality$cause       Unknown NA
+    #>   Myocardial infarction      12  0
+    #>   Pneumonia                   6  0
+    #>   NA                          6  0
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+All the recorded causes fall under Unknown sex. The table therefore
+supports a cause-specific overall rate, but no female/male comparison. A
+study with known sex can use the same cross-tabulation and compute rates
+within each prespecified stratum using its own observed person-time.
 
 ## Calculate the period rate
 
@@ -198,9 +263,9 @@ knitr::kable(rates)
 | 2024   | Pneumonia             |                 506.5881 |
 
 These rates describe an intentionally tiny synthetic population with
-many deaths. They are not population estimates for Nairobi or any real
-surveillance site. A count divided by all enrolled people is a risk, not
-a person-time rate.
+many deaths. These teaching results do not estimate mortality in a real
+population. A count divided by all enrolled people is a risk, not a
+person-time rate.
 
 ## Compare calendar periods without reusing the wrong denominator
 
@@ -218,10 +283,10 @@ earlier <- omop_recipe(variables = list(
   mi = omop_variable(event = mi_2023, reducer = omop_reduce("binary")),
   pneumonia = omop_variable(event = pneumonia_2023, reducer = omop_reduce("binary")),
   until_death = omop_time_between("2023-01-01", "death")))
-print(recipe_execute(earlier, out = c(output = "D_mortality_2023"), conns = conns))
+book_symbols(recipe_execute(earlier, out = c(output = "D_mortality_2023"), conns = conns))
 ```
 
-    #>             output
+    #>             output 
     #> "D_mortality_2023"
 
 ``` r
@@ -250,7 +315,7 @@ knitr::kable(rbind(earlier_rates, rates))
 | 2024   | Pneumonia             |                 506.5881 |
 
 The zero rate is a released estimate for this defined synthetic period,
-not a replacement for suppression. A general HDSS analysis must
+not a replacement for suppression. A general mortality analysis must
 additionally remove people who died before the period and intersect each
 residency interval with it.
 
@@ -265,7 +330,7 @@ ds.omop.table("D_mortality", "period", conns = conns)
 ```
 
     #> D_mortality$period
-    #> 2024
+    #> 2024 
     #>   18
 
 Observed deaths belong to 2024; survivors have no death-period label.
@@ -295,7 +360,7 @@ c(same_mi_roster = mean_mi$Global.Mean[1,"Nvalid"] == mean_days$Global.Mean[1,"N
   same_pneumonia_roster = mean_pneumonia$Global.Mean[1,"Nvalid"] == mean_days$Global.Mean[1,"Nvalid"])
 ```
 
-    #>        same_mi_roster same_pneumonia_roster
+    #>        same_mi_roster same_pneumonia_roster 
     #>                  TRUE                  TRUE
 
 Both must be TRUE. Also establish the same person membership from the

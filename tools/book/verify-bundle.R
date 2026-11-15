@@ -115,6 +115,7 @@ local({
   # No ../practice-data exists in this case: the override must actually be used.
   if (any(grepl("book-17-reproduce", inputs)))
     run_chapter(inputs[grepl("book-17-reproduce", inputs)], custom=TRUE)
-  message("PASS: 25 complete chapters in fresh R processes from the final ZIP; ",
-          "Reproduction chapter also passed with BOOK_PRACTICE_DIR and no default data path")
+  message("PASS: ",length(inputs)," complete chapter(s) in fresh R processes from the final ZIP",
+    if(any(grepl("book-17-reproduce",inputs)))
+      "; study-record chapter also passed with BOOK_PRACTICE_DIR and no default data path" else "")
 })

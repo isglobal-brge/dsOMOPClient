@@ -18,11 +18,10 @@ a valid sealed input.
 
 ## Overview
 
-dsOMOP v2 applies endpoint-specific disclosure controls to its
-assignment and aggregate methods. It reads standard DataSHIELD
-thresholds plus `dsomop.*` server options configured by the
-administrator; the client cannot change these options through the dsOMOP
-API.
+dsOMOP applies endpoint-specific disclosure controls to its assignment
+and aggregate methods. It reads standard DataSHIELD thresholds plus
+`dsomop.*` server options configured by the administrator; the client
+cannot change these options through the dsOMOP API.
 
 These controls are one layer of a DataSHIELD deployment, not a complete
 security boundary by themselves. The administrator must also review the

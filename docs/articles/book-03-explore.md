@@ -124,7 +124,7 @@ ds.omop.table.stats("observation", conns = conns)$per_site$site
 
     #> $rows
     #> [1] 1475
-    #>
+    #> 
     #> $persons
     #> [1] 670
 
@@ -197,7 +197,7 @@ ds.omop.table.stats("visit_occurrence", conns = conns)$per_site$site
 
     #> $rows
     #> [1] 1035
-    #>
+    #> 
     #> $persons
     #> [1] 890
 
@@ -287,7 +287,7 @@ ds.omop.table.stats("measurement", conns = conns)$per_site$site
 
     #> $rows
     #> [1] 44050
-    #>
+    #> 
     #> $persons
     #> [1] 2685
 

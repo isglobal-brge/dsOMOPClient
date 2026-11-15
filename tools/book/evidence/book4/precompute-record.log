@@ -1,0 +1,4 @@
+PRECOMPUTE vignettes/book-17-reproduce.Rmd.orig
+ASSERTIONS PASS book-17-reproduce.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

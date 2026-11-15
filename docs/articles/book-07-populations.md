@@ -5,8 +5,8 @@
 Choose who enters a study, define episodes and observation coverage,
 reuse a cohort, identify new users and sample controls at case time.
 
-This chapter uses the 24-person synthetic questionnaire test fixture
-described in [Getting
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
 
 **You need:** the packages and the matching practice connection
@@ -65,10 +65,10 @@ visit episodes.
 ``` r
 visit_members <- omop_recipe(populations = list(visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-print(recipe_execute(visit_members, out = c(members = "D_members"), conns = conns))
+book_symbols(recipe_execute(visit_members, out = c(members = "D_members"), conns = conns))
 ```
 
-    #>     members
+    #>     members 
     #> "D_members"
 
 Membership includes pseudonymous keys and episode dates. Inspect its
@@ -113,10 +113,10 @@ is not evidence of eligibility.
 eligible_recipe <- omop_recipe(populations = list(eligible),
   variables = list(visits = omop_count("visit_occurrence", before = Inf)),
   outputs = omop_output("people", rows = "eligible", format = "wide"))
-print(recipe_execute(eligible_recipe, out = c(people = "D_eligible"), conns = conns))
+book_symbols(recipe_execute(eligible_recipe, out = c(people = "D_eligible"), conns = conns))
 ```
 
-    #>       people
+    #>       people 
     #> "D_eligible"
 
 The count includes visits through the chosen index day.
@@ -128,12 +128,12 @@ dsBaseClient::ds.summary("D_eligible$visits", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 12
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>    2    2    2    2    2    2    2    2
 
 This aggregate describes the eligible episodes, not everybody in the
@@ -151,10 +151,10 @@ covered <- eligible
 covered$coverage <- omop_coverage(policy = "union", gap = 0)
 coverage_recipe <- omop_recipe(populations = list(covered),
   outputs = omop_output("members", rows = "eligible", format = "membership"))
-print(recipe_execute(coverage_recipe, out = c(members = "D_covered"), conns = conns))
+book_symbols(recipe_execute(coverage_recipe, out = c(members = "D_covered"), conns = conns))
 ```
 
-    #>     members
+    #>     members 
     #> "D_covered"
 
 Here each person has one observation period, so the policy does not
@@ -175,10 +175,10 @@ cohort_population <- omop_population("saved", index = omop_index(
   list(cohort_definition_id = 1L), select = "all", end = omop_end("event_end")))
 cohort_recipe <- omop_recipe(populations = list(cohort_population),
   outputs = omop_output("members", rows = "saved", format = "membership"))
-print(recipe_execute(cohort_recipe, out = c(members = "D_cohort"), conns = conns))
+book_symbols(recipe_execute(cohort_recipe, out = c(members = "D_cohort"), conns = conns))
 ```
 
-    #>    members
+    #>    members 
     #> "D_cohort"
 
 This reads existing cohort episodes without writing a cohort to the
@@ -198,10 +198,10 @@ new_users <- omop_new_users(950001L, washout_days = 365, by = "concept")
 new_user_recipe <- omop_study(new_users, outputs = "baseline",
   baseline = list(prior_fills = omop_count("drug_exposure", 950001L,
     window = omop_window(-365, -1))))
-print(recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), conns = conns))
+book_symbols(recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), conns = conns))
 ```
 
-    #>      baseline
+    #>      baseline 
     #> "D_new_users"
 
 The synthetic medicine uses concept grouping explicitly; ingredient
@@ -219,28 +219,28 @@ dsBaseClient::ds.table("D_new_users$prior_fills", useNA = "no", datasources = co
     #>                        study
     #> D_new_users$prior_fills site
     #>                       0    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                        study
     #> D_new_users$prior_fills site
     #>                       0    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                        study
     #> D_new_users$prior_fills site
     #>                       0   18
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_new_users$prior_fills
-    #> 0
-    #> 1
-    #>
+    #> 0 
+    #> 1 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_new_users$prior_fills
-    #>  0
-    #> 18
-    #>
-    #>
+    #>  0 
+    #> 18 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -292,10 +292,10 @@ matched_recipe <- omop_recipe(populations = list(cases, controls, matched),
   variables = list(is_case = omop_population_column("is_case"),
     weight = omop_population_column("sampling_weight")),
   outputs = omop_output("sample", rows = "matched", format = "wide"))
-print(recipe_execute(matched_recipe, out = c(sample = "D_matched"), conns = conns))
+book_symbols(recipe_execute(matched_recipe, out = c(sample = "D_matched"), conns = conns))
 ```
 
-    #>      sample
+    #>      sample 
     #> "D_matched"
 
 The match-set key stays protected on the server. Sampling weights and
@@ -311,30 +311,30 @@ dsBaseClient::ds.table("D_matched$is_case", useNA = "no", datasources = conns)
     #> D_matched$is_case site
     #>                 0    1
     #>                 1    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                  study
     #> D_matched$is_case site
     #>                 0  0.5
     #>                 1  0.5
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                  study
     #> D_matched$is_case site
     #>                 0   18
     #>                 1   18
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_matched$is_case
-    #>   0   1
-    #> 0.5 0.5
-    #>
+    #>   0   1 
+    #> 0.5 0.5 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_matched$is_case
-    #>  0  1
-    #> 18 18
-    #>
-    #>
+    #>  0  1 
+    #> 18 18 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -353,10 +353,10 @@ Solution
 all_visitors <- omop_population("visitors", index = omop_index(visits, select = "all"))
 all_recipe <- omop_recipe(populations = list(all_visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-print(recipe_execute(all_recipe, out = c(members = "D_all_visitors"), conns = conns))
+book_symbols(recipe_execute(all_recipe, out = c(members = "D_all_visitors"), conns = conns))
 ```
 
-    #>          members
+    #>          members 
     #> "D_all_visitors"
 
 ``` r

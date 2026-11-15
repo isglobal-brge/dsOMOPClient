@@ -6,8 +6,8 @@ Separate date sources from presentation, choose factor/number/date
 periods, extract parts, calculate anchored ages, and handle partial
 dates explicitly.
 
-This chapter uses the 24-person synthetic questionnaire test fixture
-described in [Getting
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
 
 **You need:** the packages and the matching practice connection
@@ -65,10 +65,10 @@ inventory:
 ``` r
 exact <- omop_recipe(variables = list(visit_date = first_visit),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns))
+book_symbols(recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns))
 ```
 
-    #>         people
+    #>         people 
     #> "D_date_exact"
 
 ``` r
@@ -105,10 +105,10 @@ private minimum/maximum dates.
 ``` r
 months <- omop_recipe(variables = list(month = omop_date("first_visit", month_spec)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(months, out = c(people = "D_date_months"), conns = conns))
+book_symbols(recipe_execute(months, out = c(people = "D_date_months"), conns = conns))
 ```
 
-    #>          people
+    #>          people 
     #> "D_date_months"
 
 ``` r
@@ -116,7 +116,7 @@ ds.omop.table("D_date_months", "month", conns = conns)
 ```
 
     #> D_date_months$month
-    #> 2020-03 2020-04 2020-05 2020-06 2020-07
+    #> 2020-03 2020-04 2020-05 2020-06 2020-07 
     #>       6       0       0       6       6
 
 April and May remain declared zero categories. Ordered factors have
@@ -130,10 +130,10 @@ numbers <- omop_recipe(variables = list(month_index = omop_date("first_visit",
   omop_date_spec(precision = "month", representation = "number",
     numeric = "index", origin = "2020-01-01"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns))
+book_symbols(recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns))
 ```
 
-    #>           people
+    #>           people 
     #> "D_date_numbers"
 
 ``` r
@@ -143,12 +143,12 @@ dsBaseClient::ds.summary("D_date_numbers$month_index", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 2.000000 2.000000 2.000000 5.000000 6.000000 6.000000 6.000000 4.333333
 
 January 2020 is zero, February one and March two. These are period
@@ -175,10 +175,10 @@ occurred at a boundary.
 ``` r
 bounds <- omop_recipe(variables = list(start = month_start, end = month_end),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns))
+book_symbols(recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns))
 ```
 
-    #>          people
+    #>          people 
     #> "D_date_bounds"
 
 ``` r
@@ -195,12 +195,12 @@ dsBaseClient::ds.summary("D_month_lengths$days", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 30.00000 30.00000 30.00000 31.00000 31.00000 31.00000 31.00000 30.66667
 
 The inclusive length adds one day. Different months need different
@@ -215,10 +215,10 @@ choose the final column names in this bundle.
 parts <- omop_recipe(variables = list(visit = omop_date_parts("first_visit",
   c(visit_year = "year", visit_month = "month", weekday = "weekday_name"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns))
+book_symbols(recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns))
 ```
 
-    #>         people
+    #>         people 
     #> "D_date_parts"
 
 ``` r
@@ -226,7 +226,7 @@ ds.omop.table("D_date_parts", "weekday", conns = conns)
 ```
 
     #> D_date_parts$weekday
-    #>    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday
+    #>    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday 
     #>        12         0         0         0         0         6         0
 
 Weekday names use a fixed English domain, with Monday first. Month
@@ -252,10 +252,10 @@ education_date <- omop_anchor(omop_event("observation", concepts = 900001L))
 ages <- omop_recipe(variables = list(at_death = omop_age_at("death"),
   at_question = omop_age_at(education_date)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns))
+book_symbols(recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns))
 ```
 
-    #>        people
+    #>        people 
     #> "D_date_ages"
 
 ``` r
@@ -265,12 +265,12 @@ dsBaseClient::ds.summary("D_date_ages$at_death", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>   33   33   33   38   43   43   43   38
 
 Missing death or incomplete birth dates can leave age missing. A
@@ -284,12 +284,12 @@ dsBaseClient::ds.summary("D_date_ages$at_question", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>   29   29   29   34   39   39   39   34
 
 The selected event sets a different age reference. An index, an
@@ -305,10 +305,10 @@ completed age.
 partial <- omop_recipe(variables = list(birth_year = omop_date("birth",
   omop_date_spec(precision = "year"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns))
+book_symbols(recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns))
 ```
 
-    #>           people
+    #>           people 
     #> "D_date_partial"
 
 ``` r
@@ -316,7 +316,7 @@ ds.omop.table("D_date_partial", "birth_year", conns = conns)
 ```
 
     #> D_date_partial$birth_year
-    #> 1975 1980 1990 2000
+    #> 1975 1980 1990 2000 
     #>    6    6    6    6
 
 The year is known for all four patterns. If the study permits an
@@ -327,10 +327,10 @@ choose it.
 estimated <- omop_recipe(variables = list(age = omop_age_at("death",
   date_spec = omop_date_spec(partial = "mid"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns))
+book_symbols(recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns))
 ```
 
-    #>             people
+    #>             people 
     #> "D_date_estimated"
 
 ``` r
@@ -340,12 +340,12 @@ dsBaseClient::ds.summary("D_date_estimated$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>   23   23   23   33   43   43   43   33
 
 The middle possible birth day supplies an **estimated** completed age.
@@ -361,10 +361,10 @@ reproducible plan.
 custom <- omop_recipe(variables = list(month = omop_date("first_visit",
   omop_date_spec(precision = "custom", pattern = "%b %Y"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns))
+book_symbols(recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns))
 ```
 
-    #>          people
+    #>          people 
     #> "D_date_custom"
 
 ``` r
@@ -372,7 +372,7 @@ ds.omop.table("D_date_custom", "month", conns = conns)
 ```
 
     #> D_date_custom$month
-    #> Mar 2020 Jun 2020 Jul 2020
+    #> Mar 2020 Jun 2020 Jul 2020 
     #>        6        6        6
 
 This uses fixed English month abbreviations and a year. The supported
@@ -402,10 +402,10 @@ For example, choose an April-start fiscal quarter explicitly:
 fiscal <- omop_recipe(variables = list(quarter = omop_date("first_visit",
   omop_date_spec(precision = "fiscal_quarter", fiscal_start = 4L))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns))
+book_symbols(recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns))
 ```
 
-    #>          people
+    #>          people 
     #> "D_date_fiscal"
 
 ``` r
@@ -413,7 +413,7 @@ ds.omop.table("D_date_fiscal", "quarter", conns = conns)
 ```
 
     #> D_date_fiscal$quarter
-    #> 2019-FQ4 2020-FQ1 2020-FQ2
+    #> 2019-FQ4 2020-FQ1 2020-FQ2 
     #>        6        6        6
 
 March belongs to the preceding fiscal year. The variable’s specification
@@ -429,10 +429,10 @@ Solution
 ``` r
 elapsed <- omop_recipe(variables = list(days = omop_time_between("first_visit", "death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns))
+book_symbols(recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns))
 ```
 
-    #>           people
+    #>           people 
     #> "D_date_elapsed"
 
 ``` r
@@ -442,12 +442,12 @@ dsBaseClient::ds.summary("D_date_elapsed$days", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #> 1390.000 1390.000 1390.000 1447.000 1461.000 1461.000 1461.000 1432.667
 
 Elapsed days need both dates. This calculation does not need a complete

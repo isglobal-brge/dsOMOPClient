@@ -6,8 +6,8 @@ Distinguish a private assignment from an aggregate release, understand
 distinct-person support, and recognise refused identifiers and free
 text.
 
-This chapter uses the 24-person synthetic questionnaire test fixture
-described in [Getting
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
 
 **You need:** the packages and the matching practice connection
@@ -60,10 +60,10 @@ download.
 ``` r
 private <- omop_recipe(variables = list(age = omop_age_at("2024-06-01")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(private, out = c(people = "D_private"), conns = conns))
+book_symbols(recipe_execute(private, out = c(people = "D_private"), conns = conns))
 ```
 
-    #>      people
+    #>      people 
     #> "D_private"
 
 The mapping is the result you receive from recipe execution. Exact
@@ -90,12 +90,12 @@ dsBaseClient::ds.summary("D_private$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>   34   34   34   43   49   49   49   42
 
 An approved aggregate method checks its own disclosure rules. A
@@ -177,10 +177,10 @@ face the applicable release controls.
 ``` r
 date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
+book_symbols(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
 ```
 
-    #>           people
+    #>           people 
     #> "D_private_date"
 
 ``` r
@@ -242,12 +242,12 @@ dsBaseClient::ds.summary("D_private$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>   34   34   34   43   49   49   49   42
 
 The original object remains usable. A refusal is not permission to

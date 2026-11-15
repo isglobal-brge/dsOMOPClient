@@ -5,8 +5,8 @@
 Separate day offsets from calendar dates, select visit settings and
 build one row per visit.
 
-This chapter uses the 24-person synthetic questionnaire test fixture
-described in [Getting
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
 **You need:** the packages and the matching practice connection
 described in [Before you
@@ -76,10 +76,10 @@ Date objects. People without visits retain missing values.
 ``` r
 offsets <- omop_recipe(variables = list(first_days = first, last_days = last),
   outputs = omop_output("visits", format = "wide", grain = "person"))
-print(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
+book_symbols(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
 ```
 
-    #>      visits
+    #>      visits 
     #> "D_offsets"
 
 ``` r
@@ -89,12 +89,12 @@ dsBaseClient::ds.summary("D_offsets$first_days", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
     #>  73.0000  73.0000  73.0000 166.0000 201.0000 201.0000 201.0000 146.6667
 
 The summary is an aggregate of private offsets. It is not a list of
@@ -107,12 +107,12 @@ dsBaseClient::ds.summary("D_offsets$last_days", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 24
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean 
     #>  201.0000  201.0000  201.0000  439.0000 1369.0000 1369.0000 1369.0000  669.6667
 
 Some people have later visits. Taking a last date answers a different
@@ -130,10 +130,10 @@ first-visit offset is zero.
 visit_study <- omop_study(visit, outputs = "baseline",
   baseline = list(first_days = omop_first_date("visit_occurrence"),
                   last_days = omop_last_date("visit_occurrence")))
-print(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
+book_symbols(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
 ```
 
-    #>        baseline
+    #>        baseline 
     #> "D_visit_study"
 
 ``` r
@@ -143,15 +143,15 @@ dsBaseClient::ds.summary("D_visit_study$first_days", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #>
+    #> 
     #> $site$length
     #> [1] 18
-    #>
+    #> 
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
     #>    0    0    0    0    0    0    0    0
 
-This is the simple layer of the same language-2 API. It expands into an
+This is the simple layer of the same recipe API. It expands into an
 ordinary recipe. It includes people with an eligible index visit, so
 unlike our all-person wide table it excludes the people who never
 visited.
@@ -161,10 +161,10 @@ visited.
 ``` r
 calendar <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("visits", format = "wide", grain = "person"))
-print(recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns))
+book_symbols(recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns))
 ```
 
-    #>       visits
+    #>       visits 
     #> "D_calendar"
 
 `omop_date()` defaults to day precision and assigns a Date on the
@@ -179,10 +179,10 @@ For a useful categorical aggregate, explicitly choose month precision:
 months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   omop_date_spec(precision = "month", level_range = c("2020-03-01", "2020-07-31")))),
   outputs = omop_output("visits", format = "wide", grain = "person"))
-print(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
+book_symbols(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
 ```
 
-    #>     visits
+    #>     visits 
     #> "D_months"
 
 ``` r
@@ -190,7 +190,7 @@ ds.omop.table("D_months", "visit_month", conns = conns)
 ```
 
     #> D_months$visit_month
-    #> 2020-03 2020-04 2020-05 2020-06 2020-07
+    #> 2020-03 2020-04 2020-05 2020-06 2020-07 
     #>       6       0       0       6       6
 
 The public range declares month categories, including empty months. It
@@ -229,10 +229,10 @@ missing setting.
 ``` r
 inpatient_people <- omop_recipe(variables = list(setting = setting),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns))
+book_symbols(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns))
 ```
 
-    #>        people
+    #>        people 
     #> "D_inpatient"
 
 ``` r
@@ -240,7 +240,7 @@ ds.omop.table("D_inpatient", "setting", conns = conns)
 ```
 
     #> D_inpatient$setting
-    #> Inpatient Visit
+    #> Inpatient Visit 
     #>              12
 
 This counts people with an inpatient setting, not total inpatient
@@ -258,10 +258,10 @@ long_visits <- omop_recipe(
   events = list(visits = omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")),
   outputs = omop_output("visits", format = "long", sources = "visits"),
   date_spec = omop_date_spec(precision = "day"))
-print(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
+book_symbols(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
 ```
 
-    #>     visits
+    #>     visits 
     #> "D_visits"
 
 ``` r
@@ -269,8 +269,8 @@ dsBaseClient::ds.colnames("D_visits", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                "cohort_row_id"         "person_id"
-    #> [4] "concept_id"            "start_date"            "end_date"
+    #> [1] "row_id"                "cohort_row_id"         "person_id"            
+    #> [4] "concept_id"            "start_date"            "end_date"             
     #> [7] "visit_type_concept_id"
 
 The column inventory describes a private table. It does not return a
@@ -290,8 +290,8 @@ dsBaseClient::ds.colnames("D_visit_dates", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                "cohort_row_id"         "person_id"
-    #> [4] "concept_id"            "start_date"            "end_date"
+    #> [1] "row_id"                "cohort_row_id"         "person_id"            
+    #> [4] "concept_id"            "start_date"            "end_date"             
     #> [7] "visit_type_concept_id" "visit_start_date"
 
 This copies the date column inside the protected table. It preserves one
@@ -307,30 +307,30 @@ dsBaseClient::ds.table("D_visits$concept_id", useNA = "no", datasources = conns)
     #> D_visits$concept_id site
     #>    Inpatient Visit     1
     #>    Outpatient Visit    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                    study
     #> D_visits$concept_id site
     #>    Inpatient Visit   0.4
     #>    Outpatient Visit  0.6
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                    study
     #> D_visits$concept_id site
     #>    Inpatient Visit    12
     #>    Outpatient Visit   18
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_visits$concept_id
-    #>  Inpatient Visit Outpatient Visit
-    #>              0.4              0.6
-    #>
+    #>  Inpatient Visit Outpatient Visit 
+    #>              0.4              0.6 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_visits$concept_id
-    #>  Inpatient Visit Outpatient Visit
-    #>               12               18
-    #>
-    #>
+    #>  Inpatient Visit Outpatient Visit 
+    #>               12               18 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -352,10 +352,10 @@ template <- omop_recipe(variables = list(setting = omop_variable(
   reducer = omop_reduce("first_value", value = "visit_concept_id"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
 outpatient <- recipe_bind(template, setting = 9202L)
-print(recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns))
+book_symbols(recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns))
 ```
 
-    #>         people
+    #>         people 
     #> "D_outpatient"
 
 ``` r
@@ -363,7 +363,7 @@ ds.omop.table("D_outpatient", "setting", conns = conns)
 ```
 
     #> D_outpatient$setting
-    #> Outpatient Visit
+    #> Outpatient Visit 
     #>               18
 
 ## Exercise 2: a common variant
@@ -401,8 +401,8 @@ dsBaseClient::ds.colnames("D_visit_dates", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                "cohort_row_id"         "person_id"
-    #> [4] "concept_id"            "start_date"            "end_date"
+    #> [1] "row_id"                "cohort_row_id"         "person_id"            
+    #> [4] "concept_id"            "start_date"            "end_date"             
     #> [7] "visit_type_concept_id" "visit_start_date"
 
 No. Multiple visits can belong to one person; a model must respect

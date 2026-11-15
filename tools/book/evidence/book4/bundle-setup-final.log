@@ -1,0 +1,2 @@
+PASS: all chunks and identical output (normalised temporary cleanup handle): book-00-start.Rmd.orig
+PASS: 1 complete chapter(s) in fresh R processes from the final ZIP

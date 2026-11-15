@@ -97,12 +97,12 @@ omop_output(
     grain over an indexed population.
 
   - number\_columns:
-
+    
     Named numeric column copies/formulas over the canonical output
     frame.
 
   - category\_columns:
-
+    
     Named categorical copies over original typed output columns.
 
 ## Value

@@ -1,0 +1,28 @@
+PRECOMPUTE vignettes/book-10-harmonise.Rmd.orig
+
+Quitting from vignettes/book-10-harmonise.Rmd.orig:281-283 [category-unknown]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+This message is displayed once per session.
+
+NULL
+Error: column must have a published concept level contract.
+Execution halted
+PRECOMPUTE vignettes/book-15-formulas.Rmd.orig
+
+Quitting from vignettes/book-15-formulas.Rmd.orig:203-220 [egfr-definition]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error in names(object) <- nm : attempt to set an attribute on NULL
+Calls: render ... tryCatch -> tryCatchList -> tryCatchOne -> <Anonymous>
+Execution halted
+PRECOMPUTE vignettes/book-18-capstone.Rmd.orig
+ASSERTIONS PASS book-18-capstone.Rmd.orig
+All chapter chunks executed successfully
+Error: Fresh-process chapters failed: vignettes/book-10-harmonise.Rmd.orig, vignettes/book-15-formulas.Rmd.orig
+Execution halted

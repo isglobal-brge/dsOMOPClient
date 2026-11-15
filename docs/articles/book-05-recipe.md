@@ -2,11 +2,11 @@
 
 **What you will learn**
 
-Build education and cause-of-death columns, check language 2, and
+Build education and cause-of-death columns, predict its output, and
 request category counts.
 
-This chapter uses the 24-person synthetic questionnaire test fixture
-described in [Getting
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
 **You need:** the packages and the matching practice connection
 described in [Before you
@@ -118,43 +118,14 @@ class(people)
     #> [1] "omop_recipe" "list"
 
 `person_id` is included automatically as a pseudonym. Missing records
-produce missing values. We did not add a legacy raw-ID variable to keep
-the roster.
+produce missing values. The roster does not require an extra identifier
+variable.
 
 ## Predict: read the recipe explanation
 
 ``` r
 explained <- recipe_explain(people, conns = conns)
-stopifnot(explained$selected == "v2")
-explained$selected
-```
-
-    #> [1] "v2"
-
-The selected plan is language 2. Before running, predict one private row
-per person, two named categorical variables, and a pseudonymous key.
-With no time restriction, each variable reads all available history
-independently. That is a teaching definition to choose explicitly in a
-real study.
-
-Full plan explanation (optional)
-
-The semantic version identifies the rules used to interpret the recipe.
-A label contract records the category names and their ordering.
-Federation reconciliation makes those categories agree across sites. A
-bytewise tie compares the bytes of text to make a repeated choice
-deterministic. You do not need to configure these for this first recipe.
-
-Read the lines in order: the selected language is the execution route;
-the population defines the row; each variable identifies its source and
-reducer; output defaults determine the shape; category reconciliation
-determines names. The explanation contains declarations, not observed
-patient frequencies.
-
-Print all the chosen defaults:
-
-``` r
-recipe_explain(people)
+cat(explained$text, sep = "\n")
 ```
 
     #> Recipe plan (language 2.0, semantic 2.0.0)
@@ -173,14 +144,36 @@ recipe_explain(people)
     #> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
     #> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
     #> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
+    #> Execution would use the publication protocol on every site.
+
+Before running, predict one private row per person, two named
+categorical variables, and a pseudonymous key. With no time restriction,
+each variable reads all available history independently. That is a
+teaching definition to choose explicitly in a real study.
+
+Full plan explanation (optional)
+
+A label contract records the category names and their ordering.
+Federation reconciliation makes those categories agree across sites. A
+bytewise tie compares the bytes of text to make a repeated choice
+deterministic. You do not need to configure these for this first recipe.
+
+Read the lines in order: the population defines the row; each variable
+identifies its source and reducer; output defaults determine the shape;
+category reconciliation determines names. The explanation contains
+declarations, not observed patient frequencies.
+
+Print all the chosen defaults:
+
+The explanation above records the chosen defaults before execution.
 
 ## Run: assign the result
 
 ``` r
-print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+book_symbols(recipe_execute(people, out = c(people = "D_people"), conns = conns))
 ```
 
-    #>     people
+    #>     people 
     #> "D_people"
 
 The reply is a mapping of output names to server symbols. `D_people` is
@@ -212,10 +205,10 @@ dsBaseClient::ds.ls(search.filter = "D_*", datasources = conns)
     #> $site
     #> $site$environment.searched
     #> [1] "R_GlobalEnv"
-    #>
+    #> 
     #> $site$objects.found
     #> character(0)
-    #>
+    #> 
     #> $site$search.filter.final
     #> [1] "D_*"
 
@@ -232,7 +225,7 @@ dsBaseClient::ds.dim("D_people", datasources = conns)
 
     #> $`dimensions of D_people in site`
     #> [1] 24  3
-    #>
+    #> 
     #> $`dimensions of D_people in combined studies`
     #> [1] 24  3
 
@@ -288,30 +281,30 @@ education_table_result
     #> D_people$education     site
     #>   Secondary education     1
     #>   University education    1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                       study
     #> D_people$education     site
     #>   Secondary education   0.5
     #>   University education  0.5
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                       study
     #> D_people$education     site
     #>   Secondary education     6
     #>   University education    6
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_people$education
-    #>  Secondary education University education
-    #>                  0.5                  0.5
-    #>
+    #>  Secondary education University education 
+    #>                  0.5                  0.5 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_people$education
-    #>  Secondary education University education
-    #>                    6                    6
-    #>
-    #>
+    #>  Secondary education University education 
+    #>                    6                    6 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -331,7 +324,7 @@ ds.omop.table("D_people", "cause_of_death", conns = conns)
 ```
 
     #> D_people$cause_of_death
-    #> Myocardial infarction             Pneumonia
+    #> Myocardial infarction             Pneumonia 
     #>                    12                     6
 
 `ds.omop.table()` calls the real dsBase `ds.table()` and preserves the
@@ -359,10 +352,10 @@ become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+book_symbols(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 ```
 
-    #>      people
+    #>      people 
     #> "D_answers"
 
 ``` r
@@ -387,30 +380,30 @@ yes_no_result
     #> D_answers$fever site
     #>             yes    1
     #>             no     1
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                study
     #> D_answers$fever site
     #>             yes  0.5
     #>             no   0.5
-    #>
+    #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                study
     #> D_answers$fever site
     #>             yes    6
     #>             no     6
-    #>
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_answers$fever
-    #> yes  no
-    #> 0.5 0.5
-    #>
+    #> yes  no 
+    #> 0.5 0.5 
+    #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_answers$fever
-    #> yes  no
-    #>   6   6
-    #>
-    #>
+    #> yes  no 
+    #>   6   6 
+    #> 
+    #> 
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -430,7 +423,7 @@ ds.omop.table("D_people", "education", conns = conns)
 ```
 
     #> D_people$education
-    #>  Secondary education University education
+    #>  Secondary education University education 
     #>                    6                    6
 
 ## Exercise 2: a common variant

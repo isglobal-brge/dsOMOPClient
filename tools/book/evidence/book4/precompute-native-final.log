@@ -1,0 +1,22 @@
+PRECOMPUTE vignettes/book-10-harmonise.Rmd.orig
+Error in verify_book4(input, env) : 
+  all(d$D_rollups$atc_first == "Teaching ATC first level") is not TRUE
+Calls: render -> verify_chapter -> verify_book4 -> stopifnot
+Execution halted
+PRECOMPUTE vignettes/book-15-formulas.Rmd.orig
+
+Quitting from vignettes/book-15-formulas.Rmd.orig:321-335 [egfr-run]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: formula_age_anchor: /age; declare completed calendar years at the selected creatinine measurement anchor; align the selector/window explicitly.
+Execution halted
+PRECOMPUTE vignettes/book-22-case-drug.Rmd.orig
+BOOK4 UTILISATION PASS: PDC bounds and discontinuation rule
+ASSERTIONS PASS book-22-case-drug.Rmd.orig
+All chapter chunks executed successfully
+Error: Fresh-process chapters failed: vignettes/book-10-harmonise.Rmd.orig, vignettes/book-15-formulas.Rmd.orig
+Execution halted

@@ -12,12 +12,12 @@ and mark the population as a derivative; they do not establish
 equivalence with the original phenotype. Keep half-open numeric ranges
 and authenticated safe-bin filters in native recipes.
 
-This chapter follows the 2.10.5 recipe-language-2 contract. Examples are
-not evaluated during documentation builds because they need
-authenticated connections and study-specific concept definitions. Use
-matching client and server packages and check the server’s advertised
-operations before execution. A recipe describes work beside the
-database; patient rows stay on the DataSHIELD server.
+This chapter follows the 2.10.5 recipe API contract. Examples are not
+evaluated during documentation builds because they need authenticated
+connections and study-specific concept definitions. Use matching client
+and server packages and check the server’s advertised operations before
+execution. A recipe describes work beside the database; patient rows
+stay on the DataSHIELD server.
 
 ## Start with a study question
 

@@ -1,0 +1,23 @@
+PRECOMPUTE vignettes/book-10-harmonise.Rmd.orig
+BOOK4 CATEGORIES PASS: exact order, missing/unknown, flag types, rollups, and published schema
+ASSERTIONS PASS book-10-harmonise.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-15-formulas.Rmd.orig
+
+Quitting from vignettes/book-15-formulas.Rmd.orig:321-335 [egfr-run]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error in FUN(X[[i]], ...) : 
+  Numeric summary was withheld or incomplete; inspect the original result.
+Calls: render ... tryCatch -> tryCatchList -> tryCatchOne -> <Anonymous>
+Execution halted
+PRECOMPUTE vignettes/book-19-case-mortality.Rmd.orig
+BOOK4 MORTALITY PASS: deaths, missing ages, clipped risk time and released rates
+ASSERTIONS PASS book-19-case-mortality.Rmd.orig
+All chapter chunks executed successfully
+Error: Fresh-process chapters failed: vignettes/book-15-formulas.Rmd.orig
+Execution halted

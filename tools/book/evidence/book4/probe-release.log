@@ -1,0 +1,256 @@
+dsOMOP v2.10.5 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+[dsomop-audit] 2026-11-15T02:42:52+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"populations":{"base":{"kind":"criteria"}},"variables":{"person_gender_concept_id":{"raw":{"table":"person","column":"gender_concept_id"},"category_spec":{"missing":{"kind":"category_missing","na":"level","unknown":"level","labels":{"missing":"Missing","unknown":"Unknown"}}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-15T02:42:52+0000 method=publication detail={"output":"output","component":"output","passed":true}
+                      name    r_type       levels
+1                person_id character             
+2 person_gender_concept_id    factor c("speci....
+ [1] Unknown Unknown Unknown Unknown Unknown Unknown Unknown Unknown Unknown
+[10] Unknown Unknown Unknown Unknown Unknown Unknown Unknown Unknown Unknown
+[19] Unknown Unknown Unknown Unknown Unknown Unknown
+attr(,"contrasts")
+        2
+Missing 0
+Unknown 1
+attr(,"omop_category_contract")
+attr(,"omop_category_contract")$kind
+[1] category
+
+attr(,"omop_category_contract")$category
+attr(,"omop_category_contract")$category$spec
+attr(,"omop_category_contract")$category$spec$missing
+attr(,"omop_category_contract")$category$spec$missing$kind
+[1] category_missing
+
+attr(,"omop_category_contract")$category$spec$missing$na
+[1] level
+
+attr(,"omop_category_contract")$category$spec$missing$unknown
+[1] level
+
+attr(,"omop_category_contract")$category$spec$missing$labels
+attr(,"omop_category_contract")$category$spec$missing$labels$missing
+[1] Missing
+
+attr(,"omop_category_contract")$category$spec$missing$labels$unknown
+[1] Unknown
+
+
+
+
+attr(,"omop_category_contract")$category$producer
+attr(,"omop_category_contract")$category$producer$kind
+[1] concept
+
+
+attr(,"omop_category_contract")$category$producer_order
+list()
+
+attr(,"omop_category_contract")$category$producer_ordered
+[1] FALSE
+
+
+attr(,"omop_category_contract")$ids
+attr(,"omop_category_contract")$ids[[1]]
+[1] concept:0
+
+attr(,"omop_category_contract")$ids[[2]]
+[1] special:missing
+
+attr(,"omop_category_contract")$ids[[3]]
+[1] special:unknown
+
+
+attr(,"omop_category_contract")$labels
+attr(,"omop_category_contract")$labels[[1]]
+[1] Unknown
+
+attr(,"omop_category_contract")$labels[[2]]
+[1] Missing
+
+attr(,"omop_category_contract")$labels[[3]]
+[1] Unknown
+
+
+attr(,"omop_category_contract")$levels
+attr(,"omop_category_contract")$levels[[1]]
+[1] Missing
+
+attr(,"omop_category_contract")$levels[[2]]
+[1] Unknown
+
+
+attr(,"omop_category_contract")$keys
+attr(,"omop_category_contract")$keys[[1]]
+[1] special:missing
+
+attr(,"omop_category_contract")$keys[[2]]
+[1] special:unknown
+
+
+attr(,"omop_category_contract")$aliases
+attr(,"omop_category_contract")$aliases$`concept:0`
+[1] special:unknown
+
+attr(,"omop_category_contract")$aliases$`special:missing`
+[1] special:missing
+
+attr(,"omop_category_contract")$aliases$`special:unknown`
+[1] special:unknown
+
+
+attr(,"omop_category_contract")$ordered
+[1] FALSE
+
+attr(,"omop_category_contract")$reference
+NULL
+
+attr(,"omop_category_contract")$contrasts
+attr(,"omop_category_contract")$contrasts$kind
+[1] treatment
+
+attr(,"omop_category_contract")$contrasts$reference
+NULL
+
+
+attr(,"omop_category_contract")$provenance
+attr(,"omop_category_contract")$provenance[[1]]
+attr(,"omop_category_contract")$provenance[[1]]$id
+[1] concept:0
+
+attr(,"omop_category_contract")$provenance[[1]]$label
+[1] Unknown
+
+attr(,"omop_category_contract")$provenance[[1]]$rule
+[1] ID fallback
+
+attr(,"omop_category_contract")$provenance[[1]]$origin
+[1] concept_name_fallback
+
+attr(,"omop_category_contract")$provenance[[1]]$version
+NULL
+
+attr(,"omop_category_contract")$provenance[[1]]$language
+[1] en
+
+
+attr(,"omop_category_contract")$provenance[[2]]
+attr(,"omop_category_contract")$provenance[[2]]$id
+[1] special:missing
+
+attr(,"omop_category_contract")$provenance[[2]]$label
+[1] Missing
+
+attr(,"omop_category_contract")$provenance[[2]]$rule
+[1] declared category identity
+
+attr(,"omop_category_contract")$provenance[[2]]$origin
+[1] sentinel
+
+attr(,"omop_category_contract")$provenance[[2]]$version
+NULL
+
+attr(,"omop_category_contract")$provenance[[2]]$language
+[1] en
+
+
+attr(,"omop_category_contract")$provenance[[3]]
+attr(,"omop_category_contract")$provenance[[3]]$id
+[1] special:unknown
+
+attr(,"omop_category_contract")$provenance[[3]]$label
+[1] Unknown
+
+attr(,"omop_category_contract")$provenance[[3]]$rule
+[1] declared category identity
+
+attr(,"omop_category_contract")$provenance[[3]]$origin
+[1] sentinel
+
+attr(,"omop_category_contract")$provenance[[3]]$version
+NULL
+
+attr(,"omop_category_contract")$provenance[[3]]$language
+[1] en
+
+
+
+Levels: Missing Unknown
+Registered S3 method overwritten by 'gamlss':
+  method   from
+  print.ri bit 
+$output.list
+$output.list$TABLE_rvar.by.study_row.props
+                                study
+D_probe$person_gender_concept_id site
+                         Unknown    1
+                         NA       NaN
+
+$output.list$TABLE_rvar.by.study_col.props
+                                study
+D_probe$person_gender_concept_id site
+                         Unknown    1
+                         NA         0
+
+$output.list$TABLE_rvar.by.study_counts
+                                study
+D_probe$person_gender_concept_id site
+                         Unknown   24
+                         NA         0
+
+$output.list$TABLES.COMBINED_all.sources_proportions
+D_probe$person_gender_concept_id
+Unknown      NA 
+      1       0 
+
+$output.list$TABLES.COMBINED_all.sources_counts
+D_probe$person_gender_concept_id
+Unknown      NA 
+     24       0 
+
+
+$validity.message
+[1] "Data in all studies were valid"
+
+
+Data in all studies were valid
+
+
+Study1: No errors reported from this study
+
+
+
+ [1] concept_id       concept_name     domain_id        vocabulary_id   
+ [5] concept_class_id standard_concept concept_code     valid_start_date
+ [9] valid_end_date   invalid_reason  
+<0 rows> (or 0-length row.names)
+Tracing function ".categoryReject" in package "namespace:dsOMOP"
+[1] ".categoryReject"
+[1] "/tmp/RtmpAiVRNK/file10e28f4e96183a.md"
+ROLLUP VARIABLE: atc_first
+[1] "Error : No OMOP session 'omop'. Call ds.omop.connect() first.\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+Error : No OMOP session 'omop'. Call ds.omop.connect() first.
+<simpleError: No OMOP session 'omop'. Call ds.omop.connect() first.>
+ROLLUP VARIABLE: atc_second
+[1] "Error : No OMOP session 'omop'. Call ds.omop.connect() first.\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+<simpleError: No OMOP session 'omop'. Call ds.omop.connect() first.>
+Error : No OMOP session 'omop'. Call ds.omop.connect() first.
+ROLLUP VARIABLE: chapter
+[1] "Error : No OMOP session 'omop'. Call ds.omop.connect() first.\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+<simpleError: No OMOP session 'omop'. Call ds.omop.connect() first.>
+Error : No OMOP session 'omop'. Call ds.omop.connect() first.
+Ran 3/3 deferred expressions

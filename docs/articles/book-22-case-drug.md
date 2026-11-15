@@ -43,6 +43,90 @@ On an ATC-enabled resource, search the intended class with
 prevalence, then save that set. Do not infer an ATC hierarchy from a
 drug’s spelling.
 
+## Run the ATC-class selection on the teaching catalogue
+
+The category chapter’s synthetic catalogue lets us execute the
+class-selection workflow without pretending that GiBleed contains an ATC
+hierarchy. The class, its descendant medicine and its exposure records
+are all explicitly synthetic.
+
+``` r
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
+source("tools/book/fixture.R")
+class_practice <- book_fixture(categories = TRUE)
+class_conns <- class_practice$conns
+classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE,
+  conns = class_conns)$pooled
+knitr::kable(classes[c("concept_name", "concept_class_id", "standard_concept")])
+```
+
+| concept\_name             | concept\_class\_id | standard\_concept |
+| :------------------------ | :----------------- | :---------------- |
+| Teaching ATC first level  | ATC 1st            | C                 |
+| Teaching ATC second level | ATC 2nd            | C                 |
+
+``` r
+class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
+knitr::kable(ds.omop.concept.descendants(class_id, conns = class_conns)$pooled)
+```
+
+| concept\_id | concept\_name     | domain\_id | vocabulary\_id | min\_levels\_of\_separation |
+| ----------: | :---------------- | :--------- | :------------- | --------------------------: |
+|      950001 | Practice medicine | Drug       | Fixture        |                           1 |
+
+``` r
+knitr::kable(ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = class_conns)$pooled)
+```
+
+| concept\_id | n\_persons | concept\_name     |
+| ----------: | ---------: | :---------------- |
+|      950001 |         15 | Practice medicine |
+
+``` r
+class_set <- omop_concept_set(class_id, descendants = TRUE)
+class_file <- tempfile(fileext = ".rds")
+saveRDS(class_set, class_file)
+```
+
+A classification concept groups descendants; it is not a standard
+ingredient substitution through Maps to. The descendant list establishes
+the selected medicine before the protected inventory establishes its
+use.
+
+``` r
+class_users <- omop_new_users(class_set, washout_days = 365)
+class_users$filters <- c(class_users$filters, list(omop_observed(after = 364)))
+class_drug <- omop_event("drug_exposure", class_set)
+class_era <- omop_era(class_drug, gap = 30, by = "ingredient", stockpile = TRUE)
+class_days <- omop_variable(event = class_era, reducer = omop_reduce("covered_days",
+  window = omop_window(0, 364), coverage = "effective_supply"))
+class_study <- omop_study(class_users, outputs = "baseline", baseline = list(
+  pdc = omop_number_derive(list(days = class_days),
+    book_expr(book_op("/", book_col("days"), book_lit(365))), unit = "1")))
+class_result <- recipe_execute(class_study, out = c(baseline = "D_class_use"), conns = class_conns)
+class_pdc <- dsBaseClient::ds.mean("D_class_use$pdc", type = "combine", datasources = class_conns)
+class_pdc$Global.Mean
+```
+
+    #>                 EstimatedMean Nmissing Nvalid Ntotal
+    #> studiesCombined    0.08219178        0     18     18
+
+The synthetic PDC describes covered supply during a complete first year.
+The class has one ingredient in this catalogue; a protocol with several
+ingredients must decide whether switching still counts as persistence on
+the class. The rest of this case uses the unmodified GiBleed ingredient
+data to teach persistence, discontinuation and interpretation with
+varied histories.
+
+``` r
+ds.omop.disconnect(conns = class_conns)
+DSI::datashield.logout(class_conns)
+unlink(class_practice$path)
+practice <- book_connect("gibleed")
+conns <- practice$conns
+```
+
 ## Find the executable ingredient set
 
 ``` r
@@ -118,10 +202,10 @@ utilisation <- omop_study(users, outputs = "baseline", baseline = list(
     book_expr(book_op("/", book_col("covered"), book_lit(365))), unit = "1"),
   discontinued = omop_number_flag(persistence, "lt", 365),
   fills = omop_variable(event = drug, reducer = omop_reduce("count", window = omop_window(0, 364)))))
-print(recipe_execute(utilisation, out = c(baseline = "D_utilisation"), conns = conns))
+book_symbols(recipe_execute(utilisation, out = c(baseline = "D_utilisation"), conns = conns))
 ```
 
-    #>        baseline
+    #>        baseline 
     #> "D_utilisation"
 
 ``` r
@@ -155,10 +239,10 @@ protocol-defined discontinuation indicator under this gap rule, not
 proof of permanent treatment cessation.
 
 ``` r
-print(recipe_execute(utilisation, out = c(baseline = "D_utilisation_analysis"), conns = conns))
+book_symbols(recipe_execute(utilisation, out = c(baseline = "D_utilisation_analysis"), conns = conns))
 ```
 
-    #>                 baseline
+    #>                 baseline 
     #> "D_utilisation_analysis"
 
 ``` r

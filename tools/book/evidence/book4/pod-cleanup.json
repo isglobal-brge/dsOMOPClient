@@ -1,0 +1,17 @@
+{
+  "removed": [
+    {
+      "path": "/root/rt/wt/book/runtime-server",
+      "bytes": 17435113
+    },
+    {
+      "path": "/root/rt/wt/book/runtime-client",
+      "bytes": 36325191
+    },
+    {
+      "path": "/root/rt/wt/book/dsOMOPClient",
+      "bytes": 48041849
+    }
+  ],
+  "kept": "installed private library, public practice data and root installation logs"
+}

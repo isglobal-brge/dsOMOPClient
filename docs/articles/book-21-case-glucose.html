@@ -52,9 +52,9 @@
     <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
     <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
     <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
-    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
-    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Checking and recording a study</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-capstone.html">18. Capstone: a cause-of-death wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: cause-specific mortality by age, sex and period</a></li>
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
@@ -203,7 +203,7 @@
 <span>  change <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_change</a></span><span class="op">(</span><span class="va">glucose</span><span class="op">)</span>,</span>
 <span>  target_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_change</a></span><span class="op">(</span><span class="va">glucose</span>, <span class="st">"time_to_threshold"</span>, threshold <span class="op">=</span> <span class="fl">140</span>, op <span class="op">=</span> <span class="st">"le"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"measured"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">trajectory</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_glucose"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">trajectory</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_glucose"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;      people </span></span>
 <span><span class="co">#&gt; "D_glucose"</span></span></code></pre>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">

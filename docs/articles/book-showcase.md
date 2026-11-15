@@ -7,8 +7,8 @@ choose the chapter that teaches your next step.
 
 Read the cards as a quick tour, or run them in order. Each output is a
 real 2.10.5 result. The first four cards use the **24-person synthetic
-questionnaire fixture**, not APHRC patient data; the last two use
-**synthetic Synthea27Nj labs**.
+questionnaire fixture**; the last two use **synthetic Synthea27Nj
+labs**.
 
 **You need:** the packages and downloaded helpers from [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
@@ -42,7 +42,13 @@ named <- omop_recipe(variables = list(education = omop_variable(
   reducer = omop_reduce("last_value", value = "value_as_concept_id"),
   labels = c("900102" = "University education"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(named, out = c(people = "D_tour_named"), conns = conns)
+book_symbols(recipe_execute(named, out = c(people = "D_tour_named"), conns = conns))
+```
+
+    #>         people 
+    #> "D_tour_named"
+
+``` r
 named_tables <- lapply(names(conns), function(site)
   ds.omop.table("D_tour_named", "education", conns = conns[site]))
 names(named_tables) <- names(conns)
@@ -51,12 +57,12 @@ named_tables
 
     #> $site
     #> D_tour_named$education
-    #>  Secondary education University education
-    #>                    6                    6
-    #>
+    #>  Secondary education University education 
+    #>                    6                    6 
+    #> 
     #> $site2
     #> D_tour_named$education
-    #>  Secondary education University education
+    #>  Secondary education University education 
     #>                    6                    6
 
 The same labels appear at both sites even though their local names
@@ -85,12 +91,18 @@ dates <- omop_recipe(variables = list(
   month = omop_date("first_visit", omop_date_spec(precision = "custom",
     pattern = "%b %Y")), age = omop_age_at("death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(dates, out = c(people = "D_tour_dates"), conns = conns)
+book_symbols(recipe_execute(dates, out = c(people = "D_tour_dates"), conns = conns))
+```
+
+    #>         people 
+    #> "D_tour_dates"
+
+``` r
 ds.omop.table("D_tour_dates", "month", conns = conns)
 ```
 
     #> D_tour_dates$month
-    #> Mar 2020 Jun 2020 Jul 2020
+    #> Mar 2020 Jun 2020 Jul 2020 
     #>        6        6        6
 
 ``` r
@@ -147,7 +159,6 @@ stopping earlier at observation end or death.
 shape_columns <- lapply(names(shapes), function(shape) {
   recipe <- base
   recipe$outputs <- setNames(list(shapes[[shape]]), shape)
-  stopifnot(recipe_explain(recipe, conns = conns)$selected == "v2")
   target <- paste0("D_tour_", shape)
   recipe_execute(recipe, out = setNames(target, shape), conns = conns)
   columns <- dsBaseClient::ds.colnames(target, datasources = conns)[[1L]]
@@ -190,7 +201,6 @@ more <- list(
 more_columns <- lapply(names(more), function(shape) {
   recipe <- base
   recipe$outputs <- setNames(list(more[[shape]]), shape)
-  stopifnot(recipe_explain(recipe, conns = conns)$selected == "v2")
   target <- paste0("D_tour_", shape)
   recipe_execute(recipe, out = setNames(target, shape), conns = conns)
   data.frame(Shape = shape, Columns = paste(
@@ -216,12 +226,18 @@ dictionary <- base
 dictionary$outputs$dictionary <- omop_output("dictionary", rows = "visitors",
   format = "dictionary", options = list(source_outputs = "wide"))
 dictionary$publish <- "dictionary"
-recipe_execute(dictionary, out = c(dictionary = "D_tour_dictionary"), conns = conns)
+book_symbols(recipe_execute(dictionary, out = c(dictionary = "D_tour_dictionary"), conns = conns))
+```
+
+    #>          dictionary 
+    #> "D_tour_dictionary"
+
+``` r
 dsBaseClient::ds.colnames("D_tour_dictionary", datasources = conns)
 ```
 
     #> $site
-    #> [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"
+    #> [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"   
     #> [5] "concept_class_id" "source"
 
 ``` r
@@ -234,7 +250,13 @@ joined$outputs <- list(
     options = list(from = list(list(output = "counts"), list(output = "ages")),
       how = "left", cardinality = "one_to_one")))
 joined$publish <- "joined"
-recipe_execute(joined, out = c(joined = "D_tour_joined"), conns = conns)
+book_symbols(recipe_execute(joined, out = c(joined = "D_tour_joined"), conns = conns))
+```
+
+    #>          joined 
+    #> "D_tour_joined"
+
+``` r
 dsBaseClient::ds.colnames("D_tour_joined", datasources = conns)
 ```
 
@@ -249,7 +271,7 @@ dictionary or joined result is published in those respective calls.
 [Then analyse longitudinal data
 →](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md)
 
-## The APHRC colleague’s verbal-autopsy table
+## A cause-of-death wide table
 
 **One wide table combines the study variables.** The downloadable helper
 builds the released recipe: pseudonymous person key, completed ages,
@@ -257,31 +279,27 @@ education and fever answers, visit periods, dates and coded cause of
 death.
 
 ``` r
-source("tools/dates/va-native.R")
-va <- va_native_recipe()
-recipe_execute(va, out = c(people = "D_tour_va"), conns = conns)
-dsBaseClient::ds.colnames("D_tour_va", datasources = conns)
+source("tools/book/capstone.R")
+va <- book_capstone_recipe()
+book_symbols(recipe_execute(va, out = c(people = "D_tour_va"), conns = conns))
 ```
 
-    #> $site
-    #>  [1] "person_id"          "age_at_death"       "age_at_first_visit" "education"
-    #>  [5] "fever"              "visit_date"         "visit_month"        "visit_quarter"
-    #>  [9] "visit_year"         "visit_parts_year"   "visit_parts_month"  "death_date"
-    #> [13] "cause_of_death"
+    #>      people 
+    #> "D_tour_va"
 
 ``` r
 ds.omop.table("D_tour_va", "cause_of_death", conns = conns)
 ```
 
     #> D_tour_va$cause_of_death
-    #> Myocardial infarction             Pneumonia
+    #> Myocardial infarction             Pneumonia 
     #>                    12                     6
 
-The cause counts are synthetic questionnaire-fixture results, not APHRC
-findings. The person key and patient rows stay private; education and
-cause are each one named categorical column in the same table. [Build
-this table step by step
-→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-verbal-autopsy.md)
+The cause counts summarise the synthetic questionnaire data. The person
+key and patient rows stay private; education and cause are each one
+named categorical column in the same table. [Build this table step by
+step
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-capstone.md)
 
 Switch to the numeric practice resource for the last two cards. The
 common connection file keeps its DSLite/Opal choice in one place.
@@ -309,13 +327,25 @@ teaching breaks.
 labs <- omop_recipe(variables = list(hb = omop_variable(event = omop_event("measurement", 3000963L,
   unit = omop_unit(8713L)), reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(labs, out = c(people = "D_tour_labs"), conns = conns)
+book_symbols(recipe_execute(labs, out = c(people = "D_tour_labs"), conns = conns))
+```
+
+    #>        people 
+    #> "D_tour_labs"
+
+``` r
 tour_mean <- labs$variables$hb
 tour_mean$name <- NULL
 bands <- omop_recipe(variables = list(hb = tour_mean,
   band = omop_number_bins(tour_mean, breaks = c(-Inf, 14, 15, Inf),
     labels = c("below 14", "14 to below 15", "15 or above"))))
-recipe_execute(bands, out = c(output = "D_tour_bands"), conns = conns)
+book_symbols(recipe_execute(bands, out = c(output = "D_tour_bands"), conns = conns))
+```
+
+    #>         output 
+    #> "D_tour_bands"
+
+``` r
 band_result <- dsBaseClient::ds.table("D_tour_bands$band", useNA = "no", datasources = conns)
 mean_result <- dsBaseClient::ds.mean("D_tour_bands$hb", type = "combine", datasources = conns)
 band_display <- book_group_comparison(band_result, mean_result, "Person mean hemoglobin", "g/dL")
@@ -349,7 +379,13 @@ in an already assigned table.
 converted <- omop_recipe(variables = list(hb = tour_mean,
   hb_gl = omop_number(tour_mean, omop_number_spec(
     unit = omop_number_unit("unit:8713", "unit:8636", 10)))))
-recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns)
+book_symbols(recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns))
+```
+
+    #>             output 
+    #> "D_tour_converted"
+
+``` r
 ds.omop.filter("D_tour_converted", expr = omop_where(hb >= 14),
   newobj = "D_tour_selected", conns = conns)
 selected_result <- dsBaseClient::ds.summary("D_tour_selected$hb_gl", datasources = conns)

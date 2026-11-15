@@ -14,7 +14,7 @@ bypass the final disclosure gate.
 ## Overview
 
 Before extracting data, you need to understand what’s available in each
-CDM. dsOMOP v2 provides schema metadata and **aggregate** exploration
+CDM. dsOMOP provides schema metadata and **aggregate** exploration
 functions without returning clinical rows to the client.
 
 Each reviewed aggregate has its own disclosure contract. Person-bearing

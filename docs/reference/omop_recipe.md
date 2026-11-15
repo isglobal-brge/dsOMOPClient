@@ -130,11 +130,11 @@ omop_recipe(
     Recipe-wide defaults created with omop\_date\_spec().
 
   - number\_spec:
-
+    
     Recipe-wide numeric presentation defaults.
 
   - category\_spec:
-
+    
     Recipe-wide category presentation defaults.
 
 ## Value

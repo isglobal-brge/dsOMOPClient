@@ -69,7 +69,7 @@ creates and checks both Opal resources.
 resource_names
 ```
 
-    #>   gibleed   numeric
+    #>   gibleed   numeric 
     #> "gibleed" "numeric"
 
 These are the names used by every attach and switch below. With Opal
@@ -279,7 +279,7 @@ Solution 2
 book_resource_names("Opal", "teaching", c(gibleed = "bleeding", numeric = "labs"))
 ```
 
-    #>             gibleed             numeric
+    #>             gibleed             numeric 
     #> "teaching.bleeding"     "teaching.labs"
 
 No. Name resolution is local; attaching the resolved resource is a

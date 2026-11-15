@@ -109,7 +109,7 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   change = omop_number_change(glucose),
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 140, op = "le")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
-print(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
+book_symbols(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
 ```
 
 ```

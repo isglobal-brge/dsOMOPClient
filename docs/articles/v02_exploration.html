@@ -54,9 +54,9 @@
     <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
     <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
     <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
-    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
-    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Checking and recording a study</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-capstone.html">18. Capstone: a cause-of-death wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: cause-specific mortality by age, sex and period</a></li>
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
@@ -100,7 +100,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>Before extracting data, you need to understand what’s available in each CDM. dsOMOP v2 provides schema metadata and <strong>aggregate</strong> exploration functions without returning clinical rows to the client.</p>
+<p>Before extracting data, you need to understand what’s available in each CDM. dsOMOP provides schema metadata and <strong>aggregate</strong> exploration functions without returning clinical rows to the client.</p>
 <p>Each reviewed aggregate has its own disclosure contract. Person-bearing summaries gate on distinct persons; counts/cells may then be banded, omitted or blocked (see the <em>Security</em> vignette). This is not a blanket guarantee for unrestricted adaptive queries or for methods exported by other server packages. Client wrappers return a <code>dsomop_result</code> object with a <code>$per_site</code> list (one entry per server), an optional <code>$pooled</code> slot (when <code>scope = "pooled"</code>), and a <code>$meta</code> slot that records the generated call and any server warnings.</p>
 </div>
 <div class="section level2">

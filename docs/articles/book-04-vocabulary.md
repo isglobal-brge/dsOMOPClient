@@ -291,13 +291,13 @@ ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$poole
     #>   concept_id       table_name   concept_column n_records n_persons
     #> 1       9201 visit_occurrence visit_concept_id      1035       890
 
-## Find the colleague’s questions, answers and causes
+## Find the questionnaire questions, answers and causes
 
 The questionnaire fixture is explicitly synthetic and separate from
-GiBleed. Its local concepts are teaching examples, not codes to use in a
-real HDSS. Search the whole small catalogue so the question, answer and
-cause roles are visible together. Later questionnaire chapters refer
-back to this catalogue.
+GiBleed. Its local concepts are teaching examples, not codes to copy
+into a clinical study. Search the whole small catalogue so the question,
+answer and cause roles are visible together. Later questionnaire
+chapters refer back to this catalogue.
 
 ``` r
 ds.omop.disconnect(conns = conns)

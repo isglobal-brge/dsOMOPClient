@@ -1,11 +1,10 @@
 # Events, reducers and analysis outputs
 
-These 2.10.5 examples use the integrated recipe-language-2
-implementation. They are not evaluated during documentation builds
-because they need live DataSHIELD connections and study-specific
-vocabulary inputs. Patient tables are assigned beside the data; use
-reviewed DataSHIELD methods to analyse them. The previous chapter
-explains populations and index dates.
+These 2.10.5 examples use the integrated recipe API implementation. They
+are not evaluated during documentation builds because they need live
+DataSHIELD connections and study-specific vocabulary inputs. Patient
+tables are assigned beside the data; use reviewed DataSHIELD methods to
+analyse them. The previous chapter explains populations and index dates.
 
 ## Choose rows, then columns
 
@@ -243,9 +242,9 @@ columns and zero/NA rules; an unavailable source is NA. Multi-concept
 source columns retain concept identity. Carry-forward is per source and
 concept, evaluated at period start.
 
-Survival windows and censoring are explicit. Native v2 adds no implicit
-cohort-end cap; request `index_end` when intended. A named TAR yields
-its own inventory entry, such as `D_tte.itt`. Each independently
+Survival windows and censoring are explicit. The recipe API adds no
+implicit cohort-end cap; request `index_end` when intended. A named TAR
+yields its own inventory entry, such as `D_tte.itt`. Each independently
 accessible patient component must pass distinct-person support; a
 passing roster does not permit a small event component to escape.
 Reference companions are released only with their passing family.

@@ -83,10 +83,10 @@ characterise <- omop_study(hb, outputs = "baseline", baseline = list(
   age_band = omop_number_bins(omop_age(), breaks = c(0, 18, 121),
     labels = c("under 18", "adult")),
   haemoglobin = omop_variable(event = hb, reducer = omop_reduce("mean"))))
-print(recipe_execute(characterise, out = c(baseline = "D_table1"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(characterise, out = c(baseline = "D_table1"), conns = two_conns, symbol = "book_pool"))
 ```
 
-    #>   baseline
+    #>   baseline 
     #> "D_table1"
 
 ``` r
@@ -95,16 +95,16 @@ dsBaseClient::ds.levels("D_table1$age_band", datasources = two_conns)
 
     #> $north
     #> $north$Levels
-    #> [1] "under 18" "adult"
-    #>
+    #> [1] "under 18" "adult"   
+    #> 
     #> $north$ValidityMessage
     #> [1] "VALID ANALYSIS"
-    #>
-    #>
+    #> 
+    #> 
     #> $south
     #> $south$Levels
-    #> [1] "under 18" "adult"
-    #>
+    #> [1] "under 18" "adult"   
+    #> 
     #> $south$ValidityMessage
     #> [1] "VALID ANALYSIS"
 
@@ -173,12 +173,12 @@ dsBaseClient::ds.mean("D_table1$age", type = "combine", datasources = two_conns)
     #> $Global.Mean
     #>                 EstimatedMean Nmissing Nvalid Ntotal
     #> studiesCombined      22.21429        0     28     28
-    #>
+    #> 
     #> $Nstudies
     #> [1] 2
-    #>
+    #> 
     #> $ValidityMessage
-    #>       ValidityMessage
+    #>       ValidityMessage 
     #> north "VALID ANALYSIS"
     #> south "VALID ANALYSIS"
 

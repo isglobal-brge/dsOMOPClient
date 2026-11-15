@@ -1,9 +1,9 @@
-# A-28 native colleague recipe. Question IDs below are synthetic fixture IDs;
+# Cause-of-death teaching recipe. Question IDs below are synthetic fixture IDs;
 # replace them with the corresponding questions in the study CDM.
 # First visit means the earliest visit; latest answers are independent per
 # question across available history. Missing anchors retain the person.
 # All patient values stay in the assigned table on each server.
-va_native_recipe <- function(education_question_id = 900001L,
+book_capstone_recipe <- function(education_question_id = 900001L,
                              fever_question_id = 900002L) {
   visit<-omop_anchor(omop_event("visit_occurrence"),which="first")
   death<-omop_anchor(omop_event("death"),which="first")
@@ -20,10 +20,10 @@ va_native_recipe <- function(education_question_id = 900001L,
 
 # With initialized conns, returns only the symbol mapping. Example:
 # library(dsOMOPClient)
-# source("tools/dates/va-native.R")
-# va_native_execute(conns)
-va_native_execute <- function(conns, education_question_id = 900001L,
+# source("tools/book/capstone.R")
+# book_capstone_execute(conns)
+book_capstone_execute <- function(conns, education_question_id = 900001L,
                               fever_question_id = 900002L) {
-  recipe_execute(va_native_recipe(education_question_id, fever_question_id),
+  recipe_execute(book_capstone_recipe(education_question_id, fever_question_id),
                  out = c(people = "D_va"), conns = conns)
 }

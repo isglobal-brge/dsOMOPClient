@@ -1,0 +1,277 @@
+also installing the dependencies ‘fansi’, ‘systemfonts’, ‘textshaping’, ‘labelled’, ‘downlit’, ‘httr2’, ‘ragg’, ‘whisker’
+
+trying URL 'https://cloud.r-project.org/src/contrib/fansi_1.0.7.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/systemfonts_1.3.2.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/textshaping_1.0.5.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/labelled_2.16.1.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/downlit_0.4.5.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/httr2_1.3.0.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/ragg_1.5.2.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/whisker_0.4.1.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/opalr_3.7.0.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/pkgdown_2.2.1.tar.gz'
+begin installing package ‘fansi’
+begin installing package ‘systemfonts’
+begin installing package ‘labelled’
+begin installing package ‘httr2’
+begin installing package ‘whisker’
+* installing *source* package ‘whisker’ ...
+** this is package ‘whisker’ version ‘0.4.1’
+** package ‘whisker’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (whisker)
+* installing *source* package ‘labelled’ ...
+** this is package ‘labelled’ version ‘2.16.1’
+** package ‘labelled’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (labelled)
+begin installing package ‘opalr’
+* installing *source* package ‘fansi’ ...
+** this is package ‘fansi’ version ‘1.0.7’
+** package ‘fansi’ successfully unpacked and MD5 sums checked
+** using staged installation
+** libs
+using C compiler: ‘cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0’
+make[1]: Entering directory '/tmp/RtmpxQ6cxK/R.INSTALL10e75071c5ada9/fansi/src'
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c assumptions.c -o assumptions.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c carry.c -o carry.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c has.c -o has.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c init.c -o init.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c nchar.c -o nchar.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c normalize.c -o normalize.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c read.c -o read.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c state.c -o state.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c strip.c -o strip.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c substr.c -o substr.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c tabs.c -o tabs.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c tohtml.c -o tohtml.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c trimws.c -o trimws.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c unhandled.c -o unhandled.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c utf8.c -o utf8.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c utils.c -o utils.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c width.c -o width.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c wrap.c -o wrap.o
+cc -I"/usr/share/R/include" -DNDEBUG      -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c write.c -o write.o
+cc -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o fansi.so assumptions.o carry.o has.o init.o nchar.o normalize.o read.o state.o strip.o substr.o tabs.o tohtml.o trimws.o unhandled.o utf8.o utils.o width.o wrap.o write.o -L/usr/lib/R/lib -lR
+make[1]: Leaving directory '/tmp/RtmpxQ6cxK/R.INSTALL10e75071c5ada9/fansi/src'
+installing to /root/rt/wt/book/lib/00LOCK-fansi/00new/fansi/libs
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (fansi)
+begin installing package ‘downlit’
+* installing *source* package ‘downlit’ ...
+** this is package ‘downlit’ version ‘0.4.5’
+** package ‘downlit’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (downlit)
+* installing *source* package ‘httr2’ ...
+** this is package ‘httr2’ version ‘1.3.0’
+** package ‘httr2’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (httr2)
+* installing *source* package ‘opalr’ ...
+** this is package ‘opalr’ version ‘3.7.0’
+** package ‘opalr’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (opalr)
+* installing *source* package ‘systemfonts’ ...
+** this is package ‘systemfonts’ version ‘1.3.2’
+** package ‘systemfonts’ successfully unpacked and MD5 sums checked
+** using staged installation
+Found pkg-config cflags and libs!
+Using PKG_CFLAGS=-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid 
+Using PKG_LIBS=-lfontconfig -lfreetype 
+** libs
+using C++ compiler: ‘g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0’
+make[1]: Entering directory '/tmp/RtmpMQxIII/R.INSTALL10e75534b1d165/systemfonts/src'
+rm -f systemfonts.so caches.o cpp11.o dev_metrics.o font_matching.o font_local.o font_variation.o font_registry.o ft_cache.o string_shape.o font_metrics.o font_outlines.o font_fallback.o string_metrics.o emoji.o cache_store.o init.o unix/FontManagerLinux.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c caches.cpp -o caches.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c cpp11.cpp -o cpp11.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c dev_metrics.cpp -o dev_metrics.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_matching.cpp -o font_matching.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_local.cpp -o font_local.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_variation.cpp -o font_variation.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_registry.cpp -o font_registry.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c ft_cache.cpp -o ft_cache.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c string_shape.cpp -o string_shape.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_metrics.cpp -o font_metrics.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_outlines.cpp -o font_outlines.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c font_fallback.cpp -o font_fallback.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c string_metrics.cpp -o string_metrics.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c emoji.cpp -o emoji.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c cache_store.cpp -o cache_store.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c init.cpp -o init.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid  -I'/usr/local/lib/R/site-library/cpp11/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c unix/FontManagerLinux.cpp -o unix/FontManagerLinux.o
+g++ -std=gnu++20 -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o systemfonts.so caches.o cpp11.o dev_metrics.o font_matching.o font_local.o font_variation.o font_registry.o ft_cache.o string_shape.o font_metrics.o font_outlines.o font_fallback.o string_metrics.o emoji.o cache_store.o init.o unix/FontManagerLinux.o -lfontconfig -lfreetype -L/usr/lib/R/lib -lR
+make[1]: Leaving directory '/tmp/RtmpMQxIII/R.INSTALL10e75534b1d165/systemfonts/src'
+installing to /root/rt/wt/book/lib/00LOCK-systemfonts/00new/systemfonts/libs
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (systemfonts)
+begin installing package ‘textshaping’
+* installing *source* package ‘textshaping’ ...
+** this is package ‘textshaping’ version ‘1.0.5’
+** package ‘textshaping’ successfully unpacked and MD5 sums checked
+** using staged installation
+Found pkg-config cflags and libs!
+Using PKG_CFLAGS=-I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi 
+Using PKG_LIBS=-lharfbuzz -lfreetype -lfribidi 
+** libs
+using C++ compiler: ‘g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0’
+make[1]: Entering directory '/tmp/Rtmpy6dWIh/R.INSTALL10ea6b7a7d10b4/textshaping/src'
+rm -f textshaping.so cpp11.o face_feature.o hb_shaper.o init.o string_bidi.o string_metrics.o string_shape.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c cpp11.cpp -o cpp11.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c face_feature.cpp -o face_feature.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c hb_shaper.cpp -o hb_shaper.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c init.cpp -o init.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c string_bidi.cpp -o string_bidi.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c string_metrics.cpp -o string_metrics.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -DNDEBUG -I/usr/include/harfbuzz -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/fribidi  -I'/usr/local/lib/R/site-library/cpp11/include' -I'/root/rt/wt/book/lib/systemfonts/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c string_shape.cpp -o string_shape.o
+g++ -std=gnu++20 -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o textshaping.so cpp11.o face_feature.o hb_shaper.o init.o string_bidi.o string_metrics.o string_shape.o -lharfbuzz -lfreetype -lfribidi -L/usr/lib/R/lib -lR
+make[1]: Leaving directory '/tmp/Rtmpy6dWIh/R.INSTALL10ea6b7a7d10b4/textshaping/src'
+installing to /root/rt/wt/book/lib/00LOCK-textshaping/00new/textshaping/libs
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (textshaping)
+begin installing package ‘ragg’
+* installing *source* package ‘ragg’ ...
+** this is package ‘ragg’ version ‘1.5.2’
+** package ‘ragg’ successfully unpacked and MD5 sums checked
+** using staged installation
+Found pkg-config cflags and libs!
+Using PKG_CFLAGS=-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu 
+Using PKG_LIBS=-lfreetype -lpng16 -lz -ltiff -ljpeg -lwebpmux -lwebp 
+** libs
+using C++ compiler: ‘g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0’
+make[1]: Entering directory '/tmp/RtmpfKXElG/R.INSTALL10ebce52d37206/ragg/src'
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c capture_dev.cpp -o capture_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c init.cpp -o init.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c jpeg_dev.cpp -o jpeg_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c png_dev.cpp -o png_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c ppm_dev.cpp -o ppm_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c record_dev.cpp -o record_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c tiff_dev.cpp -o tiff_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c webp_anim_dev.cpp -o webp_anim_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c webp_dev.cpp -o webp_dev.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c agg/src/agg_curves.cpp -o agg/src/agg_curves.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c agg/src/agg_font_freetype.cpp -o agg/src/agg_font_freetype.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c agg/src/agg_image_filters.cpp -o agg/src/agg_image_filters.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c agg/src/agg_trans_affine.cpp -o agg/src/agg_trans_affine.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c agg/src/agg_vcgen_dash.cpp -o agg/src/agg_vcgen_dash.o
+g++ -std=gnu++20 -I"/usr/share/R/include" -DNDEBUG -I./agg/include -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/x86_64-linux-gnu  -I'/root/rt/wt/book/lib/systemfonts/include' -I'/root/rt/wt/book/lib/textshaping/include'     -fpic  -g -O2 -ffile-prefix-map=/build/r-base-dFZsSi/r-base-4.6.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2   -c agg/src/agg_vcgen_stroke.cpp -o agg/src/agg_vcgen_stroke.o
+ar rcs agg/libstatagg.a agg/src/agg_curves.o agg/src/agg_font_freetype.o agg/src/agg_image_filters.o agg/src/agg_trans_affine.o agg/src/agg_vcgen_dash.o agg/src/agg_vcgen_stroke.o
+g++ -std=gnu++20 -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o ragg.so capture_dev.o init.o jpeg_dev.o png_dev.o ppm_dev.o record_dev.o tiff_dev.o webp_anim_dev.o webp_dev.o -Lagg -lstatagg -lfreetype -lpng16 -lz -ltiff -ljpeg -lwebpmux -lwebp -L/usr/lib/R/lib -lR
+make[1]: Leaving directory '/tmp/RtmpfKXElG/R.INSTALL10ebce52d37206/ragg/src'
+installing to /root/rt/wt/book/lib/00LOCK-ragg/00new/ragg/libs
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (ragg)
+begin installing package ‘pkgdown’
+* installing *source* package ‘pkgdown’ ...
+** this is package ‘pkgdown’ version ‘2.2.1’
+** package ‘pkgdown’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (pkgdown)
+
+The downloaded source packages are in
+	‘/tmp/Rtmp9DAnjc/downloaded_packages’

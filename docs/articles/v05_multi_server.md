@@ -15,7 +15,7 @@ equal.
 
 ## Overview
 
-dsOMOP v2 is designed for federated analysis across multiple DataSHIELD
+dsOMOP is designed for federated analysis across multiple DataSHIELD
 servers, each hosting an OMOP CDM database. Servers may differ in CDM
 version, available tables and columns, vocabulary version, database
 engine, disclosure policy and data volume. dsOMOP exposes those

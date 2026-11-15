@@ -29,3 +29,14 @@ book_group_comparison <- function(counts, mean_result, number, unit) {
   out$Mean <- as.numeric(values[1L, 1L])
   out
 }
+
+# Display the output-to-symbol mapping without printing the attached codebook.
+# Keep the original result when calling recipe_codebook() later.
+book_symbols <- function(result) {
+  if (is.null(names(result)) || !(is.character(result) || is.list(result)))
+    stop("Expected an output-to-symbol mapping or component receipt.")
+  shown <- result
+  attr(shown, "omop_codebook") <- NULL
+  print(shown)
+  invisible(result)
+}

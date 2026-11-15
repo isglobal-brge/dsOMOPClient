@@ -11,10 +11,10 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Build education and cause-of-death columns, check language 2, and request category counts.
+Build education and cause-of-death columns, predict its output, and request category counts.
 </div>
 
-This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
+This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
@@ -134,43 +134,14 @@ class(people)
 ```
 
 `person_id` is included automatically as a pseudonym. Missing records produce
-missing values. We did not add a legacy raw-ID variable to keep the roster.
+missing values. The roster does not require an extra identifier variable.
 
 ## Predict: read the recipe explanation
 
 
 ``` r
 explained <- recipe_explain(people, conns = conns)
-stopifnot(explained$selected == "v2")
-explained$selected
-```
-
-```
-#> [1] "v2"
-```
-
-The selected plan is language 2. Before running, predict one private row per
-person, two named categorical variables, and a pseudonymous key. With no time restriction, each variable reads all available history
-independently. That is a teaching definition to choose explicitly in a real study.
-
-<details><summary>Full plan explanation (optional)</summary>
-
-The semantic version identifies the rules used to interpret the recipe. A label
-contract records the category names and their ordering. Federation reconciliation
-makes those categories agree across sites. A bytewise tie compares the bytes of
-text to make a repeated choice deterministic. You do not need to configure these
-for this first recipe.
-
-Read the lines in order: the selected language is the execution route; the
-population defines the row; each variable identifies its source and reducer;
-output defaults determine the shape; category reconciliation determines names.
-The explanation contains declarations, not observed patient frequencies.
-
-Print all the chosen defaults:
-
-
-``` r
-recipe_explain(people)
+cat(explained$text, sep = "\n")
 ```
 
 ```
@@ -190,7 +161,28 @@ recipe_explain(people)
 #> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
 #> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
 #> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
+#> Execution would use the publication protocol on every site.
 ```
+
+Before running, predict one private row per
+person, two named categorical variables, and a pseudonymous key. With no time restriction, each variable reads all available history
+independently. That is a teaching definition to choose explicitly in a real study.
+
+<details><summary>Full plan explanation (optional)</summary>
+
+A label contract records the category names and their ordering. Federation reconciliation
+makes those categories agree across sites. A bytewise tie compares the bytes of
+text to make a repeated choice deterministic. You do not need to configure these
+for this first recipe.
+
+Read the lines in order: the
+population defines the row; each variable identifies its source and reducer;
+output defaults determine the shape; category reconciliation determines names.
+The explanation contains declarations, not observed patient frequencies.
+
+Print all the chosen defaults:
+
+The explanation above records the chosen defaults before execution.
 
 </details>
 
@@ -198,7 +190,7 @@ recipe_explain(people)
 
 
 ``` r
-print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+book_symbols(recipe_execute(people, out = c(people = "D_people"), conns = conns))
 ```
 
 ```
@@ -403,7 +395,7 @@ is selected. Missing fever answers remain missing; they do not become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+book_symbols(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 ```
 
 ```

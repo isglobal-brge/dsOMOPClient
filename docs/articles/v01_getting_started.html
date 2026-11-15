@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Getting Started with dsOMOP v2 • dsOMOPClient</title>
+<title>Getting Started with dsOMOP • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<script src="../extra.js"></script><meta property="og:title" content="Getting Started with dsOMOP v2">
+<script src="../extra.js"></script><meta property="og:title" content="Getting Started with dsOMOP">
 <meta name="description" content="Connect to OMOP CDM resources and run a first reviewed workflow.">
 <meta property="og:description" content="Connect to OMOP CDM resources and run a first reviewed workflow.">
 </head>
@@ -54,9 +54,9 @@
     <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
     <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
     <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
-    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
-    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Checking and recording a study</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-capstone.html">18. Capstone: a cause-of-death wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: cause-specific mortality by age, sex and period</a></li>
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
@@ -83,7 +83,7 @@
 <script src="v01_getting_started_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Getting Started with dsOMOP v2</h1>
+      <h1>Getting Started with dsOMOP</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v01_getting_started.Rmd" class="external-link"><code>vignettes/v01_getting_started.Rmd</code></a></small>
@@ -95,7 +95,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><strong>dsOMOP v2</strong> provides a typed interface to OMOP Common Data Model databases through the DataSHIELD framework. The server implements endpoint-specific disclosure controls, but deployment safety also depends on its complete method allowlist, policy options, database role and downstream consumers. It consists of two packages:</p>
+<p><strong>dsOMOP</strong> provides a typed interface to OMOP Common Data Model databases through the DataSHIELD framework. The server implements endpoint-specific disclosure controls, but deployment safety also depends on its complete method allowlist, policy options, database role and downstream consumers. It consists of two packages:</p>
 <ul>
 <li>
 <strong>dsOMOP</strong> (server-side): runs on each DataSHIELD node. Handles database queries, disclosure control, and data preparation.</li>
@@ -104,16 +104,10 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="upgrading-to-2-10-5">Upgrading to 2.10.5<a class="anchor" aria-label="anchor" href="#upgrading-to-2-10-5"></a>
-</h2>
-<p>Install matching dsOMOP and dsOMOPClient 2.10.5, publish the server package’s methods and Options on Opal, and call <code>ds.omop.server.version(conns)</code> to confirm both installed and published versions. Existing private roots are reused; no privacy settings, key provisioning, epoch bump or TLS change is needed. Re-run affected recipes and rebuild codebooks to obtain the corrected numeric and categorical outputs. The extraction chapter covers numeric presentation, recorded-day reduction, typed categories, calendar dates and anchored ages. Check server capabilities before using new operations at several sites.</p>
-<p>Release validation: <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661271157" class="external-link">Opal contract run 43661271157</a> and <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661274062" class="external-link">end-to-end run 43661274062</a>. The release pipeline records both as successful; the end-to-end artifacts cover fresh installation and upgrade from 2.10.4 on Opal 6.2.1, including preservation of the existing DP noise root. These runs do not establish live execution on every SQL dialect or exercise the separate numeric scenario N.</p>
-</div>
-<div class="section level2">
 <h2 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
 </h2>
 <ul>
-<li>A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2 installed</li>
+<li>A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP installed</li>
 <li>An OMOP CDM database configured as a DataSHIELD resource</li>
 <li>The <code>dsOMOPClient</code> package installed locally</li>
 </ul>

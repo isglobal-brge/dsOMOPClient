@@ -1,6 +1,31 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/404.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/LICENSE-text.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-13-visits.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-capstone.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-19-case-mortality.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-21-case-glucose.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-22-case-drug.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-23-case-table1.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-showcase.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/index.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.html</loc></url>
@@ -424,3 +449,4 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_validate.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/summary.omop_plan.html</loc></url>
 </urlset>
+

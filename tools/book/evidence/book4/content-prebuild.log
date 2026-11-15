@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/workspace/dsomop/wt/book/dsOMOPClient/tools/book/audit-content.py", line 13, in <module>
+    assert '#> NULL' not in text, f'Empty result displayed: {p}'
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Empty result displayed: /workspace/dsomop/wt/book/dsOMOPClient/vignettes/book-17-reproduce.Rmd

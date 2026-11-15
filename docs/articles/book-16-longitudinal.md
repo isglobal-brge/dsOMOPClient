@@ -92,10 +92,10 @@ visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = omop_output("visits", rows = "visitors", format = "long", sources = "admission",
     options = list(columns_derived = c("days_from_index", "duration_days"))))
-print(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
+book_symbols(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
 ```
 
-    #>         visits
+    #>         visits 
     #> "D_visit_long"
 
 The long table remains private. Release only the named visit-type counts
@@ -106,9 +106,9 @@ dsBaseClient::ds.colnames("D_visit_long", datasources = conns)
 ```
 
     #> $site
-    #>  [1] "row_id"                  "cohort_row_id"           "person_id"
-    #>  [4] "concept_id"              "start_date"              "end_date"
-    #>  [7] "visit_type_concept_id"   "discharge_to_concept_id" "days_from_index"
+    #>  [1] "row_id"                  "cohort_row_id"           "person_id"              
+    #>  [4] "concept_id"              "start_date"              "end_date"               
+    #>  [7] "visit_type_concept_id"   "discharge_to_concept_id" "days_from_index"        
     #> [10] "duration_days"
 
 ``` r
@@ -134,12 +134,12 @@ visit_time
     #> $Global.Mean
     #>                 EstimatedMean Nmissing Nvalid Ntotal
     #> studiesCombined      1272.554        0   1037   1037
-    #>
+    #> 
     #> $Nstudies
     #> [1] 1
-    #>
+    #> 
     #> $ValidityMessage
-    #>      ValidityMessage
+    #>      ValidityMessage 
     #> site "VALID ANALYSIS"
 
 No. Here the mean is about 1273 days: the first admission contributes
@@ -182,10 +182,10 @@ windows <- omop_recipe(events = list(lab), populations = list(entry), variables 
   last2 = window_value("last_value", 1000, 1999),
   last3 = window_value("last_value", 2000, 2999)),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-print(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
+book_symbols(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
 ```
 
-    #>        wide
+    #>        wide 
     #> "D_windows"
 
 No eligible nonmissing value gives `NA`. It never gives zero hemoglobin.
@@ -255,6 +255,83 @@ The source checks find 28, 10 and 15 observed people: therefore 0, 18
 and 13 missing values. Do not carry a measurement forward without
 declaring how long it remains valid and what that assumption means.
 
+## Wide columns at prespecified time points
+
+A wide table can hold several scheduled values for each person. A named
+grid makes the target times, tolerances and selection rule explicit.
+Each value comes from an eligible observed event; no measurement is
+interpolated.
+
+``` r
+points <- omop_timepoints(list(
+  baseline = omop_timepoint(),
+  year3 = omop_timepoint(3, "years", tolerance = c(-365, 365))),
+  anchor = "index", reuse = FALSE)
+repeated_hb <- omop_repeated(lab, values = list(hb = omop_number_rows(lab)),
+  timepoints = points, missing = "keep")
+repeated_recipe <- omop_recipe(events = list(lab), populations = list(entry),
+  variables = list(measurements = repeated_hb),
+  outputs = omop_output("wide", rows = "entry", format = "wide"))
+repeated_result <- recipe_execute(repeated_recipe, out = "D_timepoints", conns = conns)
+dsBaseClient::ds.colnames("D_timepoints", datasources = conns)
+```
+
+    #> $site
+    #> [1] "row_id"                   "cohort_row_id"            "person_id"               
+    #> [4] "measurements_hb_baseline" "measurements_hb_year3"
+
+The generated names retain the measurement and time-point names.
+`closest` is the default selection; `first` or `last` would choose
+differently within the inclusive tolerance. `reuse = FALSE` prevents an
+event from filling two points. The tolerance here is a teaching choice
+for irregular data, not a claim that a lab a year away represents a
+clinical three-year visit.
+
+**Exercise.** Inspect the baseline column’s released summary.
+
+Solution: a scheduled column
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary(
+  "D_timepoints$measurements_hb_baseline", datasources = conns)))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 11.29000 |
+| site | 10%       | 12.48000 |
+| site | 25%       | 12.97500 |
+| site | 50%       | 13.70000 |
+| site | 75%       | 15.42500 |
+| site | 90%       | 16.19000 |
+| site | 95%       | 16.85500 |
+| site | Mean      | 13.98571 |
+
+The baseline target is day zero at the first lab. Later targets without
+an eligible reading remain missing; they are not zero-valued
+measurements.
+
+**Exercise.** Where can you check the expanded columns’ types before
+modelling?
+
+Solution: the published table codebook
+
+``` r
+knitr::kable(recipe_codebook(repeated_result)[[1]]$columns[c("name", "r_type", "unit")])
+```
+
+| name                       | r\_type   | unit               |
+| :------------------------- | :-------- | :----------------- |
+| row\_id                    | character | not\_applicable    |
+| cohort\_row\_id            | character | not\_applicable    |
+| person\_id                 | character | not\_applicable    |
+| measurements\_hb\_baseline | double    | unresolved\_source |
+| measurements\_hb\_year3    | double    | unresolved\_source |
+
+Use the numeric columns in a model only after choosing how to handle
+missing scheduled readings. A codebook does not expose their missingness
+frequency.
+
 ## Ask the recipe, or reshape on the server
 
 The installed `ds.reShape()` can turn existing wide columns into period
@@ -276,7 +353,7 @@ dsBaseClient::ds.dataFrame(c("D_windows$person_id", "first.1", "first.2", "first
 
     #> $is.object.created
     #> [1] "A data object <D_for_reshape> has been created in all specified data sources"
-    #>
+    #> 
     #> $validity.check
     #> [1] "<D_for_reshape> appears valid in all sources"
 
@@ -288,7 +365,7 @@ dsBaseClient::ds.reShape("D_for_reshape", varying = c("first.1", "first.2", "fir
 
     #> $is.object.created
     #> [1] "A data object <D_reshaped> has been created in all specified data sources"
-    #>
+    #> 
     #> $validity.check
     #> [1] "<D_reshaped> appears valid in all sources"
 
@@ -317,10 +394,10 @@ panel <- omop_recipe(events = list(lab), populations = list(entry),
   outputs = omop_output("panel", rows = "entry", format = "person_period",
     options = list(sources = list(lab), bins = list(width = 1000L),
       window = omop_window(0, 2999), analyses = c("count", "last"), representation = "dense")))
-print(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
+book_symbols(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
 ```
 
-    #>     panel
+    #>     panel 
     #> "D_panel"
 
 ``` r
@@ -400,10 +477,10 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
       options = list(from = list(list(output = "daily"), list(output = "ends")),
         how = "left", cardinality = "many_to_one"))))
 hazard$publish <- "risk"
-print(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
 ```
 
-    #>     risk
+    #>     risk 
     #> "D_days"
 
 Remove days after the first repeat or death. A missing next-day value
@@ -453,7 +530,7 @@ remains **per day**. The binomial GLM models log odds with a linear time
 trend. A study would assess that time specification and the assumption
 of noninformative censoring.
 
-The pinned dsBase 6.3.5 local setup fits use one iteration and emit the
+The dsBase 6.3.5 local setup fits use one iteration and emit the
 explained `glm.fit: algorithm did not converge` warnings. The
 distributed fit then iterates; inspect its final diagnostics, which the
 book checks against a central fit of the public source. The warnings
@@ -511,18 +588,18 @@ list(iterations = hazard_fit$iter, valid_days = hazard_fit$Nvalid,
 
     #> $iterations
     #> [1] 13
-    #>
+    #> 
     #> $valid_days
     #> [1] 48560
-    #>
+    #> 
     #> $disclosure_risk
     #>       RISK OF DISCLOSURE
     #> north                  0
     #> south                  0
-    #>
+    #> 
     #> $errors
     #>       ERROR MESSAGES
-    #> north "No errors"
+    #> north "No errors"   
     #> south "No errors"
 
 This is a jointly estimated distributed GLM. Its risk-set likelihood has
@@ -561,10 +638,10 @@ bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-print(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
 ```
 
-    #>     long
+    #>     long 
     #> "D_long"
 
 ``` r
@@ -572,19 +649,19 @@ dsBaseClient::ds.colnames("D_long", datasources = two_conns)
 ```
 
     #> $north
-    #>  [1] "row_id"                      "cohort_row_id"
-    #>  [3] "person_id"                   "concept_id"
-    #>  [5] "start_date"                  "end_date"
-    #>  [7] "measurement_type_concept_id" "value_as_concept_id"
-    #>  [9] "meas_event_field_concept_id" "days_since_previous"
-    #> [11] "value"                       "unit_concept_id"
-    #>
+    #>  [1] "row_id"                      "cohort_row_id"              
+    #>  [3] "person_id"                   "concept_id"                 
+    #>  [5] "start_date"                  "end_date"                   
+    #>  [7] "measurement_type_concept_id" "value_as_concept_id"        
+    #>  [9] "meas_event_field_concept_id" "days_since_previous"        
+    #> [11] "value"                       "unit_concept_id"            
+    #> 
     #> $south
-    #>  [1] "row_id"                      "cohort_row_id"
-    #>  [3] "person_id"                   "concept_id"
-    #>  [5] "start_date"                  "end_date"
-    #>  [7] "measurement_type_concept_id" "value_as_concept_id"
-    #>  [9] "meas_event_field_concept_id" "days_since_previous"
+    #>  [1] "row_id"                      "cohort_row_id"              
+    #>  [3] "person_id"                   "concept_id"                 
+    #>  [5] "start_date"                  "end_date"                   
+    #>  [7] "measurement_type_concept_id" "value_as_concept_id"        
+    #>  [9] "meas_event_field_concept_id" "days_since_previous"        
     #> [11] "value"                       "unit_concept_id"
 
 `start_date` is days since first BMI under the default relative-date
@@ -699,7 +776,7 @@ list(sites = binary_mixed$num.valid.studies,
 
     #> $sites
     #> [1] 2
-    #>
+    #> 
     #> $time_odds_ratio
     #> [1] 1.00938
 
@@ -730,5 +807,5 @@ models instead retain repeated readings and model their dependence.
 Check every site’s diagnostics and distinguish joint GLM estimation from
 SLMA pooling.
 
-**Next:** [17. Reproduction and migration
-notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md).
+**Next:** [17. Checking and recording a
+study](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md).

@@ -1,0 +1,5 @@
+PRECOMPUTE vignettes/book-10-harmonise.Rmd.orig
+BOOK4 CATEGORIES PASS: exact order, missing/unknown, flag types, rollups, and published schema
+ASSERTIONS PASS book-10-harmonise.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

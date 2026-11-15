@@ -1,11 +1,11 @@
-# 17\. Reproduction and migration notes
+# 17\. Checking and recording a study
 
 **What you will learn**
 
 Rebuild the offline book and recognise the old recipe conventions.
 
-This chapter uses the 24-person synthetic questionnaire test fixture
-described in [Getting
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
 **You need:** the packages and the matching practice connection
 described in [Before you
@@ -40,186 +40,97 @@ names(conns)
 The `site` connection is ready. This chapter creates its temporary
 questionnaire fixture locally.
 
-## Source and rendered lessons
+## Keep a reproducible study record
 
-The editable chapters are `vignettes/book-*.Rmd.orig`. The precompute
-script executes them against the synthetic fixture and writes `.Rmd`
-with the actual output embedded. The resulting files contain ordinary
-Markdown code fences, so the website does not connect to a database when
-it builds.
-
-From the book client checkout, run `tools/book/run-pod.sh` in this
-workspace, or run `Rscript tools/book/precompute.R` in an R environment
-containing the matching packages and fixture dependencies. Then run
-`Rscript tools/book/build-site.R` to build the site and its helper
-downloads, followed by `Rscript tools/book/verify-bundle.R` to execute
-every chapter from the final ZIP. The pod driver is workspace-specific;
-the R scripts and fixture are portable.
-
-## Record the software versions
+Save the recipe and its concept definitions with the software versions
+used to execute them. Record the chosen vocabulary release and dataset
+resource as well: a repeatable definition does not guarantee that a
+database has stayed unchanged.
 
 ``` r
 vapply(c("dsOMOP", "dsOMOPClient", "DSI", "DSLite", "dsBase", "dsBaseClient"),
        function(p) as.character(packageVersion(p)), character(1))
 ```
 
-    #>       dsOMOP dsOMOPClient          DSI       DSLite       dsBase dsBaseClient
+    #>       dsOMOP dsOMOPClient          DSI       DSLite       dsBase dsBaseClient 
     #>     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"      "6.3.5"
 
-These are the actual versions used for this rendering. Detailed
-assertions, source hashes and test logs are retained under
-`tools/book/evidence`.
-
-## Reproduce both practice resources
-
-Run `Rscript tools/book/load-practice.R ../practice-data`. The loader
-pins the EunomiaDatasets source revision and verifies SHA-256 for both
-archives. It creates `gibleed.sqlite`, `numeric.sqlite` and
-`manifest.json` in `../practice-data`. If you chose a different loader
-directory, set `BOOK_PRACTICE_DIR` to that directory before running the
-lessons. These are administrator-side operations on public synthetic
-data, separate from analyst DataSHIELD calls. The following table reads
-your loader’s manifest from that same directory. The checkout’s
-`tools/book/evidence/book2/practice-manifest.json` is historical build
-evidence; readers do not need it.
+The practice loader records both datasets in a manifest. Readers who
+chose a custom data directory can set `BOOK_PRACTICE_DIR` to that
+directory.
 
 ``` r
 practice_dir <- Sys.getenv("BOOK_PRACTICE_DIR", file.path("..", "practice-data"))
 manifest <- jsonlite::read_json(file.path(practice_dir, "manifest.json"))
-loaded <- do.call(rbind, lapply(manifest, function(x) data.frame(
-  Dataset = x$dataset, Measurements = x$measurements$rows,
-  Numeric = x$measurements$numeric_values,
-  Numeric_with_unit = x$measurements$numeric_with_unit)))
-knitr::kable(loaded, row.names = FALSE)
+vapply(manifest, function(x) x$dataset, "")
 ```
 
-| Dataset     | Measurements | Numeric | Numeric\_with\_unit |
-| :---------- | -----------: | ------: | ------------------: |
-| GiBleed     |        44053 |       0 |                   0 |
-| Synthea27Nj |        10040 |    9107 |                8403 |
+    #>       gibleed       numeric 
+    #>     "GiBleed" "Synthea27Nj"
 
-GiBleed supplies the basics; Synthea27Nj supplies numeric labs. Its
-numeric values and mapped units come from the pinned source, without
-fabricated lab extensions. The questionnaire fixture remains separate
-and is explicitly named in its lessons.
+## Predict the schema, then retain the published codebook
 
-The
-[loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R),
-[two-resource DSLite
-helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/practice.R)
-and [questionnaire
-fixture](https://isglobal-brge.github.io/dsOMOPClient/downloads/fixture.R)
-are downloadable from this site. The same SQLite files can be mounted
-into another Rock server; their resource registration is shown in
-chapter 0. Dependencies are listed in `tools/book/README.md`.
-
-## The local test driver
-
-DSLite 1.5 rejects some quoted dsBase call strings containing commas.
-The practice helper applies the same scoped lexer repair used by the
-package’s release tests. It changes tokenisation only: ds.table,
-assignments and all disclosure checks still run for real. It does not
-apply to Opal. The two intentional refusal chunks in chapter 12 omit
-DSLite’s extra missing-symbol cleanup warnings; they display the actual
-policy error, and the verification checks that no refused output exists.
-The helper also injects a synthetic test pseudonym root; a deployed
-server manages its own private root automatically.
-
-## Migrating older recipes
-
-The 2.10.2 colleague example selected a categorical observation with
-`omop_variable(table = ..., concept_id = ..., format = "last_value",
-value_source = ...)`. Its translation path required an output name
-ending in `_concept_id`. The death feature needed `value_source =
-"cause_concept_id"`; `column` alone did not select the reduced value.
-Those are legacy conventions, not the API taught here.
-
-In language 2, use `event = omop_event(...)` and `reducer =
-omop_reduce("last_value", value = "value_as_concept_id")`. Use `format =
-"wide"` and `grain = "person"` on the output. Concept typing now
-supplies labels regardless of the output name. Re-execute an old recipe
-to obtain new labelled assignments; renaming an existing symbol does not
-recompute it.
-
-Calendar migration also matters. `first_date` and `last_date` remain day
-offsets. For calendar values use `omop_date()`, for calendar precision
-use `omop_date_spec()`, and for completed age at death use
-`omop_age_at("death")`. Do not relabel annual year subtraction as
-completed age.
-
-## Inspect the executed language
+A codebook describes each output component. Before execution it is
+prospective; after execution it reflects the admitted column contract.
+Date precision, category representation and renaming can affect several
+fields at once.
 
 ``` r
-check <- omop_recipe(variables = list(age = omop_age_at("death")),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_explain(check, conns = conns)$selected
+check <- omop_recipe(variables = list(
+  age = omop_age_at("death"),
+  death_period = omop_date("death", omop_date_spec(precision = "year"))),
+  outputs = omop_output("people", format = "wide", grain = "person"),
+  category_spec = omop_category_spec(ordered = TRUE))
+prospective <- recipe_codebook(check)
+result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns)
+published <- recipe_codebook(result)
+print(c(before = prospective[[1]]$status, after = published[[1]]$status))
 ```
 
-    #> [1] "v2"
+    #>        before         after 
+    #> "prospective"   "published"
 
 ``` r
-print(recipe_execute(check, out = c(people = "D_migration"), conns = conns))
+knitr::kable(published[[1]]$columns[c("name", "semantic_type", "r_type", "unit",
+  "privacy_class", "aggregate_policy", "missing_policy", "completeness")])
 ```
 
-    #>        people
-    #> "D_migration"
+| name          | semantic\_type | r\_type         | unit            | privacy\_class | aggregate\_policy                                                                | missing\_policy                                                                            | completeness |
+| :------------ | :------------- | :-------------- | :-------------- | :------------- | :------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- | :----------- |
+| person\_id    | key            | character       | not\_applicable | 1              | Existing endpoint admission and protection; unresolved for unrequested endpoints | Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA | reconciled   |
+| age           | numeric        | integer         | years           | 2              | Existing endpoint admission and protection; unresolved for unrequested endpoints | Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA | reconciled   |
+| death\_period | category       | ordered\_factor | not\_applicable | 2              | Existing endpoint admission and protection; unresolved for unrequested endpoints | Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA | reconciled   |
 
-If an explanation selects v1, it is explaining the legacy execution
-path. Merely printing a forced v2 conversion would not prove that the
-actual execution uses it.
+Completed age is numeric; a calendar year presentation is an ordered
+factor. `privacy_class` and `aggregate_policy` describe the admitted
+column policy. `completeness` describes metadata resolution, not the
+percentage of people with nonmissing values. A codebook never replaces a
+protected aggregate check.
 
-## Try it
+**Exercise 1.** Save and restore the definition. Does the plan stay
+equal?
 
-Check that the migration recipe is native before using it.
-
-Solution
-
-``` r
-recipe_explain(check, conns = conns)$selected
-```
-
-    #> [1] "v2"
-
-## Exercise 2: a common variant
-
-Round-trip a native recipe through JSON.
-
-Solution 2
+Solution 1
 
 ``` r
-restored <- recipe_import_json(recipe_export_json(check))
+recipe_file <- tempfile(fileext = ".json")
+recipe_save(check, recipe_file)
+restored <- recipe_load(recipe_file)
 identical(recipe_to_plan(check), recipe_to_plan(restored))
 ```
 
     #> [1] TRUE
 
-TRUE establishes plan equality for this example; retain package and
-vocabulary versions as well.
-
-## Exercise 3: a pitfall to avoid
-
-Inspect the loaded manifest dataset names. Does rebuilding the site
-reload a database?
-
-Solution 3
-
-``` r
-vapply(manifest, function(x) x$dataset, "")
-```
-
-    #>       gibleed       numeric
-    #>     "GiBleed" "Synthea27Nj"
-
-No. Loading practice data, precomputing examples and rendering the site
-are three distinct operations.
+TRUE means the definition survived the round trip. Keep the published
+codebook with it so that later analysis can distinguish planned and
+actual types.
 
 ## Strict Circe imports preserve the question
 
-Circe JSON describes an OHDSI cohort. Import is a translation into the
-executable recipe subset, not a promise that every Circe setting is
-supported. Refusing an unsupported criterion protects the research
-question from silent simplification. This deliberately invalid example
-stops at the unsupported additional criteria:
+Circe JSON describes an OHDSI cohort. Import translates supported cohort
+rules into a recipe. An unsupported criterion must not disappear
+silently. This deliberately invalid example has an unsupported
+additional criterion:
 
 ``` r
 circe_message <- tryCatch(recipe_import_circe(jsonlite::toJSON(list(
@@ -228,17 +139,32 @@ circe_message <- tryCatch(recipe_import_circe(jsonlite::toJSON(list(
 cat(circe_message, "\n")
 ```
 
-    #> Circe import: AdditionalCriteria is not supported by the executable recipe subset.
+    #> unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.
 
-Do not delete criteria merely to make an import run. Translate them with
-a supported native definition, verify the same population semantics, and
-retain the original JSON alongside the reviewed recipe.
+Read the named path in the refusal. Translate the intended rule into
+supported recipe constructs and verify its population meaning; do not
+delete a criterion just to make the import succeed. Retain the original
+JSON for review.
 
-## Unsupported settings must remain visible
+**Exercise 2.** Can a successful export/import prove that a source
+cohort used only supported criteria?
 
-Typed constructors reject irrelevant settings instead of guessing their
-meaning. For example, square-root transformation has no affine
-multiplier parameter:
+Solution 2
+
+``` r
+is.character(circe_message) && nchar(circe_message) > 0L
+```
+
+    #> [1] TRUE
+
+No. The message above is an import refusal, not a usable cohort. Inspect
+the source criteria and the translated definition before any extraction.
+
+## Unsupported settings are refused
+
+Constructors reject settings that have no meaning for the chosen
+operation. A square-root transform cannot also take an affine
+multiplier:
 
 ``` r
 setting_message <- tryCatch(omop_number_transform("sqrt", factor = 2),
@@ -248,22 +174,60 @@ cat(setting_message, "\n")
 
     #> number_spec_invalid: Use only the documented fields and required operands.
 
-Declare an explicit affine stage and a square-root stage if that ordered
-calculation is intended. A successful parse is not evidence that a
-statistical option was honoured; keep execution capabilities and the
-explain output with the protocol. Audit-specific catalogue settings
-depend on the separately integrated audit implementation; this book does
-not silently install it over A-29.
+If the protocol intends both steps, declare an affine transform followed
+by a square-root transform in a numeric pipeline. Their order changes
+the result. A category hierarchy also cannot take a distance rule
+without a separation:
 
-The per-table codebook and its new fields belong to the
-categorical/layout extension, excluded from this update. The existing
-dictionary in the output chapter remains vocabulary metadata, not an
-invented codebook contract.
+``` r
+cat(tryCatch(omop_category_rollup("snomed", distance = "max"),
+  error = function(e) conditionMessage(e)), "\n")
+```
+
+    #> category_spec_invalid: distance requires separation.
+
+These failures happen while constructing the definition, before server
+data are assigned. They prevent a supplied setting from being quietly
+ignored.
+
+**Exercise 3.** Select only the exact `people` table’s codebook and
+inspect its category ordering and contrasts. Why is this preferable to
+guessing from a name?
+
+Solution 3
+
+``` r
+columns <- recipe_codebook(result, output = "people", component = "people")[[1]]$columns
+period <- match("death_period", columns$name)
+print(list(ordered = columns$ordered[[period]], contrasts = columns$contrasts[[period]],
+  levels = columns$levels[[period]]$labels))
+```
+
+    #> $ordered
+    #> [1] TRUE
+    #> 
+    #> $contrasts
+    #> $contrasts$kind
+    #> [1] "polynomial"
+    #> 
+    #> $contrasts$reference
+    #> [1] "period:2024"
+    #> 
+    #> 
+    #> $levels
+    #> [1] "2024"
+
+The metadata records the actual category contract. A column called
+“year” could instead have been numeric or a Date under a different
+presentation declaration. For multi-component outputs, select each exact
+component in the same way.
 
 ## Recap
 
-The editable source executes once; the generated website is offline.
-Migration changes the recipe definitions, not just column names.
+Keep the definition, software and vocabulary versions, and published
+codebooks. Read import and constructor refusals as unresolved study
+decisions. Metadata explains the table’s contract; protected summaries
+describe its data.
 
-**Next:** [18. Capstone: a verbal-autopsy wide
-table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-verbal-autopsy.md).
+**Next:** [18. Capstone: a cause-of-death wide
+table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-capstone.md).

@@ -1,0 +1,2497 @@
+[
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 0,
+    "chapterLinks": 0,
+    "byline": false,
+    "copyButtons": 0,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 0,
+    "footer": true,
+    "headings": [
+      "Learn dsOMOPClient"
+    ]
+  },
+  {
+    "slug": "articles/book-00-start",
+    "title": "0. Getting started • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 16,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "0. Getting started"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-01-mental-model",
+    "title": "1. What DataSHIELD and OMOP mean • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 6,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 3,
+    "footer": true,
+    "headings": [
+      "1. What DataSHIELD and OMOP mean"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-02-connect",
+    "title": "2. Resources, connections and symbols • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "2. Resources, connections and symbols"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-03-explore",
+    "title": "3. Exploring the CDM • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 10,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 4,
+    "footer": true,
+    "headings": [
+      "3. Exploring the CDM"
+    ],
+    "scrollableBlocks": 5
+  },
+  {
+    "slug": "articles/book-04-vocabulary",
+    "title": "4. Finding the concept IDs you need • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 26,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 7,
+    "footer": true,
+    "headings": [
+      "4. Finding the concept IDs you need"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 20,
+    "footer": true,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-06-events",
+    "title": "6. Events, windows and reducers • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 45,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "6. Events, windows and reducers"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 6
+  },
+  {
+    "slug": "articles/book-07-populations",
+    "title": "7. Populations and index events • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 19,
+    "footer": true,
+    "headings": [
+      "7. Populations and index events"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-08-outputs",
+    "title": "8. Choosing an output format • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 36,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "8. Choosing an output format"
+    ],
+    "scrollableBlocks": 4
+  },
+  {
+    "slug": "articles/book-09-dates",
+    "title": "9. Dates, periods and ages • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 30,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 30,
+    "footer": true,
+    "headings": [
+      "9. Dates, periods and ages"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-10-harmonise",
+    "title": "10. Concepts as categories • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 43,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 33,
+    "footer": true,
+    "headings": [
+      "10. Concepts as categories"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-11-parameters",
+    "title": "11. Reusable studies and standalone verbs • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 29,
+    "footer": true,
+    "headings": [
+      "11. Reusable studies and standalone verbs"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-12-privacy",
+    "title": "12. What stays private • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 11,
+    "footer": true,
+    "headings": [
+      "12. What stays private"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-13-visits",
+    "title": "13. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 23,
+    "footer": true,
+    "headings": [
+      "13. Visit dates, one idea at a time"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-14-labs",
+    "title": "14. Working with lab values • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 57,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "14. Working with lab values"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-15-formulas",
+    "title": "15. Derived numeric formulas • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 31,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 8,
+    "footer": true,
+    "headings": [
+      "15. Derived numeric formulas"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-16-longitudinal",
+    "title": "16. Longitudinal data: from events to analysis • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 27,
+    "footer": true,
+    "headings": [
+      "16. Longitudinal data: from events to analysis"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-17-reproduce",
+    "title": "17. Checking and recording a study • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "17. Checking and recording a study"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-18-capstone",
+    "title": "18. Capstone: a cause-of-death wide table • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 29,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 26,
+    "footer": true,
+    "headings": [
+      "18. Capstone: a cause-of-death wide table"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-19-case-mortality",
+    "title": "19. Case study: cause-specific mortality by age, sex and period • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "19. Case study: cause-specific mortality by age, sex and period"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-20-case-gibleed",
+    "title": "20. Case study: celecoxib versus diclofenac • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 17,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "20. Case study: celecoxib versus diclofenac"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-21-case-glucose",
+    "title": "21. Case study: glucose trajectories • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "21. Case study: glucose trajectories"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-22-case-drug",
+    "title": "22. Case study: drug utilisation • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "22. Case study: drug utilisation"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-23-case-table1",
+    "title": "23. Case study: a harmonised Table 1 • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 12,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "23. Case study: a harmonised Table 1"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-showcase",
+    "title": "What you can do with dsOMOP • dsOMOPClient",
+    "width": 1280,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 25,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 17,
+    "footer": true,
+    "headings": [
+      "What you can do with dsOMOP"
+    ],
+    "capabilityCards": 6,
+    "copyTest": "passed",
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 0,
+    "chapterLinks": 0,
+    "byline": false,
+    "copyButtons": 0,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 0,
+    "footer": true,
+    "headings": [
+      "Learn dsOMOPClient"
+    ]
+  },
+  {
+    "slug": "articles/book-00-start",
+    "title": "0. Getting started • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 16,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "0. Getting started"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-01-mental-model",
+    "title": "1. What DataSHIELD and OMOP mean • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 6,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 3,
+    "footer": true,
+    "headings": [
+      "1. What DataSHIELD and OMOP mean"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-02-connect",
+    "title": "2. Resources, connections and symbols • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "2. Resources, connections and symbols"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-03-explore",
+    "title": "3. Exploring the CDM • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 10,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 4,
+    "footer": true,
+    "headings": [
+      "3. Exploring the CDM"
+    ],
+    "scrollableBlocks": 5
+  },
+  {
+    "slug": "articles/book-04-vocabulary",
+    "title": "4. Finding the concept IDs you need • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 26,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 7,
+    "footer": true,
+    "headings": [
+      "4. Finding the concept IDs you need"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 20,
+    "footer": true,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-06-events",
+    "title": "6. Events, windows and reducers • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 45,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "6. Events, windows and reducers"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 6
+  },
+  {
+    "slug": "articles/book-07-populations",
+    "title": "7. Populations and index events • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 19,
+    "footer": true,
+    "headings": [
+      "7. Populations and index events"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-08-outputs",
+    "title": "8. Choosing an output format • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 36,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "8. Choosing an output format"
+    ],
+    "scrollableBlocks": 4
+  },
+  {
+    "slug": "articles/book-09-dates",
+    "title": "9. Dates, periods and ages • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 30,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 30,
+    "footer": true,
+    "headings": [
+      "9. Dates, periods and ages"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-10-harmonise",
+    "title": "10. Concepts as categories • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 43,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 33,
+    "footer": true,
+    "headings": [
+      "10. Concepts as categories"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-11-parameters",
+    "title": "11. Reusable studies and standalone verbs • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 29,
+    "footer": true,
+    "headings": [
+      "11. Reusable studies and standalone verbs"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-12-privacy",
+    "title": "12. What stays private • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 11,
+    "footer": true,
+    "headings": [
+      "12. What stays private"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-13-visits",
+    "title": "13. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 23,
+    "footer": true,
+    "headings": [
+      "13. Visit dates, one idea at a time"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-14-labs",
+    "title": "14. Working with lab values • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 57,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "14. Working with lab values"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-15-formulas",
+    "title": "15. Derived numeric formulas • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 31,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 8,
+    "footer": true,
+    "headings": [
+      "15. Derived numeric formulas"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-16-longitudinal",
+    "title": "16. Longitudinal data: from events to analysis • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 27,
+    "footer": true,
+    "headings": [
+      "16. Longitudinal data: from events to analysis"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-17-reproduce",
+    "title": "17. Checking and recording a study • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "17. Checking and recording a study"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-18-capstone",
+    "title": "18. Capstone: a cause-of-death wide table • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 29,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 26,
+    "footer": true,
+    "headings": [
+      "18. Capstone: a cause-of-death wide table"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-19-case-mortality",
+    "title": "19. Case study: cause-specific mortality by age, sex and period • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "19. Case study: cause-specific mortality by age, sex and period"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-20-case-gibleed",
+    "title": "20. Case study: celecoxib versus diclofenac • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 17,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "20. Case study: celecoxib versus diclofenac"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-21-case-glucose",
+    "title": "21. Case study: glucose trajectories • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "21. Case study: glucose trajectories"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-22-case-drug",
+    "title": "22. Case study: drug utilisation • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "22. Case study: drug utilisation"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-23-case-table1",
+    "title": "23. Case study: a harmonised Table 1 • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 12,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "23. Case study: a harmonised Table 1"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-showcase",
+    "title": "What you can do with dsOMOP • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 25,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 17,
+    "footer": true,
+    "headings": [
+      "What you can do with dsOMOP"
+    ],
+    "capabilityCards": 6,
+    "copyTest": "passed",
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 0,
+    "chapterLinks": 0,
+    "byline": false,
+    "copyButtons": 0,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 0,
+    "footer": true,
+    "headings": [
+      "Learn dsOMOPClient"
+    ]
+  },
+  {
+    "slug": "articles/book-00-start",
+    "title": "0. Getting started • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 16,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "0. Getting started"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-01-mental-model",
+    "title": "1. What DataSHIELD and OMOP mean • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 6,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 3,
+    "footer": true,
+    "headings": [
+      "1. What DataSHIELD and OMOP mean"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-02-connect",
+    "title": "2. Resources, connections and symbols • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "2. Resources, connections and symbols"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-03-explore",
+    "title": "3. Exploring the CDM • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 10,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 4,
+    "footer": true,
+    "headings": [
+      "3. Exploring the CDM"
+    ],
+    "scrollableBlocks": 5
+  },
+  {
+    "slug": "articles/book-04-vocabulary",
+    "title": "4. Finding the concept IDs you need • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 26,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 7,
+    "footer": true,
+    "headings": [
+      "4. Finding the concept IDs you need"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 20,
+    "footer": true,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-06-events",
+    "title": "6. Events, windows and reducers • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 45,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "6. Events, windows and reducers"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 6
+  },
+  {
+    "slug": "articles/book-07-populations",
+    "title": "7. Populations and index events • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 19,
+    "footer": true,
+    "headings": [
+      "7. Populations and index events"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-08-outputs",
+    "title": "8. Choosing an output format • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 36,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "8. Choosing an output format"
+    ],
+    "scrollableBlocks": 4
+  },
+  {
+    "slug": "articles/book-09-dates",
+    "title": "9. Dates, periods and ages • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 30,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 30,
+    "footer": true,
+    "headings": [
+      "9. Dates, periods and ages"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-10-harmonise",
+    "title": "10. Concepts as categories • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 43,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 33,
+    "footer": true,
+    "headings": [
+      "10. Concepts as categories"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-11-parameters",
+    "title": "11. Reusable studies and standalone verbs • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 29,
+    "footer": true,
+    "headings": [
+      "11. Reusable studies and standalone verbs"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-12-privacy",
+    "title": "12. What stays private • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 11,
+    "footer": true,
+    "headings": [
+      "12. What stays private"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-13-visits",
+    "title": "13. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 23,
+    "footer": true,
+    "headings": [
+      "13. Visit dates, one idea at a time"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-14-labs",
+    "title": "14. Working with lab values • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 57,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "14. Working with lab values"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-15-formulas",
+    "title": "15. Derived numeric formulas • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 31,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 8,
+    "footer": true,
+    "headings": [
+      "15. Derived numeric formulas"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-16-longitudinal",
+    "title": "16. Longitudinal data: from events to analysis • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 27,
+    "footer": true,
+    "headings": [
+      "16. Longitudinal data: from events to analysis"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-17-reproduce",
+    "title": "17. Checking and recording a study • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "17. Checking and recording a study"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-18-capstone",
+    "title": "18. Capstone: a cause-of-death wide table • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 29,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 26,
+    "footer": true,
+    "headings": [
+      "18. Capstone: a cause-of-death wide table"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-19-case-mortality",
+    "title": "19. Case study: cause-specific mortality by age, sex and period • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "19. Case study: cause-specific mortality by age, sex and period"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-20-case-gibleed",
+    "title": "20. Case study: celecoxib versus diclofenac • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 17,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "20. Case study: celecoxib versus diclofenac"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-21-case-glucose",
+    "title": "21. Case study: glucose trajectories • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "21. Case study: glucose trajectories"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-22-case-drug",
+    "title": "22. Case study: drug utilisation • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "22. Case study: drug utilisation"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-23-case-table1",
+    "title": "23. Case study: a harmonised Table 1 • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 12,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "23. Case study: a harmonised Table 1"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-showcase",
+    "title": "What you can do with dsOMOP • dsOMOPClient",
+    "width": 1400,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 25,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 17,
+    "footer": true,
+    "headings": [
+      "What you can do with dsOMOP"
+    ],
+    "capabilityCards": 6,
+    "copyTest": "passed",
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 0,
+    "chapterLinks": 0,
+    "byline": false,
+    "copyButtons": 0,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 0,
+    "footer": true,
+    "headings": [
+      "Learn dsOMOPClient"
+    ]
+  },
+  {
+    "slug": "articles/book-00-start",
+    "title": "0. Getting started • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 16,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "0. Getting started"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-01-mental-model",
+    "title": "1. What DataSHIELD and OMOP mean • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 6,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 3,
+    "footer": true,
+    "headings": [
+      "1. What DataSHIELD and OMOP mean"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-02-connect",
+    "title": "2. Resources, connections and symbols • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "2. Resources, connections and symbols"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-03-explore",
+    "title": "3. Exploring the CDM • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 10,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 4,
+    "footer": true,
+    "headings": [
+      "3. Exploring the CDM"
+    ],
+    "scrollableBlocks": 5
+  },
+  {
+    "slug": "articles/book-04-vocabulary",
+    "title": "4. Finding the concept IDs you need • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 26,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 7,
+    "footer": true,
+    "headings": [
+      "4. Finding the concept IDs you need"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 20,
+    "footer": true,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-06-events",
+    "title": "6. Events, windows and reducers • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 45,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "6. Events, windows and reducers"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 6
+  },
+  {
+    "slug": "articles/book-07-populations",
+    "title": "7. Populations and index events • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 19,
+    "footer": true,
+    "headings": [
+      "7. Populations and index events"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-08-outputs",
+    "title": "8. Choosing an output format • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 36,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "8. Choosing an output format"
+    ],
+    "scrollableBlocks": 4
+  },
+  {
+    "slug": "articles/book-09-dates",
+    "title": "9. Dates, periods and ages • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 30,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 30,
+    "footer": true,
+    "headings": [
+      "9. Dates, periods and ages"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-10-harmonise",
+    "title": "10. Concepts as categories • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 43,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 33,
+    "footer": true,
+    "headings": [
+      "10. Concepts as categories"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-11-parameters",
+    "title": "11. Reusable studies and standalone verbs • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 29,
+    "footer": true,
+    "headings": [
+      "11. Reusable studies and standalone verbs"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-12-privacy",
+    "title": "12. What stays private • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 11,
+    "footer": true,
+    "headings": [
+      "12. What stays private"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-13-visits",
+    "title": "13. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 23,
+    "footer": true,
+    "headings": [
+      "13. Visit dates, one idea at a time"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-14-labs",
+    "title": "14. Working with lab values • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 57,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "14. Working with lab values"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-15-formulas",
+    "title": "15. Derived numeric formulas • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 31,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 8,
+    "footer": true,
+    "headings": [
+      "15. Derived numeric formulas"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-16-longitudinal",
+    "title": "16. Longitudinal data: from events to analysis • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 27,
+    "footer": true,
+    "headings": [
+      "16. Longitudinal data: from events to analysis"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-17-reproduce",
+    "title": "17. Checking and recording a study • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "17. Checking and recording a study"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-18-capstone",
+    "title": "18. Capstone: a cause-of-death wide table • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 29,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 26,
+    "footer": true,
+    "headings": [
+      "18. Capstone: a cause-of-death wide table"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-19-case-mortality",
+    "title": "19. Case study: cause-specific mortality by age, sex and period • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "19. Case study: cause-specific mortality by age, sex and period"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-20-case-gibleed",
+    "title": "20. Case study: celecoxib versus diclofenac • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 17,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "20. Case study: celecoxib versus diclofenac"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-21-case-glucose",
+    "title": "21. Case study: glucose trajectories • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "21. Case study: glucose trajectories"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-22-case-drug",
+    "title": "22. Case study: drug utilisation • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "22. Case study: drug utilisation"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-23-case-table1",
+    "title": "23. Case study: a harmonised Table 1 • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 12,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "23. Case study: a harmonised Table 1"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-showcase",
+    "title": "What you can do with dsOMOP • dsOMOPClient",
+    "width": 1920,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 25,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 17,
+    "footer": true,
+    "headings": [
+      "What you can do with dsOMOP"
+    ],
+    "capabilityCards": 6,
+    "copyTest": "passed",
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 0,
+    "chapterLinks": 0,
+    "byline": false,
+    "copyButtons": 0,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 0,
+    "footer": true,
+    "headings": [
+      "Learn dsOMOPClient"
+    ]
+  },
+  {
+    "slug": "articles/book-00-start",
+    "title": "0. Getting started • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 16,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "0. Getting started"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-01-mental-model",
+    "title": "1. What DataSHIELD and OMOP mean • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 6,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 3,
+    "footer": true,
+    "headings": [
+      "1. What DataSHIELD and OMOP mean"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-02-connect",
+    "title": "2. Resources, connections and symbols • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "2. Resources, connections and symbols"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-03-explore",
+    "title": "3. Exploring the CDM • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 10,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 4,
+    "footer": true,
+    "headings": [
+      "3. Exploring the CDM"
+    ],
+    "scrollableBlocks": 5
+  },
+  {
+    "slug": "articles/book-04-vocabulary",
+    "title": "4. Finding the concept IDs you need • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 26,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 7,
+    "footer": true,
+    "headings": [
+      "4. Finding the concept IDs you need"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 20,
+    "footer": true,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-06-events",
+    "title": "6. Events, windows and reducers • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 45,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "6. Events, windows and reducers"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 6
+  },
+  {
+    "slug": "articles/book-07-populations",
+    "title": "7. Populations and index events • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 19,
+    "footer": true,
+    "headings": [
+      "7. Populations and index events"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-08-outputs",
+    "title": "8. Choosing an output format • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 36,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "8. Choosing an output format"
+    ],
+    "scrollableBlocks": 4
+  },
+  {
+    "slug": "articles/book-09-dates",
+    "title": "9. Dates, periods and ages • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 30,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 30,
+    "footer": true,
+    "headings": [
+      "9. Dates, periods and ages"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-10-harmonise",
+    "title": "10. Concepts as categories • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 43,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 33,
+    "footer": true,
+    "headings": [
+      "10. Concepts as categories"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-11-parameters",
+    "title": "11. Reusable studies and standalone verbs • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 29,
+    "footer": true,
+    "headings": [
+      "11. Reusable studies and standalone verbs"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-12-privacy",
+    "title": "12. What stays private • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 11,
+    "footer": true,
+    "headings": [
+      "12. What stays private"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-13-visits",
+    "title": "13. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 24,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 23,
+    "footer": true,
+    "headings": [
+      "13. Visit dates, one idea at a time"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-14-labs",
+    "title": "14. Working with lab values • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 57,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 31,
+    "footer": true,
+    "headings": [
+      "14. Working with lab values"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-15-formulas",
+    "title": "15. Derived numeric formulas • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 31,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 8,
+    "footer": true,
+    "headings": [
+      "15. Derived numeric formulas"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-16-longitudinal",
+    "title": "16. Longitudinal data: from events to analysis • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 38,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 27,
+    "footer": true,
+    "headings": [
+      "16. Longitudinal data: from events to analysis"
+    ],
+    "copyTest": "passed",
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-17-reproduce",
+    "title": "17. Checking and recording a study • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 11,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 10,
+    "footer": true,
+    "headings": [
+      "17. Checking and recording a study"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-18-capstone",
+    "title": "18. Capstone: a cause-of-death wide table • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 29,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 26,
+    "footer": true,
+    "headings": [
+      "18. Capstone: a cause-of-death wide table"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-19-case-mortality",
+    "title": "19. Case study: cause-specific mortality by age, sex and period • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "19. Case study: cause-specific mortality by age, sex and period"
+    ],
+    "scrollableBlocks": 3
+  },
+  {
+    "slug": "articles/book-20-case-gibleed",
+    "title": "20. Case study: celecoxib versus diclofenac • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 17,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 9,
+    "footer": true,
+    "headings": [
+      "20. Case study: celecoxib versus diclofenac"
+    ],
+    "scrollableBlocks": 2
+  },
+  {
+    "slug": "articles/book-21-case-glucose",
+    "title": "21. Case study: glucose trajectories • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 15,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "21. Case study: glucose trajectories"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-22-case-drug",
+    "title": "22. Case study: drug utilisation • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 19,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "22. Case study: drug utilisation"
+    ],
+    "scrollableBlocks": 1
+  },
+  {
+    "slug": "articles/book-23-case-table1",
+    "title": "23. Case study: a harmonised Table 1 • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 12,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 6,
+    "footer": true,
+    "headings": [
+      "23. Case study: a harmonised Table 1"
+    ],
+    "scrollableBlocks": 0
+  },
+  {
+    "slug": "articles/book-showcase",
+    "title": "What you can do with dsOMOP • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "chapterLinks": 25,
+    "byline": true,
+    "copyButtons": 25,
+    "numericNoWrap": true,
+    "tocInside": true,
+    "outputLabelAbsent": true,
+    "outputs": 17,
+    "footer": true,
+    "headings": [
+      "What you can do with dsOMOP"
+    ],
+    "capabilityCards": 6,
+    "copyTest": "passed",
+    "scrollableBlocks": 1
+  }
+]

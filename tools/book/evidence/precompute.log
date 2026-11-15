@@ -1,4 +1,8 @@
-PRECOMPUTE vignettes/book-05-recipe.Rmd.orig
-ASSERTIONS PASS book-05-recipe.Rmd.orig
+PRECOMPUTE vignettes/book-14-labs.Rmd.orig
+BOOK3 PASS: source oracles, released summaries/counts, disjoint 14+14 sites, weighted quantiles and Gaussian coefficients
+ASSERTIONS PASS book-14-labs.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-17-reproduce.Rmd.orig
+ASSERTIONS PASS book-17-reproduce.Rmd.orig
 All chapter chunks executed successfully
 All chapters passed in separate R processes using visible setup

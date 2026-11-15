@@ -18,9 +18,6 @@ pre { border: 1px solid #d9e5eb; border-radius: 8px; padding: 1.1rem; font-size:
 .sourceCode { background-color: #f5f8fb; }
 main pre:not(.sourceCode) { background: #fff; border-left: 3px solid #b7cbdc;
   color: #415c68; margin-top: -.3rem; font-size: .82rem; }
-main pre:not(.sourceCode)::before { content: 'RECORDED OUTPUT'; display: block;
-  font: 650 .65rem/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  letter-spacing: .09em; color: #627b86; margin-bottom: .65rem; }
 main table { font-size: .92rem; margin: 1.5rem 0; }
 main table th { color: var(--book-blue); background: #edf4f8; border-bottom: 2px solid #b7cbdc; }
 main table td, main table th { padding: .7rem .8rem; }
@@ -40,10 +37,12 @@ a { text-underline-offset: .2em; }
 .book-flow > div strong { display: block; color: var(--book-blue); }
 .book-flow > span { align-self: center; font-size: 1.4rem; color: #337ab7; }
 @media (min-width: 1200px) {
-  .book-page .container { max-width: 1440px; }
-  .book-page .template-article > .row { display: grid; grid-template-columns: 230px minmax(0,1fr) 190px; gap: 2.1rem; }
+  .book-page .container { width: 100%; max-width: min(1440px, calc(100% - 2rem)); }
+  .book-page .template-article > .row { display: grid; grid-template-columns: minmax(180px, 210px) minmax(0,1fr) minmax(150px, 180px); gap: 1.5rem; margin-inline: 0; }
   .book-page main { width: 100%; min-width: 0; max-width: none; }
-  .book-page .template-article aside { width: 100%; }
+  .book-page .template-article aside { width: 100%; min-width: 0; margin-inline: 0; padding: 0; overflow-wrap: anywhere; }
+  .book-page .template-article > .row > * { min-width: 0; }
+  .book-page #toc { width: 100%; max-width: 100%; }
   .chapter-sidebar { display: block; align-self: start; position: sticky; top: 90px;
     max-height: calc(100vh - 120px); overflow-y: auto; padding-right: .6rem; }
   .chapter-sidebar h2 { font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; color: #627b86; margin: 1rem 0; }

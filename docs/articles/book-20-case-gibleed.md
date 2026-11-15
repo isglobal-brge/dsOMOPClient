@@ -149,10 +149,10 @@ cat(grep("censor|follow|survival", recipe_explain(comparison)$text, value = TRUE
     #> variables.celecoxib: concept origin follows reducer binary over the declared source value; explicit variable name is retained.
 
 ``` r
-print(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
 ```
 
-    #>       analysis
+    #>       analysis 
     #> "D_comparison"
 
 ``` r
@@ -160,15 +160,15 @@ dsBaseClient::ds.colnames("D_comparison", datasources = two_conns)
 ```
 
     #> $north
-    #>  [1] "row_id"                "cohort_row_id"         "person_id"
-    #>  [4] "age"                   "celecoxib"             "outcome_name"
-    #>  [7] "event"                 "entry_days_from_index" "exit_days_from_index"
-    #> [10] "follow_up_days"
-    #>
+    #>  [1] "row_id"                "cohort_row_id"         "person_id"            
+    #>  [4] "age"                   "celecoxib"             "outcome_name"         
+    #>  [7] "event"                 "entry_days_from_index" "exit_days_from_index" 
+    #> [10] "follow_up_days"       
+    #> 
     #> $south
-    #>  [1] "row_id"                "cohort_row_id"         "person_id"
-    #>  [4] "age"                   "celecoxib"             "outcome_name"
-    #>  [7] "event"                 "entry_days_from_index" "exit_days_from_index"
+    #>  [1] "row_id"                "cohort_row_id"         "person_id"            
+    #>  [4] "age"                   "celecoxib"             "outcome_name"         
+    #>  [7] "event"                 "entry_days_from_index" "exit_days_from_index" 
     #> [10] "follow_up_days"
 
 The censor list and 365-day window define the estimand. Event = 0 means
@@ -276,16 +276,16 @@ comparison_fit[c("Nvalid", "Nmissing", "iter", "errorMessage")]
 
     #> $Nvalid
     #> [1] 2630
-    #>
+    #> 
     #> $Nmissing
     #> [1] 0
-    #>
+    #> 
     #> $iter
     #> [1] 7
-    #>
+    #> 
     #> $errorMessage
     #>       ERROR MESSAGES
-    #> north "No errors"
+    #> north "No errors"   
     #> south "No errors"
 
 Compare the valid sample with the intended episode population. Missing

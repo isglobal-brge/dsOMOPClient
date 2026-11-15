@@ -1,8 +1,8 @@
-# Getting Started with dsOMOP v2
+# Getting Started with dsOMOP
 
 ## Overview
 
-**dsOMOP v2** provides a typed interface to OMOP Common Data Model
+**dsOMOP** provides a typed interface to OMOP Common Data Model
 databases through the DataSHIELD framework. The server implements
 endpoint-specific disclosure controls, but deployment safety also
 depends on its complete method allowlist, policy options, database role
@@ -14,32 +14,9 @@ and downstream consumers. It consists of two packages:
     an ergonomic API for schema exploration, cohort management, and data
     extraction.
 
-## Upgrading to 2.10.5
-
-Install matching dsOMOP and dsOMOPClient 2.10.5, publish the server
-package’s methods and Options on Opal, and call
-`ds.omop.server.version(conns)` to confirm both installed and published
-versions. Existing private roots are reused; no privacy settings, key
-provisioning, epoch bump or TLS change is needed. Re-run affected
-recipes and rebuild codebooks to obtain the corrected numeric and
-categorical outputs. The extraction chapter covers numeric presentation,
-recorded-day reduction, typed categories, calendar dates and anchored
-ages. Check server capabilities before using new operations at several
-sites.
-
-Release validation: [Opal contract
-run 43661271157](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661271157)
-and [end-to-end
-run 43661274062](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661274062).
-The release pipeline records both as successful; the end-to-end
-artifacts cover fresh installation and upgrade from 2.10.4 on Opal
-6.2.1, including preservation of the existing DP noise root. These runs
-do not establish live execution on every SQL dialect or exercise the
-separate numeric scenario N.
-
 ## Prerequisites
 
-  - A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2
+  - A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP
     installed
   - An OMOP CDM database configured as a DataSHIELD resource
   - The `dsOMOPClient` package installed locally

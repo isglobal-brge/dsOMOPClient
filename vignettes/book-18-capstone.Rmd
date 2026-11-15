@@ -1,9 +1,9 @@
 ---
-title: "18. Capstone: a verbal-autopsy wide table"
+title: "18. Capstone: a cause-of-death wide table"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{18. Capstone: a verbal-autopsy wide table}
+  %\VignetteIndexEntry{18. Capstone: a cause-of-death wide table}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,7 +14,7 @@ vignette: >
 Combine age at death, labelled answers, calendar periods and cause of death in one private table.
 </div>
 
-This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
+This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
@@ -82,7 +82,7 @@ va_sets <- lapply(va_ids, omop_concept_set)
 ```
 
 These local concepts have no external Maps to or ancestry. Their observed uses
-were checked in [chapter 4](book-04-vocabulary.html#find-the-colleagues-questions-answers-and-causes).
+were checked in [chapter 4](book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes).
 
 ## Begin with the clinical question
 
@@ -189,8 +189,7 @@ class(visit_quarter)
 ```
 
 Quarter labels distinguish both year and quarter. The numeric year variant is
-included to match the released native colleague recipe exactly. Precision is
-chosen separately for each variable.
+a numeric calendar year. Precision is chosen separately for each variable.
 
 ## Add the coded cause
 
@@ -208,10 +207,9 @@ class(cause)
 The vocabulary supplies the label. People without death records keep missing
 cause and age, while remaining in the all-person output.
 
-## Assemble the released native recipe
+## Assemble the recipe
 
-The following completes the exact variable set in the released follow-up
-`tools/dates/va-native.R`, which closed the earlier feasibility gaps. It also
+The following recipe also
 includes age at first visit, exact visit/death dates and separate visit date parts
 so you can distinguish those types. Every one of these values stays on the server.
 
@@ -235,25 +233,50 @@ class(va)
 ```
 
 For a smaller analysis table, select only the variables your question needs using
-`columns` in `omop_output()`. The full version here is the regression-tested
-colleague recipe, rather than the old feasibility workaround.
+`columns` in `omop_output()`. The full version here lets you compare date types before selecting columns.
 
 ## Explain and assign
 
 
 ``` r
 explanation <- recipe_explain(va, conns = conns)
-stopifnot(explanation$selected == "v2")
-explanation$selected
+cat(grep("date|precision|age", explanation$text, value = TRUE), sep = "\n")
 ```
 
 ```
-#> [1] "v2"
+#> Recipe plan (language 2.0, semantic 2.0.0)
+#>   age_at_death: age_at
+#>   age_at_first_visit: age_at
+#>   visit_date: calendar_date
+#>   visit_month: calendar_date
+#>   visit_quarter: calendar_date
+#>   visit_year: calendar_date
+#>   visit_parts_year: date_part
+#>   visit_parts_month: date_part
+#>   death_date: calendar_date
+#> Date variable 'age_at_death': age_at; partial=none; invalid=na; future=allow; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> Unit years; completed calendar anniversaries; Feb 29 -> March 1; months clamp from original day; decimal years divide by anniversary interval; absolute=FALSE; rounding=none; date.elapsed required.
+#> Date variable 'age_at_first_visit': age_at; partial=none; invalid=na; future=allow; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> Unit years; completed calendar anniversaries; Feb 29 -> March 1; months clamp from original day; decimal years divide by anniversary interval; absolute=FALSE; rounding=none; date.elapsed required.
+#> Date variable 'visit_date': calendar_date; partial=none; invalid=na; future=allow; precision=day; representation=auto; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
+#> Date variable 'visit_month': calendar_date; partial=none; invalid=na; future=allow; precision=month; representation=auto; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
+#> Date variable 'visit_quarter': calendar_date; partial=none; invalid=na; future=allow; precision=quarter; representation=auto; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
+#> Date variable 'visit_year': calendar_date; partial=none; invalid=na; future=allow; precision=year; representation=number; numeric=index; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
+#> Date variable 'visit_parts_year': date_part part=year; partial=none; invalid=na; future=allow; representation=auto; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
+#> Date variable 'visit_parts_month': date_part part=month; partial=none; invalid=na; future=allow; representation=auto; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
+#> Date variable 'death_date': calendar_date; partial=none; invalid=na; future=allow; precision=day; representation=auto; precedence variable > recipe > design; class 2 quasi_identifier; Gregorian 0001..9999 (outside domain -> typed NA).
+#> date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.
 ```
 
 
 ``` r
-print(recipe_execute(va, out = c(people = "D_va"), conns = conns))
+book_symbols(recipe_execute(va, out = c(people = "D_va"), conns = conns))
 ```
 
 ```
@@ -389,8 +412,8 @@ Use the short released helper to rebuild exactly the same recipe and verify its 
 
 
 ``` r
-source("tools/dates/va-native.R")
-reference <- va_native_recipe()
+source("tools/book/capstone.R")
+reference <- book_capstone_recipe()
 identical(recipe_to_plan(va), recipe_to_plan(reference))
 ```
 
@@ -399,7 +422,7 @@ identical(recipe_to_plan(va), recipe_to_plan(reference))
 ```
 
 ``` r
-print(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
+book_symbols(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
 ```
 
 ```
@@ -421,7 +444,7 @@ ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
 
 ## Exercise 2: a common variant
 
-Count education in the completed verbal-autopsy table.
+Count education in the completed cause-of-death table.
 
 <details><summary>Solution 2</summary>
 
@@ -464,7 +487,7 @@ Its private columns combine several domains. The approved aggregate remains the 
 </details>
 ## Add a native numeric presentation
 
-Keep exact completed age private and add a broad age band with the A-29 numeric
+Keep exact completed age private and add a broad age band with the native numeric
 wrapper. Missing age stays missing. These public teaching bands do not repair
 incomplete birth dates or infer an age for a survivor.
 
@@ -474,7 +497,7 @@ va_numeric <- omop_recipe(variables = c(va$variables,
   list(age_band = omop_number_bins(age_at_death, breaks = c(0, 40, 121),
     labels = c("under 40", "40 and over")))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
+book_symbols(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
 ```
 
 ```
@@ -492,12 +515,69 @@ ds.omop.table("D_va_numeric", "age_band", conns = conns)
 #>           6           6
 ```
 
-The earlier date presentation and concept translation remain native. Custom
-category order, rollups, wide-by-time layout and codebooks await the separate
-categorical/layout update; this chapter does not invent arguments for them.
+## Choose answer order and record the table contract
+
+For this table, secondary education precedes university education. Keep missing
+answers as an explicit category so that absence of an answer remains visible.
+The identities below come from the catalogue search at the start of this chapter.
+
+
+``` r
+answer_keys <- paste0("concept:", unname(va_ids[c("Secondary education", "University education")]))
+va_presented <- va_numeric
+va_presented$variables$education <- omop_category(education, omop_category_spec(
+  levels = answer_keys, order = omop_category_order(c(answer_keys, "special:missing")), ordered = TRUE,
+  missing = omop_category_missing(na = "level")))
+capstone_result <- recipe_execute(va_presented, out = c(people = "D_capstone"), conns = conns)
+ds.omop.table("D_capstone", "education", conns = conns)
+```
+
+```
+#> D_capstone$education
+#>  Secondary education University education              Missing 
+#>                    6                    6                   12
+```
+
+This changes presentation without filling in an answer or selecting a different
+person roster. The age band uses the native numeric presentation from chapter 14.
+
+**Exercise.** Keep the published codebook with the recipe. Which columns are
+numeric, categorical or calendar dates?
+
+<details><summary>Solution: document the completed table</summary>
+
+
+``` r
+capstone_book <- recipe_codebook(capstone_result, output = "people")
+knitr::kable(capstone_book[[1]]$columns[c("name", "semantic_type", "r_type", "unit")])
+```
+
+
+
+|name               |semantic_type |r_type         |unit           |
+|:------------------|:-------------|:--------------|:--------------|
+|person_id          |key           |character      |not_applicable |
+|age_at_death       |numeric       |integer        |years          |
+|age_at_first_visit |numeric       |integer        |years          |
+|education          |category      |ordered_factor |not_applicable |
+|fever              |concept       |factor         |not_applicable |
+|visit_date         |numeric       |Date           |1              |
+|visit_month        |date          |ordered_factor |not_applicable |
+|visit_quarter      |date          |ordered_factor |not_applicable |
+|visit_year         |numeric       |integer        |1              |
+|visit_parts_year   |numeric       |integer        |1              |
+|visit_parts_month  |date          |ordered_factor |not_applicable |
+|death_date         |numeric       |Date           |1              |
+|cause_of_death     |concept       |factor         |not_applicable |
+|age_band           |number        |ordered_factor |years          |
+
+This is metadata about the private table, not a row preview. Exact dates retain
+their privacy class even when another column presents a coarser calendar period.
+
+</details>
 
 ## Recap
 
 The native 2.10.5 API now supports the whole capstone: pseudonymous roster, completed age, coded answers, calendar periods and cause of death.
 
-**Next:** [19. Case study: HDSS-style mortality](book-19-case-mortality.html).
+**Next:** [19. Case study: cause-specific mortality by age, sex and period](book-19-case-mortality.html).

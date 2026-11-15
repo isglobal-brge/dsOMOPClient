@@ -46,7 +46,7 @@ omop_concept_set(
     Optional registry name.
 
   - validity\_policy:
-
+    
     NULL retains native semantics. The versioned `"ohdsi-import-1"`
     policy requires valid explicit vocabulary records and excludes
     invalid expanded records; OHDSI importers select it explicitly.

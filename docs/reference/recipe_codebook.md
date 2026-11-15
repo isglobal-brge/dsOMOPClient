@@ -11,15 +11,15 @@ recipe_codebook(x, output = NULL, component = NULL)
 ## Arguments
 
   - x:
-
+    
     A bound recipe or execution result carrying release metadata.
 
   - output:
-
+    
     Optional exact output name.
 
   - component:
-
+    
     Optional exact component name.
 
 ## Value

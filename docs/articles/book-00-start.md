@@ -19,16 +19,7 @@ also works. Download the book helpers below; you do not need a Git
 checkout.
 
 Run this **installation block once**, before the examples. It installs
-every package used by the lessons, the offline server and the
-reproduction tools. Installation changes your library and is not
-executed during the book build. This is an **A-29 development preview**:
-no 2.10.5 release tag existed at build time. Obtain the matching source
-directories or package archives from your study team. In the authoring
-workspace the defaults below select the two local `feat/2.10.5-numbers`
-worktrees; elsewhere set the two environment variables to your supplied
-paths. A future release can replace these two local installs with its
-published tags. This preview does not ask you to install a nonexistent
-tag.
+every package used by the lessons, the offline server and the helpers.
 
 ``` r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
@@ -36,17 +27,15 @@ install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
 remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
 remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
-server_source <- Sys.getenv("BOOK_SERVER_SOURCE", "/workspace/dsomop/wt/numbers/dsOMOP")
-client_source <- Sys.getenv("BOOK_CLIENT_SOURCE", "/workspace/dsomop/wt/numbers/dsOMOPClient")
-remotes::install_local(server_source, upgrade = "never")
-remotes::install_local(client_source, upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
 ```
 
 The *client* is the package on your computer. The *server* runs requests
-near the data; DSLite lets you run it locally for practice. Pandoc is
-also needed to rebuild the site (RStudio includes it). The [reproduction
-notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md)
-record the dependency versions used for this book.
+near the data; DSLite lets you run it locally for practice. Record the
+installed versions with your study, as shown in [Checking and recording
+a
+study](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md).
 
 ## Get the book helpers
 
@@ -62,14 +51,14 @@ unzip(file.choose(), exdir = book_dir)
 setwd(book_dir)
 stopifnot(all(file.exists(file.path("tools/book",
   c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R", "case-helpers.R")))),
-  file.exists("tools/dates/va-native.R"))
+  file.exists("tools/book/capstone.R"))
 getwd()
 ```
 
 The last line prints your home directory followed by `/book-work`. In
 every new R session run `setwd(path.expand("~/book-work"))` before the
-chapter setup. The ZIP preserves `tools/book/` and `tools/dates/`
-automatically. Alternatively, save the individual
+chapter setup. The ZIP preserves `tools/book/` automatically.
+Alternatively, save the individual
 [practice](https://isglobal-brge.github.io/dsOMOPClient/downloads/practice.R),
 [fixture](https://isglobal-brge.github.io/dsOMOPClient/downloads/fixture.R),
 [connection](https://isglobal-brge.github.io/dsOMOPClient/downloads/connection.R),
@@ -81,10 +70,15 @@ loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-numeric.R)
 and [formula
 helpers](https://isglobal-brge.github.io/dsOMOPClient/downloads/case-helpers.R)
 files under `book-work/tools/book/`. Keep the numeric loader filename
-`load-numeric.R`; the practice loader sources it. Also create
-`book-work/tools/dates/` and save the [released capstone
-helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/va-native.R)
-there as `va-native.R`; chapter 18’s solution uses it.
+`load-numeric.R`; the practice loader sources it. Save the [capstone
+helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/capstone.R)
+in `book-work/tools/book/`; chapter 18’s solution uses it.
+
+`display.R` formats released summaries, tables and returned symbol
+mappings for reading. It does not retrieve patient rows. `practice.R`
+defines `book_connect()` and the local practice server; it reads the
+connection settings and attaches the selected resource. Source these
+downloaded files in the order shown in each chapter.
 
 `connection.R` is the one place to select DSLite or Opal and set the
 Opal URL, project, profile and two resource names. Leave its defaults
@@ -98,7 +92,7 @@ vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
        function(package) as.character(packageVersion(package)), character(1))
 ```
 
-    #> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient
+    #> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient 
     #>     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"
 
 ``` r
@@ -124,16 +118,9 @@ reducers on its own.
 
 The administrator loader is
 [tools/book/load-practice.R](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R).
-It downloads pinned [Eunomia
-datasets](https://github.com/OHDSI/EunomiaDatasets), verifies archive
-checksums and loads two SQLite files. For Synthea it calls the [numeric
-validation
-loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-numeric.R)
-unchanged, then copies its typed DuckDB tables into portable SQLite,
-checking all 39 row counts. Dates retain ISO calendar text and numeric
-values retain numeric types. The temporary DuckDB copy is removed. This
-adds the `duckdb` package to the installation block above. From your
-`book-work` R session, run the loader once:
+It downloads the two [Eunomia
+datasets](https://github.com/OHDSI/EunomiaDatasets) and creates the
+SQLite databases used by the lessons. Run it once from `book-work`:
 
 ``` r
 system2(file.path(R.home("bin"), "Rscript"),
@@ -145,17 +132,17 @@ stopifnot(file.exists("../practice-data/gibleed.sqlite"),
 It uses the installed DBI, RSQLite, duckdb, withr, openssl and jsonlite
 packages. The source data are Apache-2.0 licensed; keep their
 [license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)
-with redistributed copies. The recorded loader results are in the
-reproduction notes.
+with redistributed copies.
 
 **Note**
 
-Chapters 5, 7, 9, 10 and 12–14 also use a tiny, separately labelled
-questionnaire **test fixture** for the colleague’s exact education,
-cause-of-death and partial-date examples. Its 24 fictional people and
-invented question concepts are not GiBleed or Synthea. It is created
-temporarily by `tools/book/fixture.R`, not installed as a third practice
-resource. Each chapter states its dataset.
+The categorical, date and mortality lessons also use a small **synthetic
+questionnaire dataset**, created temporarily by `fixture.R`. It contains
+education, fever, visits and causes of death, including missing answers
+and partial birth dates. Its category and formula exercises add clearly
+labelled synthetic vocabulary relationships and standardized creatinine
+inputs. It is separate from the two practice resources; each chapter
+identifies its dataset.
 
 ## Open the practice server
 
@@ -204,16 +191,16 @@ against the [easy-opal
 source](https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py)
 and [opalr resource
 API](https://www.obiba.org/opalr/reference/opal.resource_create.html).
-The book build tested both databases and all analyst chapters with
-DSLite. **A live easy-opal deployment was not run for this revision:
-Docker was unavailable.** The success lines below are acceptance
-criteria, not recorded Opal output.
+These lessons were tested with DSLite and both practice databases. **A
+live easy-opal deployment was not run for this revision: Docker was
+unavailable.** The success lines below are acceptance criteria, not
+recorded Opal output.
 
 ### Start the practice stack and mount the databases
 
-On the Docker host, install Docker with Compose V2, then install
-easy-opal. Obtain the helper ZIP and load the two databases there
-exactly as above. The host layout must be `~/book-work/tools/book/` and
+On the Docker host, install Docker with Compose, then install easy-opal.
+Obtain the helper ZIP and load the two databases there exactly as above.
+The host layout must be `~/book-work/tools/book/` and
 `~/practice-data/`. Run in a terminal:
 
 ``` sh
@@ -382,7 +369,7 @@ Solution 2
 vapply(c("DSI", "DSLite", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
 ```
 
-    #>          DSI       DSLite dsOMOPClient
+    #>          DSI       DSLite dsOMOPClient 
     #>      "1.8.0"      "1.5.0"     "2.10.5"
 
 These are client packages. The server installs dsOMOP and dsBase
@@ -400,7 +387,7 @@ source("tools/book/connection.R")
 resource_names
 ```
 
-    #>   gibleed   numeric
+    #>   gibleed   numeric 
     #> "gibleed" "numeric"
 
 Both named resources are required. Changing a host belongs in this one
