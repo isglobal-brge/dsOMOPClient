@@ -55,7 +55,7 @@ The ZIP creates `tools/book/` inside `book-work`. In each new R session, run
 `setwd(path.expand("~/book-work"))` before starting a chapter.
 
 The helpers open the practice connection and print summaries as readable tables.
-`connection.R` supplies `book_connect()` and `book_switch()`;
+`connection.R` supplies `book_connect()`, `book_switch()` and `book_disconnect()`;
 `display.R` supplies the display functions. Each chapter shows which files to
 source. No patient rows are fetched by the display helpers.
 
@@ -69,7 +69,7 @@ vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
 ```
 
 ```
-#> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient 
+#> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient
 #>     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"
 ```
 
@@ -245,8 +245,7 @@ a person count, rather than checking only that a connection has a name.
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
-DSI::datashield.logout(conns)
+book_disconnect()
 practice <- book_connect("gibleed")
 conns <- practice$conns
 knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
@@ -259,7 +258,8 @@ knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site
 | 2690|    2690|
 
 The count is back to the 2,690–2,694 band. Disconnect closes the database handle;
-logout closes the DataSHIELD session. Opening a new session starts new work.
+logout closes the DataSHIELD session. `book_disconnect()` performs both steps
+and clears the practice helper’s session record. Opening a new session starts new work.
 
 </details>
 

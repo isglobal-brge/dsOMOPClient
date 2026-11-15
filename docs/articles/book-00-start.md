@@ -2,24 +2,19 @@
 
 **What you will learn**
 
-Install the client, open a practice connection, and check both package
-versions.
-
-This chapter creates the public synthetic GiBleed practice connection.
-Run the sections in order in one R session. All printed results below
-were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching
-data, not clinical findings.
+Install the packages, load the practice data and open a connection.
 
 ## Before you start
 
 You need R 4.1 or newer and internet access for installation and the
-practice data download. The lessons use a local DSLite practice server.
-RStudio is a convenient editor; ordinary R also works. Download the book
-helpers below; you do not need a Git checkout.
+data download. RStudio is a convenient editor; ordinary R also works.
+The lessons use synthetic data and a local DataSHIELD server provided by
+DSLite. The results teach analysis methods; they are not clinical
+findings.
 
-Run this **installation block once**, before the examples. It installs
-every package needed by the client, the local practice server and the
-helpers.
+Run this **installation block once**. It installs the client, the local
+server and the packages used throughout the book. Installation is not
+executed here.
 
 ``` r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
@@ -31,59 +26,31 @@ remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
 remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
 ```
 
-The *client* is the package on your computer. The *server* runs requests
-near the data; DSLite lets you run it locally for practice. Record the
-installed versions with your study, as shown in [Checking and recording
-a
-study](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md).
+The *client* runs on your computer. The *server* runs requests near the
+data; DSLite lets you run both locally for practice.
 
 ## Get the book helpers
 
-The book helpers are distributed separately from the package. Download
-[book-helpers.zip](https://isglobal-brge.github.io/dsOMOPClient/downloads/book-helpers.zip)
-from this site, leaving it zipped in your Downloads folder. In R, run
-this block and select that ZIP when the file chooser opens:
+Download
+[book-helpers.zip](https://isglobal-brge.github.io/dsOMOPClient/downloads/book-helpers.zip),
+leave it zipped, and select it when the file chooser opens. This creates
+your working folder:
 
 ``` r
 book_dir <- path.expand("~/book-work")
 dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
 unzip(file.choose(), exdir = book_dir)
 setwd(book_dir)
-stopifnot(all(file.exists(file.path("tools/book",
-  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R", "case-helpers.R")))),
-  file.exists("tools/book/capstone.R"))
-getwd()
 ```
 
-The last line prints your home directory followed by `/book-work`. In
-every new R session run `setwd(path.expand("~/book-work"))` before the
-chapter setup. The ZIP preserves `tools/book/` automatically.
-Alternatively, save the individual
-[practice](https://isglobal-brge.github.io/dsOMOPClient/downloads/practice.R),
-[fixture](https://isglobal-brge.github.io/dsOMOPClient/downloads/fixture.R),
-[connection](https://isglobal-brge.github.io/dsOMOPClient/downloads/connection.R),
-[display](https://isglobal-brge.github.io/dsOMOPClient/downloads/display.R)
-and [practice
-loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R)
-and [numeric
-loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-numeric.R)
-and [formula
-helpers](https://isglobal-brge.github.io/dsOMOPClient/downloads/case-helpers.R)
-files under `book-work/tools/book/`. Keep the numeric loader filename
-`load-numeric.R`; the practice loader sources it. Save the [capstone
-helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/capstone.R)
-in `book-work/tools/book/`; chapter 18’s solution uses it.
+The ZIP creates `tools/book/` inside `book-work`. In each new R session,
+run `setwd(path.expand("~/book-work"))` before starting a chapter.
 
-`display.R` formats released summaries, tables and returned symbol
-mappings for reading. It does not retrieve patient rows. `practice.R`
-defines the local practice server. `connection.R` defines
-`book_connect()`, which reads the connection settings and attaches the
-selected resource. Source these downloaded files in the order shown in
-each chapter.
-
-Leave `connection.R` at its defaults for local practice. The [Opal
-connection chunk](#connect-to-your-opal-server) below replaces those
-defaults for a session on your study server.
+The helpers open the practice connection and print summaries as readable
+tables. `connection.R` supplies `book_connect()`, `book_switch()` and
+`book_disconnect()`; `display.R` supplies the display functions. Each
+chapter shows which files to source. No patient rows are fetched by the
+display helpers.
 
 ## Check the client
 
@@ -93,160 +60,95 @@ vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
        function(package) as.character(packageVersion(package)), character(1))
 ```
 
-    #> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient 
+    #> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient
     #>     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"
 
-``` r
-ds.omop.client.version()
-```
-
-    #> [1] "2.10.5"
-
-This reports the package on your computer. A correct client version
-alone does not prove that the server has the matching methods.
+These are the packages installed on your computer. This check catches a
+missing package before you connect; it does not establish that a remote
+server is ready.
 
 ## Load two public synthetic datasets
 
-The practice server has two resources. **GiBleed** supports the
-introductory schema and vocabulary lessons. **Synthea27Nj** supplies
-hemoglobin and other numeric measurements with units for [Working with
-lab
-values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md).
-Both contain fictional patients; “numeric” means populated numeric
-fields, not real patient records. GiBleed has 44,053 measurement rows
-but no populated `value_as_number`, so it cannot teach lab-value
-reducers on its own.
+**GiBleed** supplies the people, visits, conditions and medicines for
+the first chapters. **Synthea27Nj** supplies numeric lab values and
+units. GiBleed has no numeric lab values, so the lab chapters use
+Synthea27Nj.
 
-The local practice loader is
-[tools/book/load-practice.R](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R).
-It downloads the two [Eunomia
-datasets](https://github.com/OHDSI/EunomiaDatasets) and creates the
-SQLite databases used by the lessons. Run it once from `book-work`:
+Run the loader once from `book-work`. It downloads the public [Eunomia
+datasets](https://github.com/OHDSI/EunomiaDatasets) and prepares the two
+local databases. We keep only its short data summary on screen:
 
 ``` r
 source("tools/book/load-practice.R")
-load_book_practice("../practice-data")
+loader_log <- capture.output(data_info <- load_book_practice("../practice-data"))
+knitr::kable(do.call(rbind, lapply(data_info, function(x)
+  data.frame(Dataset = x$dataset, People = x$tables$person,
+    Measurements = x$measurements$rows,
+    `Numeric values` = x$measurements$numeric_values, check.names = FALSE))),
+  row.names = FALSE)
 ```
 
-    #> $dataset
-    #> [1] "Synthea27Nj"
-    #> 
-    #> $archive_bytes
-    #> [1] 3351707
-    #> 
-    #> $measurements
-    #> $measurements$rows
-    #> [1] 10040
-    #> 
-    #> $measurements$numeric
-    #> [1] 9107
-    #> 
-    #> $measurements$mapped_unit
-    #> [1] 8403
-    #> 
-    #> $measurements$numeric_and_mapped_unit
-    #> [1] 8403
-    #> 
-    #> $measurements$numeric_fraction
-    #> [1] 0.9070717
-    #> 
-    #> $measurements$mapped_unit_fraction
-    #> [1] 0.8369522
-    #> 
-    #> $measurements$both_fraction
-    #> [1] 0.8369522
-    #> 
-    #> $measurements$reference_ranges
-    #> [1] 0
-    #> 
-    #> 
-    #> $gibleed
-    #> $gibleed$dataset
-    #> [1] "GiBleed"
-    #> 
-    #> $gibleed$sha256
-    #> [1] "081b82e84c90e2904e02c26546e46412b01cce566071c77e0c4a355c2d0612f9"
-    #> 
-    #> $gibleed$measurements
-    #> $gibleed$measurements$rows
-    #> [1] 44053
-    #> 
-    #> $gibleed$measurements$numeric_values
-    #> [1] 0
-    #> 
-    #> $gibleed$measurements$numeric_with_unit
-    #> [1] 0
-    #> 
-    #> 
-    #> 
-    #> $numeric
-    #> $numeric$dataset
-    #> [1] "Synthea27Nj"
-    #> 
-    #> $numeric$sha256
-    #> [1] "cdd3971be325e17b0e872bf4560711ab4c346917ecb079e2faf32badb55cb693"
-    #> 
-    #> $numeric$measurements
-    #> $numeric$measurements$rows
-    #> [1] 10040
-    #> 
-    #> $numeric$measurements$numeric_values
-    #> [1] 9107
-    #> 
-    #> $numeric$measurements$numeric_with_unit
-    #> [1] 8403
+| Dataset     | People | Measurements | Numeric values |
+| :---------- | -----: | -----------: | -------------: |
+| GiBleed     |   2694 |        44053 |              0 |
+| Synthea27Nj |     28 |        10040 |           9107 |
+
+GiBleed has 2,694 people and 44,053 measurement rows, but zero numeric
+values. Synthea27Nj has 28 people and 10,040 measurement rows, including
+9,107 numeric values. These are exact counts because you are loading
+public synthetic data, acting as its custodian. An analyst’s protected
+query later reports 44,050 for GiBleed’s measurement rows: the lower end
+of a five-row band. The source data use the Apache-2.0 licence; keep
+that licence with redistributed copies.
+
+## The questionnaire dataset
+
+The categorical, date and mortality lessons use a separate synthetic
+dataset: 48 people in four groups of twelve. Two groups answer the
+education question twice, swapping Secondary and University between
+their first and last answers. One group has only a birth year; one has
+neither visits nor a death record. The following table describes the
+public teaching data before any analysis:
 
 ``` r
-stopifnot(file.exists("../practice-data/gibleed.sqlite"),
-          file.exists("../practice-data/numeric.sqlite"))
+source("tools/book/fixture.R")
+knitr::kable(book_fixture_structure())
 ```
 
-The output reports both loaded datasets. GiBleed has 44,053 measurement
-rows and zero numeric values; Synthea has 10,040 rows, including 9,107
-numeric values and 8,403 numeric values with a mapped unit. The checks
-confirm that both local databases exist.
+| Item                        | Total | Female | Male |
+| :-------------------------- | ----: | -----: | ---: |
+| People                      |    48 |     20 |   28 |
+| Education respondents       |    24 |     10 |   14 |
+| Education answer rows       |    48 |     20 |   28 |
+| Fever answer rows           |    24 |     10 |   14 |
+| Inpatient visits            |    24 |     10 |   14 |
+| Outpatient visits           |    36 |     14 |   22 |
+| 2023: myocardial infarction |    12 |      4 |    8 |
+| 2023: pneumonia             |     6 |      3 |    3 |
+| 2024: myocardial infarction |    12 |      4 |    8 |
+| 2024: pneumonia             |     6 |      3 |    3 |
+| Survivors                   |    12 |      6 |    6 |
 
-It uses the installed DBI, RSQLite, duckdb, withr, openssl and jsonlite
-packages. The source data are Apache-2.0 licensed; keep their
-[license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)
-with redistributed copies.
-
-**Note**
-
-The categorical, date and mortality lessons also use a small **synthetic
-questionnaire dataset**, created temporarily by `fixture.R`. It contains
-education, fever, visits and causes of death, including missing answers
-and partial birth dates. Its category and formula exercises add clearly
-labelled synthetic vocabulary relationships and standardized creatinine
-inputs. It is separate from the two practice resources; each chapter
-identifies its dataset.
+There are 24 education respondents but 48 education answer rows: an
+answer row is not a person. There are 18 deaths in each of 2023 and
+2024, and 12 survivors. The sex columns add to each total and let you
+predict later count tables. Some later exercises add medicine histories
+or duplicate weights; those sections explain the added data when needed.
 
 ## Open the practice server
 
-Use `book-work` as your R working directory after running the
-installation block above. DSLite executes real DataSHIELD methods inside
-R; this helper creates one server with both loaded resources and
-attaches GiBleed.
+Each chapter starts with its own setup block. Copy it as shown:
 
 ``` r
 source("tools/book/display.R")
 source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+practice <- book_connect("gibleed")
 conns <- practice$conns
-names(conns)
 ```
 
-    #> [1] "site"
-
-`conns` holds connections, not patient rows. The other resource is named
-`numeric`. Every chapter includes its complete fresh-session setup,
-including assigning `conns <- practice$conns`. Numeric chapters select
-`"numeric"` through the same configuration. Questionnaire chapters
-source `fixture.R` and call `practice <- book_fixture()` before
-assigning `conns`; this is always local DSLite.
-
-## Check the server
+`conns` holds the connection, not patient rows. The resource name
+`gibleed` selects the database; `numeric` and `questionnaire` select the
+other datasets.
 
 ``` r
 ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
@@ -255,120 +157,94 @@ ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready
     #>   server published running ready
     #> 1   site    2.10.5  2.10.5  TRUE
 
-The reply comes from the server. `ready` confirms that the running
-package and the methods available to your session agree.
+`ready` confirms that the server’s running package and available methods
+agree. This checks the server installation, independently of the
+selected database.
 
 ## Connect to your Opal server
 
-Your administrator has already set up the server and gives you its URL,
-your user and password (or token), the resource names and the DataSHIELD
-profile. Use those details in this connection chunk.
-
-In a fresh session, replace the chapter’s local connection chunk with
-the block below. It is not executed here: the printed chapter results
-use the local practice data. Use `"numeric"` instead of `"gibleed"` in
-the final attach call for a numeric-data chapter; the analysis code that
-follows the connection is the same.
+Your administrator supplies the server URL, your user and password (or
+token), the project-qualified resource names and the DataSHIELD profile.
+The server is already set up. Replace the chapter’s local connection
+lines with this block, keeping its `display.R` source line:
 
 ``` r
 library(dsOMOPClient)
 library(DSOpal)
-source("tools/book/display.R")
-source("tools/book/connection.R", local = TRUE)
-source("tools/book/practice.R")
-book_driver <- "Opal"
-opal_url <- "<server-url>"
-opal_project <- "<project>"
-opal_resources <- c(gibleed = "<gibleed-resource>", numeric = "<numeric-resource>")
-opal_profile <- "<profile>"
-resource_names <- book_resource_names(book_driver, opal_project, opal_resources)
-Sys.setenv(BOOK_OPAL_USER = "<user>", BOOK_OPAL_PASSWORD = "<password>")
 builder <- DSI::newDSLoginBuilder()
-builder$append(server = "site", url = opal_url,
-  user = Sys.getenv("BOOK_OPAL_USER"), password = Sys.getenv("BOOK_OPAL_PASSWORD"),
-  driver = "OpalDriver", profile = opal_profile)
+builder$append(server = "site", url = "<server-url>",
+  user = "<user>", password = "<password>",
+  driver = "OpalDriver", profile = "<profile>")
 conns <- DSI::datashield.login(builder$build(), assign = FALSE)
-ds.omop.connect(resource = resource_names[["gibleed"]], conns = conns)
-practice <- list(conns = conns, path = character())
-names(conns)
+ds.omop.connect(resource = "<project>.<gibleed-resource>", conns = conns)
 ```
 
-Keep credentials in your private R session, outside shared study
-scripts. If you receive an access token, set `Sys.setenv(BOOK_OPAL_TOKEN
-= "<token>")` instead of the user and password, and replace the
-builder’s `user` and `password` arguments with `token =
-Sys.getenv("BOOK_OPAL_TOKEN")`. Later calls to `book_connect()` use the
-same token. Resource names include their project prefix, for example
-`study.measurements`; enter the project and resource parts separately
-above. The two names in `opal_resources` map the book’s datasets to the
-resources you were given. Your study data will produce different results
-from the practice data.
+Keep credentials outside shared scripts. If you receive a token, replace
+the `user` and `password` arguments with `token = "<token>"`. The
+analysis calls use the same `conns`; your study data will give different
+results.
 
-[Chapter 2](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md)
-explains attaching resources and switching between them. Chapters that
-introduce the synthetic questionnaire or a local two-site example
-identify that practice setup explicitly.
+Where a practice chapter uses `book_switch()`, use the corresponding
+resource name supplied by your administrator instead:
 
-## Try it
+``` r
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "<project>.<numeric-resource>", conns = conns)
+```
 
-Ask the client and server for their versions again. Which call needs a
-connection?
+This attaches another database through the existing login. A two-site
+lesson requires two supplied resources and connections; local
+data-generation options do not create data on an Opal server.
+
+## Exercise 1: choose the lab resource
+
+Open the numeric resource and request its person count. How can you tell
+that you are no longer querying GiBleed?
 
 Solution
 
 ``` r
-ds.omop.client.version()
+practice <- book_switch("numeric")
+conns <- practice$conns
+knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
 ```
 
-    #> [1] "2.10.5"
+| rows | persons |
+| ---: | ------: |
+|   25 |      25 |
+
+The person count is 25, meaning 25–29 people. That band contains
+Synthea27Nj’s 28 people and is far below GiBleed’s 2,694. Chapter 1
+explains these bands.
+
+## Exercise 2: reconnect after finishing
+
+Close the numeric session, then open GiBleed again. Confirm the database
+with a person count, rather than checking only that a connection has a
+name.
+
+Solution
 
 ``` r
-ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+book_disconnect()
+practice <- book_connect("gibleed")
+conns <- practice$conns
+knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
 ```
 
-    #>   server published running ready
-    #> 1   site    2.10.5  2.10.5  TRUE
+| rows | persons |
+| ---: | ------: |
+| 2690 |    2690 |
 
-## Exercise 2: a common variant
-
-Which packages run locally?
-
-Solution 2
-
-``` r
-vapply(c("DSI", "DSLite", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
-```
-
-    #>          DSI       DSLite dsOMOPClient 
-    #>      "1.8.0"      "1.5.0"     "2.10.5"
-
-DSI and dsOMOPClient handle analyst requests. DSLite runs the practice
-server locally, using the dsOMOP and dsBase packages installed in the
-same block.
-
-## Exercise 3: a pitfall to avoid
-
-Check that the shared resource configuration names both practice
-datasets.
-
-Solution 3
-
-``` r
-source("tools/book/connection.R")
-resource_names
-```
-
-    #>   gibleed   numeric 
-    #> "gibleed" "numeric"
-
-These names select the two local practice datasets. The Opal connection
-chunk replaces them with the resource names supplied by your
-administrator.
+The count is back to the 2,690–2,694 band. Disconnect closes the
+database handle; logout closes the DataSHIELD session.
+`book_disconnect()` performs both steps and clears the practice helper’s
+session record. Opening a new session starts new work.
 
 ## Recap
 
-You can distinguish your client installation from the server
-installation and have a practice connection.
+Your working folder contains the helpers, the practice data are loaded,
+and `conns` lets you send requests to the selected database.
 
 **Next:** [1. What DataSHIELD and OMOP
 mean](https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.md).

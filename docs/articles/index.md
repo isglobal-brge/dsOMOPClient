@@ -53,8 +53,8 @@
     trajectories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-21-case-glucose.md):
   - [22. Case study: drug
     utilisation](https://isglobal-brge.github.io/dsOMOPClient/articles/book-22-case-drug.md):
-  - [23. Case study: a harmonised
-    Table 1](https://isglobal-brge.github.io/dsOMOPClient/articles/book-23-case-table1.md):
+  - [23. Case study: describing the same population across two
+    sites](https://isglobal-brge.github.io/dsOMOPClient/articles/book-23-case-table1.md):
 
 ### Reference guides
 

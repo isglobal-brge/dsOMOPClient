@@ -682,7 +682,7 @@ matrix, leaving out the proportion matrices:
 
 
 ``` r
-site_counts <- paired_counts$output.list$TABLE_rvar.by.study_counts
+site_counts <- book_site_counts(paired_counts)
 colnames(site_counts) <- names(conns)
 knitr::kable(site_counts)
 ```
@@ -775,7 +775,7 @@ first_answers <- omop_recipe(variables = list(education = omop_variable(
 invisible(recipe_execute(first_answers, out = "D_first_pair", conns = conns))
 first_counts <- dsBaseClient::ds.table("D_first_pair$education",
   useNA = "always", datasources = conns)
-first_site_counts <- first_counts$output.list$TABLE_rvar.by.study_counts
+first_site_counts <- book_site_counts(first_counts)
 colnames(first_site_counts) <- names(conns)
 knitr::kable(first_site_counts)
 ```

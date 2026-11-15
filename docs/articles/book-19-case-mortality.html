@@ -58,7 +58,7 @@
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: describing the same population across two sites</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -93,477 +93,513 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Define the mortality denominator, retain missing causes and ages, and report cause-specific rates for a calendar period.</p>
+<p>Define a calendar-year risk set, calculate cause-specific deaths and person-years, and compare crude rates by sex, age at period start and year.</p>
 </div>
-<p><strong>You need:</strong> <a href="book-00-start.html#before-you-start">the installed packages and practice resources</a>, <a href="book-04-vocabulary.html">concept discovery</a>, and the preceding tutorial chapters. Run these sections in order in a fresh <code>book-work</code> session. All observations are public synthetic teaching data; the numerical results are not clinical evidence.</p>
+<p><strong>You need:</strong> <a href="book-00-start.html">the setup and questionnaire dataset</a>, and <a href="book-18-capstone.html">the cause-of-death capstone</a>. Start a fresh R session in <code>book-work</code>.</p>
 <div class="section level2">
-<h2 id="research-question-and-data-boundary">Research question and data boundary<a class="anchor" aria-label="anchor" href="#research-question-and-data-boundary"></a>
+<h2 id="research-question">Research question<a class="anchor" aria-label="anchor" href="#research-question"></a>
 </h2>
-<p>How many deaths from each recorded cause occur in 2024, and how much observed person-time supports those counts? This worked example uses the synthetic <strong>questionnaire dataset</strong>. Every person is observed throughout 2024 until death or the year end. The dataset contains equal numbers of female and male residents, so we can calculate each group’s person-time and cause-specific rate.</p>
+<p>How do recorded cause-specific mortality rates differ between 2023 and 2024? The questionnaire data have deaths in both years. Everyone is observed from 2019 through 2025, with observation for this analysis stopping at death. Thus the population alive at each year’s start can contribute the whole year or time up to death. In a dataset with gaps or later entry, intersect each observation interval with the analysis year as well.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"questionnaire"</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="find-the-cause-and-answer-concepts">Find the cause and answer concepts<a class="anchor" aria-label="anchor" href="#find-the-cause-and-answer-concepts"></a>
+<h2 id="find-the-causes">Find the causes<a class="anchor" aria-label="anchor" href="#find-the-causes"></a>
 </h2>
-<p>Repeat chapter 4’s local catalogue search. These fixture concepts have no external Maps to or ancestry contract. Their domain separates question, answer and cause.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">catalogue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>, limit <span class="op">=</span> <span class="fl">100</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">catalogue</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">catalogue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">900201L</span>, <span class="fl">900202L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">catalogue</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 <th align="left">domain_id</th>
-<th align="left">standard_concept</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">Education question</td>
-<td align="left">Observation</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">Fever question</td>
-<td align="left">Observation</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Secondary education</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">University education</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
+<td align="right">900201</td>
 <td align="left">Myocardial infarction</td>
 <td align="left">Condition</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">900202</td>
 <td align="left">Pneumonia</td>
 <td align="left">Condition</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Yes</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">FEMALE</td>
-<td align="left">Gender</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">MALE</td>
-<td align="left">Gender</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">No</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Inpatient Visit</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">Outpatient Visit</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Education answer</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">Practice medicine</td>
-<td align="left">Drug</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Practice measurement</td>
-<td align="left">Measurement</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">kilogram</td>
-<td align="left">Unit</td>
-<td align="left">S</td>
 </tr>
 </tbody>
 </table>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">catalogue</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">catalogue</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span></span>
-<span><span class="va">cause_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span><span class="op">]</span>, <span class="va">omop_concept_set</span><span class="op">)</span></span>
-<span><span class="va">death_prevalence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"death"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">death_prevalence</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">death_prevalence</span><span class="op">)</span>, <span class="st">"concept_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"death"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="right">n_persons</th>
 <th align="left">concept_name</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="right">900201</td>
+<td align="right">20</td>
+<td align="left">Myocardial infarction</td>
+</tr>
+<tr class="even">
+<td align="right">900202</td>
 <td align="right">10</td>
-<td align="left">Myocardial infarction</td>
-</tr>
-<tr class="even">
-<td align="right">5</td>
 <td align="left">Pneumonia</td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section level2">
-<h2 id="define-the-private-cause-of-death-table">Define the private cause-of-death table<a class="anchor" aria-label="anchor" href="#define-the-private-cause-of-death-table"></a>
-</h2>
-<p>The all-person population retains survivors. Completed age at death preserves missing birth components. The cause is the coded answer, not free source text. The two flags count cause-specific deaths; all deaths in this fixture occur in 2024.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="va">cause_sets</span><span class="op">[[</span><span class="st">"Myocardial infarction"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">pneumonia</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="va">cause_sets</span><span class="op">[[</span><span class="st">"Pneumonia"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">mortality</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_category_spec.html">omop_category</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"sex"</span>, table <span class="op">=</span> <span class="st">"person"</span>, column <span class="op">=</span> <span class="st">"gender_concept_id"</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/omop_category_spec.html">omop_category_spec</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  cause <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"cause_concept_id"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  age_band <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_bins</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">40</span>, <span class="fl">121</span><span class="op">)</span>,</span>
-<span>    labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 40"</span>, <span class="st">"40 and over"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  period <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"year"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  death_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_time_between</a></span><span class="op">(</span><span class="st">"2024-01-01"</span>, <span class="st">"death"</span><span class="op">)</span>,</span>
-<span>  mi <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">mi</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"binary"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  pneumonia <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">pneumonia</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"binary"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">mortality</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_mortality"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;        output </span></span>
-<span><span class="co">#&gt; "D_mortality"</span></span></code></pre>
+<code class="sourceCode R"><span><span class="va">mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="fl">900201L</span><span class="op">)</span></span>
+<span><span class="va">pneumonia</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="fl">900202L</span><span class="op">)</span></span></code></pre></div>
+<p>Myocardial infarction is <strong>900201</strong> and Pneumonia is <strong>900202</strong>. The inventory’s person counts are rounded down to multiples of five: 20 and 10 indicate bands 20–24 and 10–14. They are not period-specific numerators; we calculate those next.</p>
+</div>
+<div class="section level2">
+<h2 id="define-age-for-everyone-at-risk">Define age for everyone at risk<a class="anchor" aria-label="anchor" href="#define-age-for-everyone-at-risk"></a>
+</h2>
+<p>Age at death cannot classify survivors’ person-time. Use completed age at the <strong>start of the year</strong>, preserving missing age where the birth date is incomplete. Each binary cause indicator looks only within the selected year. A missing cause is distinct from no recorded death from that cause.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">period_recipe</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">start</span>, <span class="va">days</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">window</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">days</span> <span class="op">-</span> <span class="fl">1</span>, anchor <span class="op">=</span> <span class="va">start</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="va">start</span><span class="op">)</span>,</span>
+<span>    death_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_time_between</a></span><span class="op">(</span><span class="va">start</span>, <span class="st">"death"</span><span class="op">)</span>,</span>
+<span>    mi <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">mi</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"binary"</span>, window <span class="op">=</span> <span class="va">window</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    pneumonia <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">pneumonia</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"binary"</span>, window <span class="op">=</span> <span class="va">window</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="fu">period_recipe</span><span class="op">(</span><span class="st">"2024-01-01"</span>, <span class="fl">366</span><span class="op">)</span>, out <span class="op">=</span> <span class="st">"D_2024"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_2024"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">death_days</span><span class="op">)</span> <span class="op">|</span> <span class="va">death_days</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_alive_2024"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_alive_2024"</span>, potential_days <span class="op">=</span> <span class="fu">coalesce</span><span class="op">(</span><span class="va">death_days</span>, <span class="fl">366</span><span class="op">)</span>,</span>
+<span>  risk_days <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">potential_days</span> <span class="op">&gt;</span> <span class="fl">366</span>, <span class="fl">366</span>, <span class="va">potential_days</span><span class="op">)</span>,</span>
+<span>  age_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span>, <span class="st">"Missing"</span>, <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&lt;</span> <span class="fl">40</span>, <span class="st">"under 40"</span>, <span class="st">"40 and over"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  cause <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">mi</span> <span class="op">==</span> <span class="fl">1</span>, <span class="st">"Myocardial infarction"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">pneumonia</span> <span class="op">==</span> <span class="fl">1</span>, <span class="st">"Pneumonia"</span>, <span class="st">"Neither selected cause"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_risk_2024"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Remove people already dead before January 1. A survivor contributes 366 days in 2024; someone who dies contributes elapsed days to death, excluding the death day. We convert days to person-years using <strong>365.25</strong>, a fixed unit conversion; it does not change the actual 366-day calendar boundary.</p>
+</div>
+<div class="section level2">
+<h2 id="look-at-deaths-before-calculating-rates">Look at deaths before calculating rates<a class="anchor" aria-label="anchor" href="#look-at-deaths-before-calculating-rates"></a>
+</h2>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_mortality"</span>, <span class="st">"cause"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_mortality$cause</span></span>
-<span><span class="co">#&gt; Myocardial infarction             Pneumonia </span></span>
-<span><span class="co">#&gt;                    12                     6</span></span></code></pre>
-<p>The output keeps missing cause separate from an observed cause. In a mortality study, restrict cause events to the analysis period and intersect residency intervals with follow-up. Do not borrow this dataset’s complete residency assumption.</p>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_table2</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_risk_2024$cause"</span>,</span>
+<span>  <span class="st">"D_risk_2024$sex"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">F</th>
+<th align="right">M</th>
+<th align="right">NA</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Myocardial infarction</td>
+<td align="right">4</td>
+<td align="right">8</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">Neither selected cause</td>
+<td align="right">6</td>
+<td align="right">6</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">Pneumonia</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>F means female and M means male. In 2024 there are four female and eight male myocardial-infarction deaths, and three pneumonia deaths in each sex. Six people of each sex survive the year. The “Neither selected cause” row contains survivors in this dataset; in another study it could also contain other causes. The denominators include survivors’ time.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_table2</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_risk_2024$cause"</span>,</span>
+<span>  <span class="st">"D_risk_2024$age_group"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">40 and over</th>
+<th align="right">Missing</th>
+<th align="right">under 40</th>
+<th align="right">NA</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Myocardial infarction</td>
+<td align="right">6</td>
+<td align="right">6</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">Neither selected cause</td>
+<td align="right">12</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">Pneumonia</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">6</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>Six pneumonia deaths are under 40 at period start. Six myocardial-infarction deaths are 40 or over and six have missing age. Keep the missing-age group in the calculation so that these deaths and their person-time do not disappear.</p>
 </div>
 <div class="section level2">
-<h2 id="count-causes-by-age-band">Count causes by age band<a class="anchor" aria-label="anchor" href="#count-causes-by-age-band"></a>
+<h2 id="calculate-crude-rates-and-uncertainty">Calculate crude rates and uncertainty<a class="anchor" aria-label="anchor" href="#calculate-crude-rates-and-uncertainty"></a>
 </h2>
+<p>The following function combines only released aggregates. Multiplying a released mean by its valid N obtains the total for that same column. Every cause indicator and the time column must describe the same complete roster. The exact Poisson interval treats person-time as fixed and deaths as a Poisson count.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_mortality$cause"</span>, <span class="st">"D_mortality$age_band"</span>,</span>
-<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $output.list</span></span>
-<span><span class="co">#&gt; $output.list$TABLE.STUDY.site_row.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$age_band</span></span>
-<span><span class="co">#&gt; D_mortality$cause       under 40 40 and over  NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction        0         0.5 0.5</span></span>
-<span><span class="co">#&gt;   Pneumonia                    1         0.0 0.0</span></span>
-<span><span class="co">#&gt;   NA                           0         0.0 1.0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE.STUDY.site_col.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$age_band</span></span>
-<span><span class="co">#&gt; D_mortality$cause       under 40 40 and over  NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction        0           1 0.5</span></span>
-<span><span class="co">#&gt;   Pneumonia                    1           0 0.0</span></span>
-<span><span class="co">#&gt;   NA                           0           0 0.5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_row.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$age_band</span></span>
-<span><span class="co">#&gt; D_mortality$cause       under 40 40 and over  NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction        0         0.5 0.5</span></span>
-<span><span class="co">#&gt;   Pneumonia                    1         0.0 0.0</span></span>
-<span><span class="co">#&gt;   NA                           0         0.0 1.0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_col.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$age_band</span></span>
-<span><span class="co">#&gt; D_mortality$cause       under 40 40 and over  NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction        0           1 0.5</span></span>
-<span><span class="co">#&gt;   Pneumonia                    1           0 0.0</span></span>
-<span><span class="co">#&gt;   NA                           0           0 0.5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_STUDY.site_counts</span></span>
-<span><span class="co">#&gt;                        D_mortality$age_band</span></span>
-<span><span class="co">#&gt; D_mortality$cause       under 40 40 and over NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction        0           6  6</span></span>
-<span><span class="co">#&gt;   Pneumonia                    6           0  0</span></span>
-<span><span class="co">#&gt;   NA                           0           0  6</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_counts</span></span>
-<span><span class="co">#&gt;                        D_mortality$age_band</span></span>
-<span><span class="co">#&gt; D_mortality$cause       under 40 40 and over NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction        0           6  6</span></span>
-<span><span class="co">#&gt;   Pneumonia                    6           0  0</span></span>
-<span><span class="co">#&gt;   NA                           0           0  6</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validity.message</span></span>
-<span><span class="co">#&gt; [1] "Data in all studies were valid"</span></span></code></pre>
-<p>Missing age remains visible. Dropping it would silently lose deaths with partial birth dates. Fine age-by-sex-by-period cells may be withheld: combine categories only when the study question supports the broader estimand.</p>
-</div>
-<div class="section level2">
-<h2 id="count-causes-by-sex">Count causes by sex<a class="anchor" aria-label="anchor" href="#count-causes-by-sex"></a>
-</h2>
-<p>The catalogue identifies the two Gender concepts as FEMALE and MALE. Count the observed causes in each group before calculating its rate.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_mortality$cause"</span>, <span class="st">"D_mortality$sex"</span>,</span>
-<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $output.list</span></span>
-<span><span class="co">#&gt; $output.list$TABLE.STUDY.site_row.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$sex</span></span>
-<span><span class="co">#&gt; D_mortality$cause       MALE FEMALE NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction  0.5    0.5  0</span></span>
-<span><span class="co">#&gt;   Pneumonia              0.5    0.5  0</span></span>
-<span><span class="co">#&gt;   NA                     0.5    0.5  0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE.STUDY.site_col.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$sex</span></span>
-<span><span class="co">#&gt; D_mortality$cause       MALE FEMALE  NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction 0.50   0.50 NaN</span></span>
-<span><span class="co">#&gt;   Pneumonia             0.25   0.25 NaN</span></span>
-<span><span class="co">#&gt;   NA                    0.25   0.25 NaN</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_row.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$sex</span></span>
-<span><span class="co">#&gt; D_mortality$cause       MALE FEMALE NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction  0.5    0.5  0</span></span>
-<span><span class="co">#&gt;   Pneumonia              0.5    0.5  0</span></span>
-<span><span class="co">#&gt;   NA                     0.5    0.5  0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_col.props</span></span>
-<span><span class="co">#&gt;                        D_mortality$sex</span></span>
-<span><span class="co">#&gt; D_mortality$cause       MALE FEMALE  NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction 0.50   0.50 NaN</span></span>
-<span><span class="co">#&gt;   Pneumonia             0.25   0.25 NaN</span></span>
-<span><span class="co">#&gt;   NA                    0.25   0.25 NaN</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_STUDY.site_counts</span></span>
-<span><span class="co">#&gt;                        D_mortality$sex</span></span>
-<span><span class="co">#&gt; D_mortality$cause       MALE FEMALE NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction    6      6  0</span></span>
-<span><span class="co">#&gt;   Pneumonia                3      3  0</span></span>
-<span><span class="co">#&gt;   NA                       3      3  0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_counts</span></span>
-<span><span class="co">#&gt;                        D_mortality$sex</span></span>
-<span><span class="co">#&gt; D_mortality$cause       MALE FEMALE NA</span></span>
-<span><span class="co">#&gt;   Myocardial infarction    6      6  0</span></span>
-<span><span class="co">#&gt;   Pneumonia                3      3  0</span></span>
-<span><span class="co">#&gt;   NA                       3      3  0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validity.message</span></span>
-<span><span class="co">#&gt; [1] "Data in all studies were valid"</span></span></code></pre>
-<p>Each sex-specific denominator must use that group’s own observed person-time. Survivors contribute time even though they have no death cause.</p>
-</div>
-<div class="section level2">
-<h2 id="calculate-the-period-rate">Calculate the period rate<a class="anchor" aria-label="anchor" href="#calculate-the-period-rate"></a>
-</h2>
-<p>2024 has 366 days. Stop each deceased person’s contribution at death and each survivor’s contribution at the end of the year. Divide released mean indicators by released mean follow-up: the common person count cancels. This works because both means use the same complete roster, not different nonmissing subsets.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_mortality"</span>, risk_days <span class="op">=</span> <span class="fu">coalesce</span><span class="op">(</span><span class="va">death_days</span>, <span class="fl">366</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_mortality_rate"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_mortality_rate"</span></span></code></pre>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mean_days</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_mortality_rate$risk_days"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">mean_mi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_mortality_rate$mi"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">mean_pneumonia</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_mortality_rate$pneumonia"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">rates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Period <span class="op">=</span> <span class="st">"2024"</span>, Cause <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span>,</span>
-<span>  Per_1000_person_years <span class="op">=</span> <span class="fl">1000</span> <span class="op">*</span> <span class="fl">365.25</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">mean_mi</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span>,</span>
-<span>    <span class="va">mean_pneumonia</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="va">mean_days</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">rates</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">released_rates</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">table</span>, <span class="va">group</span>, <span class="va">year</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">days</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">table</span>, <span class="st">"$risk_days"</span><span class="op">)</span>,</span>
+<span>    type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
+<span>  <span class="va">py</span> <span class="op">&lt;-</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span> <span class="op">*</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span> <span class="op">/</span> <span class="fl">365.25</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mi <span class="op">=</span> <span class="st">"Myocardial infarction"</span>, pneumonia <span class="op">=</span> <span class="st">"Pneumonia"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">cause</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">variable</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">cause</span> <span class="op">==</span> <span class="st">"Pneumonia"</span><span class="op">)</span> <span class="st">"pneumonia"</span> <span class="kw">else</span> <span class="st">"mi"</span></span>
+<span>    <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">table</span>, <span class="st">"$"</span>, <span class="va">variable</span><span class="op">)</span>,</span>
+<span>      type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span> <span class="op">==</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nmissing"</span><span class="op">]</span> <span class="op">==</span> <span class="fl">0</span>,</span>
+<span>      <span class="va">days</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nmissing"</span><span class="op">]</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span>    <span class="va">deaths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="va">ci</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/poisson.test.html" class="external-link">poisson.test</a></span><span class="op">(</span><span class="va">deaths</span>, T <span class="op">=</span> <span class="va">py</span><span class="op">)</span><span class="op">$</span><span class="va">conf.int</span> <span class="op">*</span> <span class="fl">1000</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Year <span class="op">=</span> <span class="va">year</span>, Group <span class="op">=</span> <span class="va">group</span>, Cause <span class="op">=</span> <span class="va">cause</span>, People <span class="op">=</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span>,</span>
+<span>      Deaths <span class="op">=</span> <span class="va">deaths</span>, Person_years <span class="op">=</span> <span class="va">py</span>, Rate_per_1000 <span class="op">=</span> <span class="fl">1000</span> <span class="op">*</span> <span class="va">deaths</span> <span class="op">/</span> <span class="va">py</span>,</span>
+<span>      Lower_95 <span class="op">=</span> <span class="va">ci</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, Upper_95 <span class="op">=</span> <span class="va">ci</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">rates_2024</span> <span class="op">&lt;-</span> <span class="fu">released_rates</span><span class="op">(</span><span class="st">"D_risk_2024"</span>, <span class="st">"All"</span>, <span class="fl">2024</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">rates_2024</span>, digits <span class="op">=</span> <span class="fl">2</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Period</th>
+<th align="right">Year</th>
+<th align="left">Group</th>
 <th align="left">Cause</th>
-<th align="right">Per_1000_person_years</th>
+<th align="right">People</th>
+<th align="right">Deaths</th>
+<th align="right">Person_years</th>
+<th align="right">Rate_per_1000</th>
+<th align="right">Lower_95</th>
+<th align="right">Upper_95</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">2024</td>
+<td align="right">2024</td>
+<td align="left">All</td>
 <td align="left">Myocardial infarction</td>
-<td align="right">1013.1761</td>
+<td align="right">30</td>
+<td align="right">12</td>
+<td align="right">22.03</td>
+<td align="right">544.74</td>
+<td align="right">281.48</td>
+<td align="right">951.56</td>
 </tr>
 <tr class="even">
-<td align="left">2024</td>
+<td align="right">2024</td>
+<td align="left">All</td>
 <td align="left">Pneumonia</td>
-<td align="right">506.5881</td>
+<td align="right">30</td>
+<td align="right">6</td>
+<td align="right">22.03</td>
+<td align="right">272.37</td>
+<td align="right">99.96</td>
+<td align="right">592.84</td>
 </tr>
 </tbody>
 </table>
-<p>These rates describe an intentionally tiny synthetic population with many deaths. These teaching results do not estimate mortality in a real population. A count divided by all enrolled people is a risk, not a person-time rate.</p>
+<p>In 2024, 30 people contribute 22.03 person-years. The myocardial-infarction rate is 544.74 per 1,000 person-years (95% CI 281.48–951.56), and the pneumonia rate is 272.37 (99.96–592.84). These intervals describe uncertainty in the rates. These are <strong>crude</strong> rates: they do not adjust for the age distribution. The intentionally high mortality in this small synthetic population is a teaching example, not an estimate for a clinical population.</p>
 </div>
 <div class="section level2">
-<h2 id="calculate-female-and-male-rates">Calculate female and male rates<a class="anchor" aria-label="anchor" href="#calculate-female-and-male-rates"></a>
+<h2 id="use-each-groups-own-denominator">Use each group’s own denominator<a class="anchor" aria-label="anchor" href="#use-each-groups-own-denominator"></a>
 </h2>
-<p>Filter the same private table for each sex. Each group retains its survivors; the numerator and denominator use the same complete roster within that group. Only the protected means are returned for the rate calculation.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sex_rates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"FEMALE"</span>, <span class="st">"MALE"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">sex_label</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">symbol</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_risk_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">tolower</a></span><span class="op">(</span><span class="va">sex_label</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_mortality_rate"</span>, var <span class="op">=</span> <span class="st">"sex"</span>, op <span class="op">=</span> <span class="st">"=="</span>, value <span class="op">=</span> <span class="va">sex_label</span>,</span>
-<span>    newobj <span class="op">=</span> <span class="va">symbol</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span>  <span class="va">days</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">symbol</span>, <span class="st">"$risk_days"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
-<span>  <span class="va">mi_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">symbol</span>, <span class="st">"$mi"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
-<span>  <span class="va">pneumonia_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">symbol</span>, <span class="st">"$pneumonia"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">mi_mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span> <span class="op">==</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span>,</span>
-<span>    <span class="va">pneumonia_mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span> <span class="op">==</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Period <span class="op">=</span> <span class="st">"2024"</span>, Sex <span class="op">=</span> <span class="va">sex_label</span>, Cause <span class="op">=</span> <span class="va">rates</span><span class="op">$</span><span class="va">Cause</span>,</span>
-<span>    Per_1000_person_years <span class="op">=</span> <span class="fl">1000</span> <span class="op">*</span> <span class="fl">365.25</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">mi_mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span>, <span class="va">pneumonia_mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="va">days</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sex_rates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"F"</span>, <span class="st">"M"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">label</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_risk_2024"</span>, var <span class="op">=</span> <span class="st">"sex"</span>, op <span class="op">=</span> <span class="st">"=="</span>, value <span class="op">=</span> <span class="va">label</span>,</span>
+<span>    newobj <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_sex_"</span>, <span class="va">label</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">released_rates</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_sex_"</span>, <span class="va">label</span><span class="op">)</span>, <span class="kw">if</span> <span class="op">(</span><span class="va">label</span> <span class="op">==</span> <span class="st">"F"</span><span class="op">)</span> <span class="st">"Female"</span> <span class="kw">else</span> <span class="st">"Male"</span>, <span class="fl">2024</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">sex_rates</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">age_rates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 40"</span>, <span class="st">"40 and over"</span>, <span class="st">"Missing"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">label</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_age_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">label</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 40"</span>, <span class="st">"40 and over"</span>, <span class="st">"Missing"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_risk_2024"</span>, var <span class="op">=</span> <span class="st">"age_group"</span>, op <span class="op">=</span> <span class="st">"=="</span>, value <span class="op">=</span> <span class="va">label</span>,</span>
+<span>    newobj <span class="op">=</span> <span class="va">object</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">released_rates</span><span class="op">(</span><span class="va">object</span>, <span class="va">label</span>, <span class="fl">2024</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">sex_rates</span>, digits <span class="op">=</span> <span class="fl">2</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Period</th>
-<th align="left">Sex</th>
+<th align="right">Year</th>
+<th align="left">Group</th>
 <th align="left">Cause</th>
-<th align="right">Per_1000_person_years</th>
+<th align="right">People</th>
+<th align="right">Deaths</th>
+<th align="right">Person_years</th>
+<th align="right">Rate_per_1000</th>
+<th align="right">Lower_95</th>
+<th align="right">Upper_95</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">2024</td>
-<td align="left">FEMALE</td>
+<td align="right">2024</td>
+<td align="left">Female</td>
 <td align="left">Myocardial infarction</td>
-<td align="right">1013.1761</td>
+<td align="right">13</td>
+<td align="right">4</td>
+<td align="right">9.55</td>
+<td align="right">418.98</td>
+<td align="right">114.16</td>
+<td align="right">1072.77</td>
 </tr>
 <tr class="even">
-<td align="left">2024</td>
-<td align="left">FEMALE</td>
+<td align="right">2024</td>
+<td align="left">Female</td>
 <td align="left">Pneumonia</td>
-<td align="right">506.5881</td>
+<td align="right">13</td>
+<td align="right">3</td>
+<td align="right">9.55</td>
+<td align="right">314.24</td>
+<td align="right">64.80</td>
+<td align="right">918.34</td>
 </tr>
 <tr class="odd">
-<td align="left">2024</td>
-<td align="left">MALE</td>
+<td align="right">2024</td>
+<td align="left">Male</td>
 <td align="left">Myocardial infarction</td>
-<td align="right">1013.1761</td>
+<td align="right">17</td>
+<td align="right">8</td>
+<td align="right">12.48</td>
+<td align="right">640.93</td>
+<td align="right">276.71</td>
+<td align="right">1262.89</td>
 </tr>
 <tr class="even">
-<td align="left">2024</td>
-<td align="left">MALE</td>
+<td align="right">2024</td>
+<td align="left">Male</td>
 <td align="left">Pneumonia</td>
-<td align="right">506.5881</td>
+<td align="right">17</td>
+<td align="right">3</td>
+<td align="right">12.48</td>
+<td align="right">240.35</td>
+<td align="right">49.57</td>
+<td align="right">702.40</td>
 </tr>
 </tbody>
 </table>
-<p>The rates are equal because this synthetic dataset repeats the same death and follow-up patterns in both groups. A real study can use the same calculation without assuming equal rates or equal follow-up.</p>
-</div>
-<div class="section level2">
-<h2 id="compare-calendar-periods-without-reusing-the-wrong-denominator">Compare calendar periods without reusing the wrong denominator<a class="anchor" aria-label="anchor" href="#compare-calendar-periods-without-reusing-the-wrong-denominator"></a>
-</h2>
-<p>In the preceding year, 2023, all 24 fixture residents remain alive and observed through the year end. Apply a period predicate to each cause event and cap risk time at the 365-day year. This example deliberately has zero deaths in that period.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mi_2023</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="va">cause_sets</span><span class="op">[[</span><span class="st">"Myocardial infarction"</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>  where <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">death_date</span> <span class="op">&gt;=</span> <span class="st">"2023-01-01"</span>, <span class="va">death_date</span> <span class="op">&lt;</span> <span class="st">"2024-01-01"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">pneumonia_2023</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="va">cause_sets</span><span class="op">[[</span><span class="st">"Pneumonia"</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>  where <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">death_date</span> <span class="op">&gt;=</span> <span class="st">"2023-01-01"</span>, <span class="va">death_date</span> <span class="op">&lt;</span> <span class="st">"2024-01-01"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">earlier</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  mi <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">mi_2023</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"binary"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  pneumonia <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">pneumonia_2023</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"binary"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  until_death <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_time_between</a></span><span class="op">(</span><span class="st">"2023-01-01"</span>, <span class="st">"death"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">earlier</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_mortality_2023"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;             output </span></span>
-<span><span class="co">#&gt; "D_mortality_2023"</span></span></code></pre>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_mortality_2023"</span>, potential_days <span class="op">=</span> <span class="fu">coalesce</span><span class="op">(</span><span class="va">until_death</span>, <span class="fl">365</span><span class="op">)</span>,</span>
-<span>  risk_days <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">potential_days</span> <span class="op">&gt;</span> <span class="fl">365</span>, <span class="fl">365</span>, <span class="va">potential_days</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_risk_2023"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_risk_2023"</span></span></code></pre>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">earlier_days</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_risk_2023$risk_days"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">earlier_mi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_risk_2023$mi"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">earlier_pneumonia</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_risk_2023$pneumonia"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">earlier_rates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Period <span class="op">=</span> <span class="st">"2023"</span>, Cause <span class="op">=</span> <span class="va">rates</span><span class="op">$</span><span class="va">Cause</span>,</span>
-<span>  Per_1000_person_years <span class="op">=</span> <span class="fl">1000</span> <span class="op">*</span> <span class="fl">365.25</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">earlier_mi</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span>,</span>
-<span>    <span class="va">earlier_pneumonia</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="va">earlier_days</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">earlier_rates</span>, <span class="va">rates</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">age_rates</span>, digits <span class="op">=</span> <span class="fl">2</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Period</th>
+<th align="right">Year</th>
+<th align="left">Group</th>
 <th align="left">Cause</th>
-<th align="right">Per_1000_person_years</th>
+<th align="right">People</th>
+<th align="right">Deaths</th>
+<th align="right">Person_years</th>
+<th align="right">Rate_per_1000</th>
+<th align="right">Lower_95</th>
+<th align="right">Upper_95</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">2023</td>
+<td align="right">2024</td>
+<td align="left">under 40</td>
 <td align="left">Myocardial infarction</td>
-<td align="right">0.0000</td>
+<td align="right">6</td>
+<td align="right">0</td>
+<td align="right">1.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">3076.17</td>
 </tr>
 <tr class="even">
-<td align="left">2023</td>
+<td align="right">2024</td>
+<td align="left">under 40</td>
 <td align="left">Pneumonia</td>
-<td align="right">0.0000</td>
+<td align="right">6</td>
+<td align="right">6</td>
+<td align="right">1.20</td>
+<td align="right">5003.42</td>
+<td align="right">1836.17</td>
+<td align="right">10890.35</td>
 </tr>
 <tr class="odd">
-<td align="left">2024</td>
+<td align="right">2024</td>
+<td align="left">40 and over</td>
 <td align="left">Myocardial infarction</td>
-<td align="right">1013.1761</td>
+<td align="right">18</td>
+<td align="right">6</td>
+<td align="right">17.53</td>
+<td align="right">342.31</td>
+<td align="right">125.62</td>
+<td align="right">745.08</td>
 </tr>
 <tr class="even">
-<td align="left">2024</td>
+<td align="right">2024</td>
+<td align="left">40 and over</td>
 <td align="left">Pneumonia</td>
-<td align="right">506.5881</td>
+<td align="right">18</td>
+<td align="right">0</td>
+<td align="right">17.53</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">210.46</td>
+</tr>
+<tr class="odd">
+<td align="right">2024</td>
+<td align="left">Missing</td>
+<td align="left">Myocardial infarction</td>
+<td align="right">6</td>
+<td align="right">6</td>
+<td align="right">3.30</td>
+<td align="right">1817.16</td>
+<td align="right">666.87</td>
+<td align="right">3955.20</td>
+</tr>
+<tr class="even">
+<td align="right">2024</td>
+<td align="left">Missing</td>
+<td align="left">Pneumonia</td>
+<td align="right">6</td>
+<td align="right">0</td>
+<td align="right">3.30</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1117.22</td>
 </tr>
 </tbody>
 </table>
-<p>The zero rate is a released estimate for this defined synthetic period, not a replacement for suppression. A general mortality analysis must additionally remove people who died before the period and intersect each residency interval with it.</p>
+<p>The male myocardial-infarction rate is 640.93 per 1,000 person-years (95% CI 276.71–1,262.89), against 418.98 (114.16–1,072.77) in females. The intervals overlap. Under-40 pneumonia has six deaths in only 1.20 person-years, giving 5,003.42 per 1,000 person-years: a rate can exceed 1,000 because it is not a percentage. Age-specific rates use the age group’s own time, including survivors. A zero observed count has a positive upper confidence limit; it does not establish that the underlying rate is zero. Small cells may be withheld in other datasets; never replace a withheld result with zero.</p>
 </div>
 <div class="section level2">
 <h2 id="exercises">Exercises<a class="anchor" aria-label="anchor" href="#exercises"></a>
 </h2>
-<p><strong>1 (basic).</strong> Count the calendar-period labels.</p>
+<p><strong>1. Repeat the analysis for 2023.</strong> Use 365 calendar days. Does the same number of deaths imply the same rate?</p>
 <details><p><summary>Solution 1</summary></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_mortality"</span>, <span class="st">"period"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_mortality$period</span></span>
-<span><span class="co">#&gt; 2024 </span></span>
-<span><span class="co">#&gt;   18</span></span></code></pre>
-<p>Observed deaths belong to 2024; survivors have no death-period label.</p>
-</details><p><strong>2 (intermediate).</strong> Report the same rates per 100,000 person-years.</p>
-<details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="va">rates</span>, Per_100000_person_years <span class="op">=</span> <span class="fl">100</span> <span class="op">*</span> <span class="va">Per_1000_person_years</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="fu">period_recipe</span><span class="op">(</span><span class="st">"2023-01-01"</span>, <span class="fl">365</span><span class="op">)</span>, out <span class="op">=</span> <span class="st">"D_2023"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_2023"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">death_days</span><span class="op">)</span> <span class="op">|</span> <span class="va">death_days</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_alive_2023"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_alive_2023"</span>, potential_days <span class="op">=</span> <span class="fu">coalesce</span><span class="op">(</span><span class="va">death_days</span>, <span class="fl">365</span><span class="op">)</span>,</span>
+<span>  risk_days <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">potential_days</span> <span class="op">&gt;</span> <span class="fl">365</span>, <span class="fl">365</span>, <span class="va">potential_days</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_risk_2023"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">rates_2023</span> <span class="op">&lt;-</span> <span class="fu">released_rates</span><span class="op">(</span><span class="st">"D_risk_2023"</span>, <span class="st">"All"</span>, <span class="fl">2023</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">rates_2023</span>, <span class="va">rates_2024</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Period</th>
+<th align="right">Year</th>
+<th align="left">Group</th>
 <th align="left">Cause</th>
-<th align="right">Per_1000_person_years</th>
-<th align="right">Per_100000_person_years</th>
+<th align="right">People</th>
+<th align="right">Deaths</th>
+<th align="right">Person_years</th>
+<th align="right">Rate_per_1000</th>
+<th align="right">Lower_95</th>
+<th align="right">Upper_95</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">2024</td>
+<td align="right">2023</td>
+<td align="left">All</td>
 <td align="left">Myocardial infarction</td>
-<td align="right">1013.1761</td>
-<td align="right">101317.61</td>
+<td align="right">48</td>
+<td align="right">12</td>
+<td align="right">39.93</td>
+<td align="right">300.49</td>
+<td align="right">155.27</td>
+<td align="right">524.90</td>
 </tr>
 <tr class="even">
-<td align="left">2024</td>
+<td align="right">2023</td>
+<td align="left">All</td>
 <td align="left">Pneumonia</td>
-<td align="right">506.5881</td>
-<td align="right">50658.81</td>
+<td align="right">48</td>
+<td align="right">6</td>
+<td align="right">39.93</td>
+<td align="right">150.25</td>
+<td align="right">55.14</td>
+<td align="right">327.02</td>
+</tr>
+<tr class="odd">
+<td align="right">2024</td>
+<td align="left">All</td>
+<td align="left">Myocardial infarction</td>
+<td align="right">30</td>
+<td align="right">12</td>
+<td align="right">22.03</td>
+<td align="right">544.74</td>
+<td align="right">281.48</td>
+<td align="right">951.56</td>
+</tr>
+<tr class="even">
+<td align="right">2024</td>
+<td align="left">All</td>
+<td align="left">Pneumonia</td>
+<td align="right">30</td>
+<td align="right">6</td>
+<td align="right">22.03</td>
+<td align="right">272.37</td>
+<td align="right">99.96</td>
+<td align="right">592.84</td>
 </tr>
 </tbody>
 </table>
-<p>Only public aggregate arithmetic changed. Person-time did not change.</p>
-</details><p><strong>3 (advanced).</strong> Check that the numerator and denominator used the same valid population size before cancelling their denominators.</p>
-<details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>same_mi_roster <span class="op">=</span> <span class="va">mean_mi</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span> <span class="op">==</span> <span class="va">mean_days</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span>,</span>
-<span>  same_pneumonia_roster <span class="op">=</span> <span class="va">mean_pneumonia</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span> <span class="op">==</span> <span class="va">mean_days</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;        same_mi_roster same_pneumonia_roster </span></span>
-<span><span class="co">#&gt;                  TRUE                  TRUE</span></span></code></pre>
-<p>Both must be TRUE. Also establish the same person membership from the definition; equal counts alone would not prove identical rosters in arbitrary tables.</p>
+<p>Both years have 12 myocardial-infarction and six pneumonia deaths. The 2023 risk set contains 48 people; the 2024 risk set contains 30 after excluding 18 earlier deaths. In 2023, 39.93 person-years give rates of 300.49 for myocardial infarction (95% CI 155.27–524.90) and 150.25 for pneumonia (55.14–327.02). More person-time in 2023 gives lower rates despite equal numerators.</p>
+</details><p><strong>2. Distinguish a risk from a rate.</strong> What fraction of those alive at the start of 2024 die from each cause during that year?</p>
+<details><p><summary>Solution 2</summary></p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Cause <span class="op">=</span> <span class="va">rates_2024</span><span class="op">$</span><span class="va">Cause</span>,</span>
+<span>  Deaths <span class="op">=</span> <span class="va">rates_2024</span><span class="op">$</span><span class="va">Deaths</span>, People_at_start <span class="op">=</span> <span class="va">rates_2024</span><span class="op">$</span><span class="va">People</span>,</span>
+<span>  Percent <span class="op">=</span> <span class="fl">100</span> <span class="op">*</span> <span class="va">rates_2024</span><span class="op">$</span><span class="va">Deaths</span> <span class="op">/</span> <span class="va">rates_2024</span><span class="op">$</span><span class="va">People</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Cause</th>
+<th align="right">Deaths</th>
+<th align="right">People_at_start</th>
+<th align="right">Percent</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Myocardial infarction</td>
+<td align="right">12</td>
+<td align="right">30</td>
+<td align="right">40</td>
+</tr>
+<tr class="even">
+<td align="left">Pneumonia</td>
+<td align="right">6</td>
+<td align="right">30</td>
+<td align="right">20</td>
+</tr>
+</tbody>
+</table>
+<p>The risks are 40% for myocardial infarction and 20% for pneumonia over 2024. Their denominator is 30 people, whereas the rate denominator is person-years. This simple risk calculation relies on complete follow-up to death or year end.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Define causes and residency before computing rates. Keep unknown age and cause visible, stop risk time at death, and state when missing sex or small cells prevent the requested stratification. The same period-specific definition must be rerun for each calendar period; a death-year label is not a person-time denominator.</p>
+<p>Restrict both deaths and person-time to the same year. Define age for survivors as well as decedents, preserve missing-age time, and report counts, denominators, rates and uncertainty together.</p>
 <p><strong>Next:</strong> <a href="book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -58,7 +58,7 @@
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: describing the same population across two sites</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -93,392 +93,340 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Find meanings, look up names and define a reusable concept set.</p>
+<p>Search for a meaning, inspect its hierarchy and clinical use, then save a concept set.</p>
 </div>
-<p>This chapter uses the public synthetic GiBleed practice connection from <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.</p>
+<p><strong>You need:</strong> the packages, helpers and loaded practice data from <a href="book-00-start.html#before-you-start">Getting started</a>. Start a fresh R session in <code>book-work</code> and run the sections in order. Start with GiBleed; later sections switch to questionnaire data and Synthea27Nj.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
-<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">book_driver</span> <span class="op">==</span> <span class="st">"DSLite"</span><span class="op">)</span> <span class="fu">book_practice</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
-<p>The <code>site</code> connection is ready. The shared <code>connection.R</code> selects DSLite or Opal and resolves the resource names.</p>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="search-a-name-then-narrow-the-meaning">Search a name, then narrow the meaning<a class="anchor" aria-label="anchor" href="#search-a-name-then-narrow-the-meaning"></a>
 </h2>
-<p>A concept is a public vocabulary meaning. Start broadly, then constrain the domain (kind of clinical fact), vocabulary (coding system) and standard status. Standard concepts are the preferred OMOP targets; classification concepts group them, and source concepts may map to them. None of this establishes patient use.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>A concept is a public vocabulary meaning with a stable numeric ID. Its <strong>domain</strong> is the kind of fact, such as Condition or Measurement; its <strong>vocabulary</strong> is the coding system. Standard concepts (<code>S</code>) are preferred OMOP targets. Classification concepts (<code>C</code>) group meanings; non-standard source codes may map to standard ones.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="left">domain_id</th>
+<th align="left">vocabulary_id</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">4051466</td>
+<td align="left">Childhood asthma</td>
+<td align="left">Condition</td>
+<td align="left">SNOMED</td>
+</tr>
+<tr class="even">
+<td align="right">317009</td>
+<td align="left">Asthma</td>
+<td align="left">Condition</td>
+<td align="left">SNOMED</td>
+</tr>
+<tr class="odd">
+<td align="right">4062501</td>
+<td align="left">Asthma screening</td>
+<td align="left">Procedure</td>
+<td align="left">SNOMED</td>
+</tr>
+</tbody>
+</table>
+<p>The word matches Asthma, Childhood asthma and Asthma screening, a procedure. Keep the ID beside the name: a familiar word alone does not specify which meaning you intend.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, domain <span class="op">=</span> <span class="st">"Condition"</span>,</span>
+<span>  vocabulary <span class="op">=</span> <span class="st">"SNOMED"</span>, standard_only <span class="op">=</span> <span class="cn">TRUE</span>, valid <span class="op">=</span> <span class="cn">TRUE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">conditions</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="left">standard_concept</th>
+<th align="left">concept_class_id</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">4051466</td>
+<td align="left">Childhood asthma</td>
+<td align="left">S</td>
+<td align="left">Clinical Finding</td>
+</tr>
+<tr class="even">
+<td align="right">317009</td>
+<td align="left">Asthma</td>
+<td align="left">S</td>
+<td align="left">Clinical Finding</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">asthma_id</span> <span class="op">&lt;-</span> <span class="va">conditions</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">conditions</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Asthma"</span><span class="op">]</span></span></code></pre></div>
+<p>Asthma is <strong>317009</strong> and Childhood asthma is <strong>4051466</strong>. Both are standard SNOMED clinical findings in the Condition domain. The filters state the intended kind of code; they have not yet selected any people.</p>
+</div>
+<div class="section level2">
+<h2 id="read-a-concept-and-its-mappings">Read a concept and its mappings<a class="anchor" aria-label="anchor" href="#read-a-concept-and-its-mappings"></a>
+</h2>
+<p>Look up the chosen ID to confirm its identity:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">asthma_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="va">asthma_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">asthma_info</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 <th align="left">domain_id</th>
 <th align="left">vocabulary_id</th>
 <th align="left">standard_concept</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Childhood asthma</td>
-<td align="left">Condition</td>
-<td align="left">SNOMED</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
+<tbody><tr class="odd">
+<td align="right">317009</td>
 <td align="left">Asthma</td>
 <td align="left">Condition</td>
 <td align="left">SNOMED</td>
 <td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Asthma screening</td>
-<td align="left">Procedure</td>
-<td align="left">SNOMED</td>
-<td align="left">S</td>
-</tr>
-</tbody>
+</tr></tbody>
 </table>
-<p>Now keep valid standard SNOMED conditions. The explicit filters make the search reproducible; a word alone can also match findings or history-of conditions.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, domain <span class="op">=</span> <span class="st">"Condition"</span>,</span>
-<span>  vocabulary <span class="op">=</span> <span class="st">"SNOMED"</span>, standard_only <span class="op">=</span> <span class="cn">TRUE</span>, valid <span class="op">=</span> <span class="cn">TRUE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">conditions</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">concept_name</th>
-<th align="left">concept_class_id</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Childhood asthma</td>
-<td align="left">Clinical Finding</td>
-</tr>
-<tr class="even">
-<td align="left">Asthma</td>
-<td align="left">Clinical Finding</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">asthma_id</span> <span class="op">&lt;-</span> <span class="va">conditions</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">conditions</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Asthma"</span><span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">asthma_id</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Exercise 1 (basic).</strong> Broaden the query to non-standard concepts. Does that change the patient population yet?</p>
-<details><p><summary>Solution 1</summary></p>
+<p>The lookup confirms that 317009 means Asthma. For vocabulary validity dates, use the richer search metadata:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">broad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">broad</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">conditions</span><span class="op">[</span><span class="va">conditions</span><span class="op">$</span><span class="va">concept_id</span> <span class="op">==</span> <span class="va">asthma_id</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"valid_start_date"</span>, <span class="st">"valid_end_date"</span>, <span class="st">"invalid_reason"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
-<th align="left">vocabulary_id</th>
-<th align="left">standard_concept</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Childhood asthma</td>
-<td align="left">SNOMED</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">Asthma</td>
-<td align="left">SNOMED</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Asthma screening</td>
-<td align="left">SNOMED</td>
-<td align="left">S</td>
-</tr>
-</tbody>
-</table>
-<p>No: this is a catalogue search. No clinical rows have been selected.</p>
-</details>
-</div>
-<div class="section level2">
-<h2 id="read-a-concept-and-its-mappings">Read a concept and its mappings<a class="anchor" aria-label="anchor" href="#read-a-concept-and-its-mappings"></a>
-</h2>
-<p><code>lookup()</code> returns the compact identity fields; the filtered search above also returns the full metadata used here. The concept class says what sort of vocabulary item this is. Valid dates delimit its vocabulary validity, not the dates of patient records. An invalid reason is about a vocabulary entry, not a patient’s diagnosis.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">asthma_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="va">asthma_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">conditions</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="va">conditions</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">concept_id</span> <span class="op">==</span> <span class="va">asthma_id</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>,</span>
-<span>  <span class="st">"concept_class_id"</span>, <span class="st">"valid_start_date"</span>, <span class="st">"valid_end_date"</span>, <span class="st">"invalid_reason"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<colgroup>
-<col width="3%">
-<col width="13%">
-<col width="17%">
-<col width="17%">
-<col width="17%">
-<col width="15%">
-<col width="15%">
-</colgroup>
-<thead><tr class="header">
-<th align="left"></th>
-<th align="left">concept_name</th>
-<th align="left">standard_concept</th>
-<th align="left">concept_class_id</th>
 <th align="left">valid_start_date</th>
 <th align="left">valid_end_date</th>
 <th align="left">invalid_reason</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="left">2</td>
+<td align="right">317009</td>
 <td align="left">Asthma</td>
-<td align="left">S</td>
-<td align="left">Clinical Finding</td>
 <td align="left">1970-01-01</td>
 <td align="left">2099-12-31</td>
 <td align="left">NA</td>
 </tr></tbody>
 </table>
-<p>A source code’s <strong>Maps to</strong> relationship can identify its standard target. Inspect the relationship direction and target before using mapped expansion. A standard concept may map to itself; that is not an additional diagnosis.</p>
+<p>The validity interval is about the vocabulary entry, not patients’ diagnosis dates. A missing <code>invalid_reason</code> means the entry has not been marked invalid.</p>
+<p>A <strong>Maps to</strong> relationship connects a source code to its standard target. Find gastrointestinal haemorrhage to see a real mapping in this vocabulary:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bleeding</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Gastrointestinal hemorrhage"</span>, domain <span class="op">=</span> <span class="st">"Condition"</span>,</span>
+<span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bleeding</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="left">vocabulary_id</th>
+<th align="left">standard_concept</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">192671</td>
+<td align="left">Gastrointestinal hemorrhage</td>
+<td align="left">SNOMED</td>
+<td align="left">S</td>
+</tr></tbody>
+</table>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mappings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.relationships.html">ds.omop.concept.relationships</a></span><span class="op">(</span><span class="va">asthma_id</span>,</span>
-<span>  relationship_id <span class="op">=</span> <span class="st">"Maps to"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>returned_relationships <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">NROW</a></span><span class="op">(</span><span class="va">mappings</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   returned_relationships</span></span>
-<span><span class="co">#&gt; 1                      0</span></span></code></pre>
-<p>An empty relationship result means this practice vocabulary has no returned mapping for the requested direction. It does not establish that all source codes are standard; inspect the source code itself in your own vocabulary.</p>
+<code class="sourceCode R"><span><span class="va">bleeding_id</span> <span class="op">&lt;-</span> <span class="va">bleeding</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">bleeding</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Gastrointestinal hemorrhage"</span><span class="op">]</span></span></code></pre></div>
+<p>The standard SNOMED concept is <strong>192671</strong>. Inspect the mapping edges touching it:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mappings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.relationships.html">ds.omop.concept.relationships</a></span><span class="op">(</span><span class="va">bleeding_id</span>,</span>
+<span>  relationship_id <span class="op">=</span> <span class="st">"Maps to"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">mappings</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"related_concept_id"</span>, <span class="st">"related_concept_name"</span>,</span>
+<span>  <span class="st">"relationship_id"</span>, <span class="st">"direction"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">concept_id</th>
+<th align="left">related_concept_id</th>
+<th align="left">related_concept_name</th>
+<th align="left">relationship_id</th>
+<th align="left">direction</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">192671</td>
+<td align="left">35208414</td>
+<td align="left">Gastrointestinal hemorrhage, unspecified</td>
+<td align="left">Maps to</td>
+<td align="left">reverse</td>
+</tr></tbody>
+</table>
+<p><code>reverse</code> means the related concept <strong>35208414</strong> is the source of the mapping into the requested target <strong>192671</strong>. Inspect that source code explicitly:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">source_code</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, concept_id <span class="op">=</span> <span class="fl">35208414L</span>,</span>
+<span>  standard_only <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">source_code</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>,</span>
+<span>  <span class="st">"concept_code"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="left">vocabulary_id</th>
+<th align="left">concept_code</th>
+<th align="left">standard_concept</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">35208414</td>
+<td align="left">Gastrointestinal hemorrhage, unspecified</td>
+<td align="left">ICD10CM</td>
+<td align="left">K92.2</td>
+<td align="left">NA</td>
+</tr></tbody>
+</table>
+<p>The source is ICD10CM <strong>K92.2</strong>, Gastrointestinal hemorrhage, unspecified; its standard status is missing. It maps to the standard SNOMED target. A mapping translates a code; adding descendants instead broadens a clinical definition.</p>
 </div>
 <div class="section level2">
 <h2 id="walk-down-and-up-the-hierarchy">Walk down and up the hierarchy<a class="anchor" aria-label="anchor" href="#walk-down-and-up-the-hierarchy"></a>
 </h2>
-<p>Descendants are more specific meanings. Ancestors are broader meanings. A SNOMED parent can have many clinically different children: inspect before pooling.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">desc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">asthma_id</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">desc</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Descendants are more specific meanings; ancestors are broader meanings. Inspect them before including a whole branch in your study.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">desc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">asthma_id</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">desc</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 </tr></thead>
 <tbody><tr class="odd">
+<td align="right">4051466</td>
 <td align="left">Childhood asthma</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">child_id</span> <span class="op">&lt;-</span> <span class="va">desc</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">desc</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Childhood asthma"</span><span class="op">]</span></span>
-<span><span class="va">parents</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.ancestors.html">ds.omop.concept.ancestors</a></span><span class="op">(</span><span class="va">child_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">parents</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="va">parents</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">direction</span> <span class="op">==</span> <span class="st">"ancestor"</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"direction"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">child_id</span> <span class="op">&lt;-</span> <span class="va">desc</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">desc</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Childhood asthma"</span><span class="op">]</span></span></code></pre></div>
+<p>Childhood asthma (4051466) is a descendant of Asthma (317009). A set that includes descendants will include both meanings unless you exclude one.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parents</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.ancestors.html">ds.omop.concept.ancestors</a></span><span class="op">(</span><span class="va">child_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">parents</span><span class="op">[</span><span class="va">parents</span><span class="op">$</span><span class="va">direction</span> <span class="op">==</span> <span class="st">"ancestor"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"direction"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">direction</th>
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
+<th align="left">direction</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="left">ancestor</td>
+<td align="right">317009</td>
 <td align="left">Asthma</td>
+<td align="left">ancestor</td>
 </tr></tbody>
 </table>
-<p>The ancestors API returns relationships in both directions. Keep its <code>direction</code> column and select <code>"ancestor"</code> to walk upward: Childhood asthma has Asthma as a parent. The preceding descendant query walks downward from Asthma to Childhood asthma. A descendant row in the ancestors response is not a parent.</p>
-<p>For medicines, ATC is a classification vocabulary, so the default <code>standard_only = TRUE</code> can hide the class you need. This is a common pitfall.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">atc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>,</span>
-<span>  standard_only <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>returned_ATC_classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">NROW</a></span><span class="op">(</span><span class="va">atc</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   returned_ATC_classes</span></span>
-<span><span class="co">#&gt; 1                    0</span></span></code></pre>
-<p>If this subset vocabulary returns zero ATC classes, stop: no ATC-class study can be inferred from ingredient names. An authorised resource with that vocabulary is needed. Do not fabricate a class or silently substitute an ingredient.</p>
-<p>Only use a returned class when its description matches the protocol. The drug utilisation case study below expands the selected class and inspects its members.</p>
+<p>The <code>ancestor</code> row leads back to Asthma. This API can return both directions; selecting <code>direction == "ancestor"</code> is what makes this an upward walk.</p>
 </div>
 <div class="section level2">
 <h2 id="check-that-the-concept-occurs-here">Check that the concept occurs here<a class="anchor" aria-label="anchor" href="#check-that-the-concept-occurs-here"></a>
 </h2>
-<p>Vocabulary presence is different from clinical prevalence. Prevalence is a protected aggregate over a <strong>table</strong>, with <code>metric = "persons"</code> by default. It has no <code>concept_ids</code> filter: select the row from the returned protected table. A concept outside the requested top list need not be absent.</p>
+<p>A catalogue entry does not establish clinical use. Despite its name, <code>concept.prevalence()</code> returns protected <strong>person counts</strong> by default. A prevalence estimate would also need a defined population, period and denominator.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prevalence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>,</span>
-<span>  metric <span class="op">=</span> <span class="st">"persons"</span>, top_n <span class="op">=</span> <span class="fl">20</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">prevalence</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, metric <span class="op">=</span> <span class="st">"persons"</span>,</span>
+<span>  top_n <span class="op">=</span> <span class="fl">20</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">use</span><span class="op">[</span><span class="va">use</span><span class="op">$</span><span class="va">concept_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">asthma_id</span>, <span class="va">child_id</span>, <span class="va">bleeding_id</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
-<th align="right">n_persons</th>
 <th align="left">concept_name</th>
+<th align="right">n_persons</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
-<td align="right">80180</td>
-<td align="right">2690</td>
-<td align="left">Osteoarthritis</td>
-</tr>
-<tr class="even">
-<td align="right">40481087</td>
-<td align="right">2685</td>
-<td align="left">Viral sinusitis</td>
-</tr>
-<tr class="odd">
-<td align="right">4112343</td>
-<td align="right">2605</td>
-<td align="left">Acute viral pharyngitis</td>
-</tr>
-<tr class="even">
-<td align="right">260139</td>
-<td align="right">2540</td>
-<td align="left">Acute bronchitis</td>
-</tr>
-<tr class="odd">
-<td align="right">372328</td>
-<td align="right">2025</td>
-<td align="left">Otitis media</td>
-</tr>
-<tr class="even">
-<td align="right">28060</td>
-<td align="right">1675</td>
-<td align="left">Streptococcal sore throat</td>
-</tr>
-<tr class="odd">
-<td align="right">81151</td>
-<td align="right">1355</td>
-<td align="left">Sprain of ankle</td>
-</tr>
-<tr class="even">
-<td align="right">378001</td>
-<td align="right">850</td>
-<td align="left">Concussion with no loss of consciousness</td>
-</tr>
-<tr class="odd">
-<td align="right">4283893</td>
-<td align="right">830</td>
-<td align="left">Sinusitis</td>
-</tr>
-<tr class="even">
-<td align="right">257012</td>
-<td align="right">810</td>
-<td align="left">Chronic sinusitis</td>
-</tr>
-<tr class="odd">
-<td align="right">4027663</td>
-<td align="right">800</td>
-<td align="left">Peptic ulcer</td>
-</tr>
-<tr class="even">
-<td align="right">4294548</td>
-<td align="right">785</td>
-<td align="left">Acute bacterial sinusitis</td>
-</tr>
-<tr class="odd">
-<td align="right">4218389</td>
-<td align="right">705</td>
-<td align="left">Whiplash injury to neck</td>
-</tr>
-<tr class="even">
-<td align="right">78272</td>
-<td align="right">675</td>
-<td align="left">Sprain of wrist</td>
-</tr>
-<tr class="odd">
-<td align="right">4278672</td>
-<td align="right">510</td>
-<td align="left">Fracture of forearm</td>
-</tr>
-<tr class="even">
+<tbody><tr class="odd">
 <td align="right">192671</td>
-<td align="right">475</td>
 <td align="left">Gastrointestinal hemorrhage</td>
-</tr>
-<tr class="odd">
-<td align="right">4113008</td>
-<td align="right">460</td>
-<td align="left">Laceration of hand</td>
-</tr>
-<tr class="even">
-<td align="right">4152936</td>
-<td align="right">455</td>
-<td align="left">Laceration of thigh</td>
-</tr>
-<tr class="odd">
-<td align="right">4155034</td>
-<td align="right">455</td>
-<td align="left">Laceration of forearm</td>
-</tr>
-<tr class="even">
-<td align="right">4156265</td>
-<td align="right">455</td>
-<td align="left">Facial laceration</td>
-</tr>
-</tbody>
+<td align="right">475</td>
+</tr></tbody>
 </table>
-<p>Locate instead accepts concept IDs and reports which clinical columns use them. It is also protected: it is not a way to recover exact small cell counts.</p>
+<p>Only gastrointestinal haemorrhage appears in these top 20 results, with a band of 475–479 people. Neither asthma concept made this top list. Their absence is not evidence of zero use; the targeted locator below answers that question.</p>
+<p>Locate both IDs to check which tables and columns actually use them:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">asthma_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">locations</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">asthma_id</span>, <span class="va">child_id</span><span class="op">)</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">locations</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="va">conditions</span><span class="op">$</span><span class="va">concept_name</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">locations</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">conditions</span><span class="op">$</span><span class="va">concept_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">locations</span><span class="op">[</span><span class="va">locations</span><span class="op">$</span><span class="va">table_name</span> <span class="op">==</span> <span class="st">"condition_occurrence"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"table_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
+<th align="left">concept_name</th>
 <th align="left">table_name</th>
-<th align="left">concept_column</th>
 <th align="right">n_records</th>
 <th align="right">n_persons</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="right">317009</td>
-<td align="left">condition_era</td>
-<td align="left">condition_concept_id</td>
+<td align="left">Asthma</td>
+<td align="left">condition_occurrence</td>
 <td align="right">5</td>
 <td align="right">5</td>
 </tr>
 <tr class="even">
-<td align="right">317009</td>
+<td align="right">4051466</td>
+<td align="left">Childhood asthma</td>
 <td align="left">condition_occurrence</td>
-<td align="left">condition_concept_id</td>
-<td align="right">5</td>
-<td align="right">5</td>
+<td align="right">95</td>
+<td align="right">95</td>
 </tr>
 </tbody>
 </table>
-<p>Read a band as a band, a suppressed result as unavailable, and an absent top-list entry as inconclusive. Never replace those with zero in a study denominator.</p>
+<p>The record bands begin at 5 for Asthma and 95 for Childhood asthma: 5–9 and 95–99 records respectively. Looking only for the seed would miss most records in this branch. Counts are rounded down to multiples of five, so do not treat these as exact counts or calculate a precise percentage from them.</p>
 </div>
 <div class="section level2">
 <h2 id="save-the-definition-including-exclusions">Save the definition, including exclusions<a class="anchor" aria-label="anchor" href="#save-the-definition-including-exclusions"></a>
 </h2>
-<p>Save the local definition rather than copying a transient list of search rows. This preserves whether descendants and mapped concepts belong in the set.</p>
+<p>A concept set records your selection rule, including whether descendants belong. It is a local definition, not a list of patients.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">asthma</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">asthma_id</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">asthma_exact</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">asthma_id</span>, descendants <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">asthma</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_concept_set" "list"</span></span></code></pre>
-<p><strong>Exercise 2 (intermediate).</strong> Exclude the seed itself while keeping its children. Save the definition and read it back without accessing patients.</p>
-<details><p><summary>Solution 2</summary></p>
+<span><span class="va">concept_file</span> <span class="op">&lt;-</span> <span class="st">"book-concepts.rds"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>asthma <span class="op">=</span> <span class="va">asthma</span><span class="op">)</span>, <span class="va">concept_file</span><span class="op">)</span></span>
+<span><span class="va">asthma</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; omop_concept_set : 317009 </span></span>
+<span><span class="co">#&gt;   includes: descendants</span></span></code></pre>
+<p>The printed definition includes the seed and requests its descendants. <code>book-concepts.rds</code> now stores that definition for reuse. Setting <code>descendants = FALSE</code> would select only the seed.</p>
+<p><strong>Exercise 1.</strong> Keep Asthma’s children but exclude the seed itself. Save the set and read it back. Does the saved definition preserve the exclusion?</p>
+<details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">children_only</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">asthma_id</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  exclude <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">asthma_id</span>, descendants <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">concept_file</span> <span class="op">&lt;-</span> <span class="st">"book-concepts.rds"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>asthma <span class="op">=</span> <span class="va">asthma</span>, children_only <span class="op">=</span> <span class="va">children_only</span><span class="op">)</span>, <span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">saved_sets</span><span class="op">$</span><span class="va">children_only</span>, <span class="va">children_only</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
-<p>The result is TRUE. An excluded set can itself use descendants when you intend to remove an entire subtree. Keep these definitions with the study protocol.</p>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">children_only</span> <span class="op">&lt;-</span> <span class="va">children_only</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">saved_sets</span>, <span class="va">concept_file</span><span class="op">)</span></span>
+<span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">children_only</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; omop_concept_set : 317009 </span></span>
+<span><span class="co">#&gt;   includes: descendants, exclusions</span></span></code></pre>
+<p>The reloaded definition still requests descendants and excludes 317009 itself. An excluded set could also include descendants if you wanted to remove an entire branch. This file contains definitions, not patient data.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="find-inpatient-and-outpatient-visits">Find inpatient and outpatient visits<a class="anchor" aria-label="anchor" href="#find-inpatient-and-outpatient-visits"></a>
 </h2>
-<p>The setting is <code>visit_concept_id</code>; <code>visit_type_concept_id</code> describes provenance. The names below produce the IDs used in the visit chapters.</p>
+<p>Use <code>visit_concept_id</code> for the setting; <code>visit_type_concept_id</code> describes the record’s provenance. Discover the settings before using their IDs:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">visit_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Visit"</span>, domain <span class="op">=</span> <span class="st">"Visit"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">visit_catalogue</span> <span class="op">&lt;-</span> <span class="va">visit_hits</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="va">visit_hits</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">concept_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span></span>
+<code class="sourceCode R"><span><span class="va">visit_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Visit"</span>, domain <span class="op">=</span> <span class="st">"Visit"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">visit_catalogue</span> <span class="op">&lt;-</span> <span class="va">visit_hits</span><span class="op">[</span><span class="va">visit_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Inpatient Visit"</span>, <span class="st">"Outpatient Visit"</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">visit_catalogue</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">visit_catalogue</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 <th align="left">standard_concept</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="right">9201</td>
 <td align="left">Inpatient Visit</td>
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">9202</td>
 <td align="left">Outpatient Visit</td>
 <td align="left">S</td>
 </tr>
@@ -486,110 +434,119 @@
 </table>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visit_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">visit_catalogue</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">visit_catalogue</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span></span>
-<span><span class="va">visit_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">visit_ids</span>, <span class="va">omop_concept_set</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">visit_ids</span><span class="op">)</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   concept_id       table_name   concept_column n_records n_persons</span></span>
-<span><span class="co">#&gt; 1       9201 visit_occurrence visit_concept_id      1035       890</span></span></code></pre>
+<span><span class="va">visit_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">visit_ids</span>, <span class="va">omop_concept_set</span><span class="op">)</span></span></code></pre></div>
+<p>Inpatient Visit is <strong>9201</strong> and Outpatient Visit is <strong>9202</strong>. Both exist in the vocabulary. Check their clinical use separately:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">visit_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">visit_ids</span><span class="op">)</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">visit_use</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">visit_ids</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">visit_use</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">visit_ids</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">visit_use</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="right">n_records</th>
+<th align="right">n_persons</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">9201</td>
+<td align="left">Inpatient Visit</td>
+<td align="right">1035</td>
+<td align="right">890</td>
+</tr></tbody>
+</table>
+<p>Only Inpatient Visit is returned: its bands begin at 1,035 records and 890 people. The public GiBleed data record only inpatient visits; Outpatient Visit is unused. In an unfamiliar private dataset, an absent locator row could also be withheld.</p>
 </div>
 <div class="section level2">
 <h2 id="find-the-questionnaire-questions-answers-and-causes">Find the questionnaire questions, answers and causes<a class="anchor" aria-label="anchor" href="#find-the-questionnaire-questions-answers-and-causes"></a>
 </h2>
-<p>The questionnaire dataset is synthetic and separate from GiBleed. Its local concepts are teaching examples, not codes to copy into a clinical study. Search the whole small catalogue so the question, answer and cause roles are visible together. Later questionnaire chapters refer back to this catalogue.</p>
+<p>Switch to the separate synthetic dataset described in <a href="book-00-start.html#the-questionnaire-dataset">chapter 0</a>. Its local question and answer codes are teaching examples, not codes to copy into a clinical study.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"questionnaire"</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
 <span><span class="va">questionnaire</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  limit <span class="op">=</span> <span class="fl">100</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">questionnaire</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">questionnaire</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 <th align="left">domain_id</th>
-<th align="left">standard_concept</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="right">900001</td>
 <td align="left">Education question</td>
 <td align="left">Observation</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">900002</td>
 <td align="left">Fever question</td>
 <td align="left">Observation</td>
-<td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">900101</td>
 <td align="left">Secondary education</td>
 <td align="left">Meas Value</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">900102</td>
 <td align="left">University education</td>
 <td align="left">Meas Value</td>
-<td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">900201</td>
 <td align="left">Myocardial infarction</td>
 <td align="left">Condition</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">900202</td>
 <td align="left">Pneumonia</td>
 <td align="left">Condition</td>
-<td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">900301</td>
 <td align="left">Yes</td>
 <td align="left">Meas Value</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">8532</td>
 <td align="left">FEMALE</td>
 <td align="left">Gender</td>
-<td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">8507</td>
 <td align="left">MALE</td>
 <td align="left">Gender</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">900302</td>
 <td align="left">No</td>
 <td align="left">Meas Value</td>
-<td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">9201</td>
 <td align="left">Inpatient Visit</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
+<td align="left">Visit</td>
 </tr>
 <tr class="even">
+<td align="right">9202</td>
 <td align="left">Outpatient Visit</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
+<td align="left">Visit</td>
 </tr>
 <tr class="odd">
-<td align="left">Education answer</td>
-<td align="left">Meas Value</td>
-<td align="left">S</td>
-</tr>
-<tr class="even">
-<td align="left">Practice medicine</td>
+<td align="right">950001</td>
+<td align="left">Questionnaire study medicine</td>
 <td align="left">Drug</td>
-<td align="left">S</td>
-</tr>
-<tr class="odd">
-<td align="left">Practice measurement</td>
-<td align="left">Measurement</td>
-<td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">950002</td>
+<td align="left">Body weight (questionnaire)</td>
+<td align="left">Measurement</td>
+</tr>
+<tr class="odd">
+<td align="right">9529</td>
 <td align="left">kilogram</td>
 <td align="left">Unit</td>
-<td align="left">S</td>
 </tr>
 </tbody>
 </table>
@@ -597,302 +554,339 @@
 <code class="sourceCode R"><span><span class="va">question_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">questionnaire</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">questionnaire</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span></span>
 <span><span class="va">education_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">[</span><span class="st">"Education question"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cause_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span><span class="op">]</span>, <span class="va">omop_concept_set</span><span class="op">)</span></span></code></pre></div>
-<p>The education question selects observations. Secondary and University education are possible answers in <code>value_as_concept_id</code>. Myocardial infarction and Pneumonia are coded causes in death. The questionnaire dataset’s local concepts have no external mapping or hierarchy; do not invent SNOMED or ATC ancestry for them.</p>
+<p>Education question <strong>900001</strong> selects observations; Secondary <strong>900101</strong> and University <strong>900102</strong> are its coded answers. Fever question <strong>900002</strong> uses Yes <strong>900301</strong> and No <strong>900302</strong>. The death causes are Myocardial infarction <strong>900201</strong> and Pneumonia <strong>900202</strong>. Visits use the Visit domain. Study medicine <strong>950001</strong> supports drug-history lessons; weight <strong>950002</strong>, with kilogram <strong>9529</strong>, supports numeric exercises. The default local question and cause codes have no external mapping or hierarchy.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">question_presence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"observation"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">question_presence</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">question_presence</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span>, <span class="st">"concept_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">n_persons</th>
-<th align="left">concept_name</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="right">10</td>
-<td align="left">Education question</td>
-</tr>
-<tr class="even">
-<td align="right">10</td>
-<td align="left">Fever question</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">question_presence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"observation"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">question_presence</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="right">n_persons</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">900001</td>
+<td align="left">Education question</td>
+<td align="right">20</td>
+</tr>
+<tr class="even">
+<td align="right">900002</td>
+<td align="left">Fever question</td>
+<td align="right">20</td>
+</tr>
+</tbody>
+</table>
+<p>The person bands for education and fever both begin at 20, meaning 20–24 people. The public dataset has 24 respondents to each question. Later categorical tables can release those exact counts when their cells pass the table’s checks.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cause_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">cause_use</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">cause_use</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">question_ids</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">cause_use</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"table_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
 <th align="left">table_name</th>
-<th align="left">concept_column</th>
 <th align="right">n_records</th>
 <th align="right">n_persons</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="right">900201</td>
+<td align="left">Myocardial infarction</td>
 <td align="left">death</td>
-<td align="left">cause_concept_id</td>
-<td align="right">10</td>
-<td align="right">10</td>
+<td align="right">20</td>
+<td align="right">20</td>
 </tr>
 <tr class="even">
 <td align="right">900202</td>
+<td align="left">Pneumonia</td>
 <td align="left">death</td>
-<td align="left">cause_concept_id</td>
-<td align="right">5</td>
-<td align="right">5</td>
+<td align="right">10</td>
+<td align="right">10</td>
 </tr>
 </tbody>
 </table>
+<p>The cause bands begin at 20 for infarction and 10 for pneumonia: 20–24 and 10–14 people. They contain the dataset’s exact totals of 24 and 12. The different representations are not conflicting counts.</p>
+<p><strong>Exercise 2.</strong> ATC classes are classification concepts. Can a standard-only search miss them even when they are present? Use the optional teaching catalogue.</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"questionnaire"</span>, categories <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
+<span><span class="va">atc_default</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">atc_default</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; NULL</span></span></code></pre>
+<p><code>NULL</code> means the search returned no matching concepts: the default asks for standard concepts (<code>S</code>). Request classification concepts (<code>C</code>) instead:</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">atc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, standard <span class="op">=</span> <span class="st">"C"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">atc</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="left">standard_concept</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">960001</td>
+<td align="left">Teaching ATC first level</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
+<td align="right">960002</td>
+<td align="left">Teaching ATC second level</td>
+<td align="left">C</td>
+</tr>
+</tbody>
+</table>
+<p>Two classes appear: <strong>960001</strong> and <strong>960002</strong>. These are explicitly invented teaching classes, used in the drug-utilisation lesson. The lesson here is the search filter: a missing standard-only hit does not prove a class is absent.</p>
+</details>
 </div>
 <div class="section level2">
 <h2 id="find-haemoglobin-glucose-and-their-units-in-synthea">Find haemoglobin, glucose and their units in Synthea<a class="anchor" aria-label="anchor" href="#find-haemoglobin-glucose-and-their-units-in-synthea"></a>
 </h2>
-<p>Switch to the numeric resource. The vocabulary spells haemoglobin “Hemoglobin”. Select the precise test and specimen, not every hit containing the word.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">practice</span><span class="op">$</span><span class="va">path</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
+<p>Switch to the numeric resource. The vocabulary spells haemoglobin “Hemoglobin”. Select a precise test and specimen, rather than every name containing the word.</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
 <span><span class="va">lab_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">lab_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">lab_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
-<col width="73%">
-<col width="12%">
-<col width="14%">
+<col width="9%">
+<col width="75%">
+<col width="15%">
 </colgroup>
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
-<th align="left">vocabulary_id</th>
 <th align="left">standard_concept</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="right">3001643</td>
 <td align="left">Hemoglobin and Hematocrit panel - Blood</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">3004410</td>
 <td align="left">Hemoglobin A1c/Hemoglobin.total in Blood</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">40761014</td>
 <td align="left">Hemoglobin.gastrointestinal.lower [Presence] in Stool by Immunoassay –1st specimen</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">3011397</td>
 <td align="left">Hemoglobin [Presence] in Urine by Test strip</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">3000963</td>
 <td align="left">Hemoglobin [Mass/volume] in Blood</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hb_id</span> <span class="op">&lt;-</span> <span class="va">lab_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">lab_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Hemoglobin [Mass/volume] in Blood"</span><span class="op">]</span></span>
-<span><span class="va">glucose_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Glucose"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">glucose_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hb_id</span> <span class="op">&lt;-</span> <span class="va">lab_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">lab_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Hemoglobin [Mass/volume] in Blood"</span><span class="op">]</span></span></code></pre></div>
+<p>Choose <strong>3000963</strong>, Hemoglobin [Mass/volume] in Blood. A panel and a haemoglobin fraction are different measurements even though their names share the word.</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">glucose_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Glucose"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">glucose_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
-<th align="left">vocabulary_id</th>
 <th align="left">standard_concept</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="right">4012477</td>
 <td align="left">Glucose tolerance test</td>
-<td align="left">SNOMED</td>
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">4149386</td>
 <td align="left">Urine screening for glucose</td>
-<td align="left">SNOMED</td>
 <td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">4146454</td>
 <td align="left">Self-monitoring of blood glucose</td>
-<td align="left">SNOMED</td>
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">3000483</td>
 <td align="left">Glucose [Mass/volume] in Blood</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">3004501</td>
 <td align="left">Glucose [Mass/volume] in Serum or Plasma</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="right">3009261</td>
 <td align="left">Glucose [Presence] in Urine by Test strip</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 <tr class="odd">
+<td align="right">3024629</td>
 <td align="left">Glucose [Mass/volume] in Urine by Test strip</td>
-<td align="left">LOINC</td>
 <td align="left">S</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">glucose_id</span> <span class="op">&lt;-</span> <span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span></span>
-<span>  <span class="st">"Glucose [Mass/volume] in Blood"</span><span class="op">]</span></span>
-<span><span class="va">lab_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>haemoglobin <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">hb_id</span><span class="op">)</span>,</span>
-<span>  glucose <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">glucose_id</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>These glucose hits are a catalogue, not yet an interchangeable measurement set. The chronic-disease study selects a single specimen and concentration measure.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">glucose_id</span> <span class="op">&lt;-</span> <span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Glucose [Mass/volume] in Blood"</span><span class="op">]</span></span>
+<span><span class="va">lab_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>haemoglobin <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">hb_id</span><span class="op">)</span>, glucose <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">glucose_id</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Blood glucose is <strong>3000483</strong>. Serum or Plasma glucose and urine glucose are separate concepts; do not combine all search hits without deciding which specimens and concentration measures answer your question.</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">hb_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">units</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">units</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">units</span><span class="op">)</span> <span class="op">==</span> <span class="st">"value"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"unit_concept_id"</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unit_concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="right">n</th>
+<th align="left">unit_concept_id</th>
 <th align="left">concept_name</th>
-<th align="left">value</th>
+<th align="right">n</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">105</td>
-<td align="left">gram per deciliter</td>
 <td align="left">8713</td>
+<td align="left">gram per deciliter</td>
+<td align="right">105</td>
 </tr></tbody>
 </table>
-<p>Counts describe recorded unit use under disclosure control. A vocabulary lookup of “milligram per deciliter” alone cannot establish that the lab was stored that way.</p>
+<p>Haemoglobin uses <strong>8713</strong>, gram per deciliter (g/dL), for 105–109 recorded values. The count describes recorded unit use; a unit’s mere presence in the vocabulary would not establish this.</p>
 <div class="section level3">
 <h3 id="when-a-unit-count-is-withheld">When a unit count is withheld<a class="anchor" aria-label="anchor" href="#when-a-unit-count-is-withheld"></a>
 </h3>
-<p>Serum or Plasma glucose is a different measurement. Here its unit-count request is refused. Print the complete response so that an unavailable pooled result cannot be mistaken for no units or a successful check.</p>
+<p>For Serum or Plasma glucose, the requested unit count lacks enough support. Keep the server’s explanation instead of treating an unavailable result as zero:</p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">serum_glucose_id</span> <span class="op">&lt;-</span> <span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span></span>
 <span>  <span class="st">"Glucose [Mass/volume] in Serum or Plasma"</span><span class="op">]</span></span>
 <span><span class="va">serum_glucose_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>,</span>
 <span>  concept_id <span class="op">=</span> <span class="va">serum_glucose_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">serum_glucose_units</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
-<span><span class="co">#&gt; Servers: &lt;none&gt;</span></span>
-<span><span class="co">#&gt; Scope: pooled</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Warnings:</span></span>
-<span><span class="co">#&gt;   - Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.</span></span>
-<span><span class="co">#&gt;   - No complete disclosure-safe pooled value counts were available.</span></span></code></pre>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">serum_glucose_units</span><span class="op">$</span><span class="va">meta</span><span class="op">$</span><span class="va">warnings</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.</span></span>
+<span><span class="co">#&gt; No complete disclosure-safe pooled value counts were available.</span></span></code></pre>
 <!-- expected-refusal:end -->
-<p>The disclosure warning means the requested aggregate is unavailable. It does not establish absence. For the positive example below, use the explicitly selected Blood glucose measurement; its unit count is admitted.</p>
-<p><strong>Exercise 3 (advanced).</strong> Check glucose unit use and save its catalogue together with the haemoglobin set. Why is choosing all glucose hits premature?</p>
-<details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<p>The aggregate is unavailable; this does not establish that the concept has no records. Use the separately selected Blood glucose for the next exercise.</p>
+<p><strong>Exercise 3.</strong> Check Blood glucose’s unit and add the lab and questionnaire sets to <code>book-concepts.rds</code> without discarding the saved asthma exclusions.</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">glucose_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>,</span>
-<span>  concept_id <span class="op">=</span> <span class="va">glucose_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">glucose_units</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<span>  concept_id <span class="op">=</span> <span class="va">glucose_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">glucose_units</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">glucose_units</span><span class="op">)</span> <span class="op">==</span> <span class="st">"value"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"unit_concept_id"</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">glucose_units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unit_concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="right">n</th>
+<th align="left">unit_concept_id</th>
 <th align="left">concept_name</th>
-<th align="left">value</th>
+<th align="right">n</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">225</td>
-<td align="left">milligram per deciliter</td>
 <td align="left">8840</td>
+<td align="left">milligram per deciliter</td>
+<td align="right">225</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sets <span class="op">=</span> <span class="va">lab_sets</span>, glucose_catalogue <span class="op">=</span> <span class="va">glucose_hits</span>,</span>
-<span>  visit_sets <span class="op">=</span> <span class="va">visit_sets</span>, education <span class="op">=</span> <span class="va">education_set</span>, causes <span class="op">=</span> <span class="va">cause_sets</span>,</span>
-<span>  questionnaire_catalogue <span class="op">=</span> <span class="va">questionnaire</span><span class="op">)</span>, <span class="va">concept_file</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span><span class="op">$</span><span class="va">sets</span>, <span class="va">lab_sets</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
-<p>Keep <code>book-concepts.rds</code> with your study files. In a later session, <code>readRDS("book-concepts.rds")$education</code> reuses the saved education definition; the questionnaire catalogue records the IDs used in subsequent examples.</p>
-<p>Different specimens, mass versus molar concentrations and urine versus blood measurements need different definitions. Preserve that decision with the set.</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">sets</span> <span class="op">&lt;-</span> <span class="va">lab_sets</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">visit_sets</span> <span class="op">&lt;-</span> <span class="va">visit_sets</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">education</span> <span class="op">&lt;-</span> <span class="va">education_set</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">causes</span> <span class="op">&lt;-</span> <span class="va">cause_sets</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">questionnaire_catalogue</span> <span class="op">&lt;-</span> <span class="va">questionnaire</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">glucose_catalogue</span> <span class="op">&lt;-</span> <span class="va">glucose_hits</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">saved_sets</span>, <span class="va">concept_file</span><span class="op">)</span></span></code></pre></div>
+<p>Blood glucose uses <strong>8840</strong>, milligram per deciliter (mg/dL), for 225–229 records. Reading the file before adding entries preserves <code>asthma</code> and <code>children_only</code>. To reuse education in your own later session, read <code>readRDS("book-concepts.rds")$education</code>. The following chapters name the IDs from this catalogue so they can also run independently in a fresh session.</p>
 </details>
 </div>
 </div>
 <div class="section level2">
 <h2 id="find-measured-bmi-and-its-recorded-unit">Find measured BMI and its recorded unit<a class="anchor" aria-label="anchor" href="#find-measured-bmi-and-its-recorded-unit"></a>
 </h2>
-<p>Measured BMI is a recorded value, distinct from calculating BMI from height and weight. The repeated-measures lesson uses this specific measurement.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<p>Measured BMI is a recorded value, distinct from calculating it from height and weight.</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bmi_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Body mass index"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>,</span>
 <span>  vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bmi_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">concept_name</th>
-<th align="left">standard_concept</th>
-<th align="left">concept_class_id</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Body mass index (BMI) [Ratio]</td>
-<td align="left">S</td>
-<td align="left">Clinical Observation</td>
-</tr>
-<tr class="even">
-<td align="left">Body mass index (BMI) [Percentile] Per age and sex</td>
-<td align="left">S</td>
-<td align="left">Clinical Observation</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmi_id</span> <span class="op">&lt;-</span> <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Body mass index (BMI) [Ratio]"</span><span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">bmi_id</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">bmi_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">bmi_id</span><span class="op">)</span></span>
-<span><span class="va">bmi_locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">bmi_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bmi_locations</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bmi_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
-<th align="left">table_name</th>
-<th align="left">concept_column</th>
+<th align="left">concept_name</th>
+<th align="left">standard_concept</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">3038553</td>
+<td align="left">Body mass index (BMI) [Ratio]</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="right">40762638</td>
+<td align="left">Body mass index (BMI) [Percentile] Per age and sex</td>
+<td align="left">S</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bmi_id</span> <span class="op">&lt;-</span> <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Body mass index (BMI) [Ratio]"</span><span class="op">]</span></span></code></pre></div>
+<p>Choose the standard LOINC measurement <strong>3038553</strong>, Body mass index (BMI) [Ratio]. The repeated-measures chapter uses this definition.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bmi_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">bmi_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">bmi_use</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">bmi_use</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bmi_use</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
 <th align="right">n_records</th>
 <th align="right">n_persons</th>
 </tr></thead>
 <tbody><tr class="odd">
 <td align="right">3038553</td>
-<td align="left">measurement</td>
-<td align="left">measurement_concept_id</td>
+<td align="left">Body mass index (BMI) [Ratio]</td>
 <td align="right">435</td>
 <td align="right">25</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<p>The bands begin at 435 records and 25 people, showing repeated measurements. Check the recorded unit before summarising those values:</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bmi_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>,</span>
-<span>  concept_id <span class="op">=</span> <span class="va">bmi_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bmi_units</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<span>  concept_id <span class="op">=</span> <span class="va">bmi_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmi_units</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmi_units</span><span class="op">)</span> <span class="op">==</span> <span class="st">"value"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"unit_concept_id"</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bmi_units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unit_concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="right">n</th>
+<th align="left">unit_concept_id</th>
 <th align="left">concept_name</th>
-<th align="left">value</th>
+<th align="right">n</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">435</td>
-<td align="left">kilogram per square meter</td>
 <td align="left">9531</td>
+<td align="left">kilogram per square meter</td>
+<td align="right">435</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
-<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">measured_bmi</span> <span class="op">&lt;-</span> <span class="va">bmi_set</span></span>
-<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">bmi_units</span> <span class="op">&lt;-</span> <span class="va">bmi_units</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">measured_bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">bmi_id</span><span class="op">)</span></span>
+<span><span class="va">saved_sets</span><span class="op">$</span><span class="va">bmi_units</span> <span class="op">&lt;-</span> <span class="va">bmi_units</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">saved_sets</span>, <span class="va">concept_file</span><span class="op">)</span></span></code></pre></div>
-<p>The standard LOINC measurement and its recorded kilogram-per-square-meter unit define the repeated BMI extraction. Keep both with the saved study definitions.</p>
+<p>BMI uses <strong>9531</strong>, kilogram per square meter. Its record band also begins at 435. The saved set and unit record preserve both parts of the measurement definition.</p>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Search, inspect standard status and mappings, explore ancestry, check protected clinical use, then save the definition. The subsequent chapters reuse these catalogues; the case studies repeat the same process for their research question.</p>
+<p>Search, inspect meanings and mappings, check the hierarchy and clinical use, then save the definition. Keep IDs alongside names during discovery; analysis tables can then present the selected concepts as named categories.</p>
 <p><strong>Next:</strong> <a href="book-05-recipe.html">5. A first recipe</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
