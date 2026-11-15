@@ -436,7 +436,8 @@ Compile the all-visit membership definition and check its index selection.
 
 
 ``` r
-all_visitors$index$select
+compiled_membership <- recipe_to_plan(all_recipe)
+compiled_membership$populations[[1L]]$index$select
 ```
 
 ```
