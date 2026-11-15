@@ -49,10 +49,8 @@ height_id <- height_hits$concept_id[trimws(height_hits$concept_name) == "Body he
 body_sets <- list(weight = omop_concept_set(weight_id), height = omop_concept_set(height_id))
 ```
 
-Body weight is **3025315** and Body height is **3036277**. The same panel concept,
-**40758413**, matches both searches, but the chosen individual measurement
-concepts are different. Choosing the exact name avoids mixing measurements
-with similar wording.
+Body weight is **3025315** and Body height is **3036277**. Choosing the exact
+name avoids mixing measurements with similar wording.
 
 ```{r body-units}
 weight_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = weight_id,
@@ -133,13 +131,19 @@ dbp_hits <- ds.omop.concept.search("Diastolic blood pressure", domain = "Measure
 knitr::kable(rbind(sbp_hits, dbp_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")])
 sbp_id <- sbp_hits$concept_id[trimws(sbp_hits$concept_name) == "Systolic blood pressure"]
 dbp_id <- dbp_hits$concept_id[trimws(dbp_hits$concept_name) == "Diastolic blood pressure"]
+```
+
+Both pressure searches also return panel **40758413**, Blood pressure systolic
+and diastolic. Select the separate systolic (**3004249**) and diastolic
+(**3012888**) measurements for the formula.
+
+```{r pressure-units}
 pressure_units <- lapply(c(Systolic = sbp_id, Diastolic = dbp_id), function(id)
   ds.omop.value.counts("measurement", "unit_concept_id", concept_id = id,
     scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
 knitr::kable(do.call(rbind, pressure_units))
 ```
 
-Systolic pressure is **3004249** and diastolic pressure is **3012888**.
 Both pressures use **8876**, millimeter mercury (mmHg). Check both inputs:
 a shared name for the result would not repair mismatched units.
 

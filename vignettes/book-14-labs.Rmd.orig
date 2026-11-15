@@ -170,7 +170,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$converted_band", dataso
 ```
 
 Both presentations give category counts 9, 9 and 10 here. The within-band means
-are 13.341, 14.325 and 15.608 g/dL: each person contributes their all-history mean
+are 13.341, 14.325 and 15.607 g/dL: each person contributes their all-history mean
 once to their band. Bins are left-closed:
 14 belongs to the middle bin and 15 to the upper bin. The bands are an ordered
 factor. In a model, R reports linear/quadratic terms (`.L`, `.Q`) instead of one
