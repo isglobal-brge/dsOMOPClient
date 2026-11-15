@@ -139,7 +139,7 @@
 <code class="sourceCode R"><span><span class="va">weight_id</span> <span class="op">&lt;-</span> <span class="va">weight_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">weight_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Body weight"</span><span class="op">]</span></span>
 <span><span class="va">height_id</span> <span class="op">&lt;-</span> <span class="va">height_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">height_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Body height"</span><span class="op">]</span></span>
 <span><span class="va">body_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">weight_id</span><span class="op">)</span>, height <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">height_id</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Body weight is <strong>3025315</strong> and Body height is <strong>3036277</strong>. They are separate concepts; choosing the exact name avoids mixing measurements with similar wording.</p>
+<p>Body weight is <strong>3025315</strong> and Body height is <strong>3036277</strong>. The same panel concept, <strong>40758413</strong>, matches both searches, but the chosen individual measurement concepts are different. Choosing the exact name avoids mixing measurements with similar wording.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weight_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">weight_id</span>,</span>
 <span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
@@ -195,8 +195,8 @@
 <span><span class="va">bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_formula_bmi.html">omop_formula_bmi</a></span><span class="op">(</span><span class="va">weight_kg</span>, <span class="va">height_m</span><span class="op">)</span></span>
 <span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">weight_event</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span>, height <span class="op">=</span> <span class="va">height</span>, bmi <span class="op">=</span> <span class="va">bmi</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">body_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_body"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_body$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_body"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_body$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -209,56 +209,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">11.53374</td>
+<td align="right">11.534</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">13.62216</td>
+<td align="right">13.622</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">15.88957</td>
+<td align="right">15.890</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">23.86380</td>
+<td align="right">23.864</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">27.93787</td>
+<td align="right">27.938</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">30.20849</td>
+<td align="right">30.208</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">30.36386</td>
+<td align="right">30.364</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">22.11315</td>
+<td align="right">22.113</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
@@ -272,7 +272,7 @@
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>bmi <span class="op">=</span> <span class="va">bmi</span>, rounded <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number</a></span><span class="op">(</span><span class="va">bmi</span>,</span>
 <span>    <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_spec</a></span><span class="op">(</span>rounding <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_round</a></span><span class="op">(</span><span class="st">"decimals"</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body_rounded</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_rounded"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_rounded$rounded"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_rounded$rounded"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -285,56 +285,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">11.52000</td>
+<td align="right">11.520</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">13.60000</td>
+<td align="right">13.600</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">15.85000</td>
+<td align="right">15.850</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">23.85000</td>
+<td align="right">23.850</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">27.90000</td>
+<td align="right">27.900</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">30.19000</td>
+<td align="right">30.190</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">30.40000</td>
+<td align="right">30.400</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">22.10357</td>
+<td align="right">22.104</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
@@ -427,7 +427,7 @@
 <span><span class="va">ratio</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_formula_bmi.html">omop_formula_ratio</a></span><span class="op">(</span><span class="va">sbp_mmhg</span>, <span class="va">dbp_mmhg</span>, unit <span class="op">=</span> <span class="st">"1"</span><span class="op">)</span></span>
 <span><span class="va">pressure</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">sbp_event</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>map <span class="op">=</span> <span class="va">map</span>, ratio <span class="op">=</span> <span class="va">ratio</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">pressure</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_pressure"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_pressure$map"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_pressure$map"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -440,56 +440,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">85.70000</td>
+<td align="right">85.700</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">87.23333</td>
+<td align="right">87.233</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">90.08333</td>
+<td align="right">90.083</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">93.50000</td>
+<td align="right">93.500</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">95.75000</td>
+<td align="right">95.750</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">96.96667</td>
+<td align="right">96.967</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">99.40000</td>
+<td align="right">99.400</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">93.53571</td>
+<td align="right">93.536</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
@@ -499,7 +499,7 @@
 <p><strong>Exercise 2.</strong> Summarise the dimensionless systolic/diastolic ratio. Is its unit mmHg?</p>
 <details><p><summary>Solution 2</summary></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_pressure$ratio"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_formula_pressure$ratio"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -512,56 +512,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">1.220452</td>
+<td align="right">1.220</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">1.291128</td>
+<td align="right">1.291</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">1.316157</td>
+<td align="right">1.316</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">1.516234</td>
+<td align="right">1.516</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">1.612708</td>
+<td align="right">1.613</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">1.639933</td>
+<td align="right">1.640</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">1.726477</td>
+<td align="right">1.726</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">1.487598</td>
+<td align="right">1.488</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
@@ -574,7 +574,7 @@
 <h2 id="egfr-validate-the-prerequisites-before-deriving">eGFR: validate the prerequisites before deriving<a class="anchor" aria-label="anchor" href="#egfr-validate-the-prerequisites-before-deriving"></a>
 </h2>
 <p>The race-free adult CKD-EPI 2021 creatinine equation needs serum creatinine, age and sex. Its public formula is 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.2 × 0.9938^age, with κ = 0.7 and α = −0.241 for female, κ = 0.9 and α = −0.302 for male, and a further factor 1.012 for female. Scr is in mg/dL. See the <a href="https://www.kidney.org/ckd-epi-creatinine-equation-2021" class="external-link">National Kidney Foundation equation</a>.</p>
-<p>Do not substitute a different specimen because the correct source cannot support a release. This check distinguishes vocabulary availability from observed use:</p>
+<p>Do not use urine measurements in place of serum measurements just to obtain a released result. This check distinguishes vocabulary availability from observed use:</p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">creatinine_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Creatinine"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>,</span>
@@ -621,7 +621,7 @@
 <tbody></tbody>
 </table>
 <!-- expected-refusal:end --><p>The serum locator returns no releasable row. An empty locator result can mean no records or too few people to release; it does not establish absence. The public synthetic source has 12 serum/plasma creatinine records from one person, which is below the release threshold. Blood creatinine is a different specimen, and the first search hit is a urine microalbumin/creatinine ratio, a different analyte. Neither is a substitute for suitable serum measurements.</p>
-<p>The formula requires standardized serum creatinine in mg/dL, completed age at measurement, and an explicit mapping to the equation’s female/male branches. It returns missing for children, nonpositive creatinine and unmapped sex. Save the intended serum definition in a named project file before moving to the separate questionnaire example.</p>
+<p>The formula requires standardized serum creatinine in mg/dL, completed age at measurement, and an explicit mapping to the equation’s female/male branches. It returns missing for children, nonpositive creatinine and unmapped sex. Save the intended serum definition in a named project file before moving to the separate questionnaire example. Saving lets later work reuse exactly the same concept definitions.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula_file</span> <span class="op">&lt;-</span> <span class="st">"formula-concepts.rds"</span></span>
 <span><span class="va">formula_concepts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>body <span class="op">=</span> <span class="va">body_sets</span>, systolic <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">sbp_id</span><span class="op">)</span>,</span>
@@ -631,14 +631,14 @@
 <div class="section level2">
 <h2 id="collapse-repeated-episodes-deliberately">Collapse repeated episodes deliberately<a class="anchor" aria-label="anchor" href="#collapse-repeated-episodes-deliberately"></a>
 </h2>
-<p>A person may have several eligible measurement episodes. Requesting person grain requires an explicit collapse rule: first_episode, last_episode or any. This collapses repeated population episodes, not duplicate source measurements.</p>
+<p>With <code>select = "all"</code>, every eligible weight reading starts a population episode. A person can therefore have several episodes. Requesting person grain requires an explicit collapse rule: first_episode, last_episode or any. This collapses repeated population episodes, not duplicate source measurements.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">episodes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"weights"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">weight_event</span>, select <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">collapsed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">episodes</span><span class="op">)</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"weights"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>    collapse <span class="op">=</span> <span class="st">"first_episode"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">collapsed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_collapsed_weights"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_collapsed_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_collapsed_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -651,69 +651,69 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">2.71000</td>
+<td align="right">2.710</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">3.73000</td>
+<td align="right">3.730</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">11.05000</td>
+<td align="right">11.050</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">70.90000</td>
+<td align="right">70.900</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">75.72500</td>
+<td align="right">75.725</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">80.94000</td>
+<td align="right">80.940</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">84.83500</td>
+<td align="right">84.835</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">50.44643</td>
+<td align="right">50.446</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<p>The first-episode weight mean is 50.45 kg. A same-day tolerance still does not average duplicate readings automatically. Closest-value selection uses deterministic ordering; a mean weights eligible rows. Document whether the problem is repeated episodes or duplicated source records before choosing a collapse or reducer. The events chapter compares record counts with distinct-day counts.</p>
+<p>The first-episode weight mean is 50.45 kg. Selecting the closest reading chooses one reading; averaging combines all eligible readings. A same-day window alone does not decide how duplicates are combined. Document whether the problem is repeated episodes or duplicated source records before choosing a collapse or reducer. The events chapter compares record counts with distinct-day counts.</p>
 <p>Compare the last eligible episode with the first one.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">last_episode</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">episodes</span><span class="op">)</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"weights"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>    collapse <span class="op">=</span> <span class="st">"last_episode"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">last_episode</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_last_weights"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_last_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_last_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -781,7 +781,7 @@
 </tr>
 </tbody>
 </table>
-<p>The last-episode weight mean is 66.60 kg. The person roster is collapsed with a different temporal choice. This is not a measurement average, and it need not equal an average over all episodes.</p>
+<p>The last-episode weight mean is 66.60 kg, compared with 50.45 kg at the first episode. The Synthea population includes children growing across years, which helps explain this large difference. Each person contributes their selected episode; this is not an average over all measurements or episodes.</p>
 </div>
 <div class="section level2">
 <h2 id="execute-egfr-with-declared-synthetic-inputs">Execute eGFR with declared synthetic inputs<a class="anchor" aria-label="anchor" href="#execute-egfr-with-declared-synthetic-inputs"></a>
@@ -844,7 +844,7 @@
 <code class="sourceCode R"><span><span class="va">sex_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">sex_hits</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">sex_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span></span>
 <span><span class="va">formula_concepts</span><span class="op">$</span><span class="va">questionnaire</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>creatinine <span class="op">=</span> <span class="va">formula_set</span>, sex <span class="op">=</span> <span class="va">sex_ids</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">formula_concepts</span>, <span class="va">formula_file</span><span class="op">)</span></span></code></pre></div>
-<p>Creatinine <strong>970001</strong> is a local teaching concept with no external mappings. The equation branches use Female <strong>8532</strong> and Male <strong>8507</strong>. The synthetic source explicitly defines standardized serum measurements in mg/dL. The clinical equivalents would require assay and source validation.</p>
+<p>Creatinine <strong>970001</strong> is a local teaching concept with no external mappings. The equation branches use Female <strong>8532</strong> and Male <strong>8507</strong>. The synthetic source explicitly defines standardized serum measurements in mg/dL. The clinical equivalents would require assay and source validation. With <code>missing = "keep"</code>, the first selected missing reading stays missing rather than being skipped. With <code>scope = "episode"</code>, the age anchor is selected within the current episode.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">serum_event</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">formula_set</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8840L</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">creatinine</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">serum_event</span>,</span>
@@ -861,7 +861,7 @@
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>egfr <span class="op">=</span> <span class="va">egfr</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"measurements"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">egfr_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">egfr_recipe</span>, out <span class="op">=</span> <span class="st">"D_egfr"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_egfr$egfr"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_egfr$egfr"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -874,56 +874,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">34.53919</td>
+<td align="right">34.539</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">34.53919</td>
+<td align="right">34.539</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">46.14291</td>
+<td align="right">46.143</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">99.23431</td>
+<td align="right">99.234</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">116.37404</td>
+<td align="right">116.374</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">118.71584</td>
+<td align="right">118.716</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">118.71584</td>
+<td align="right">118.716</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">86.11545</td>
+<td align="right">86.115</td>
 <td align="right">36</td>
 <td align="right">12</td>
 </tr>
@@ -972,146 +972,69 @@
 <span>  daily_mean <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="va">rows</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"mean"</span><span class="op">)</span>,</span>
 <span>  daily_max <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="va">rows</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"max"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">daily</span>, out <span class="op">=</span> <span class="st">"D_daily"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_daily$daily_mean"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, Rule <span class="op">=</span> <span class="st">"Daily mean"</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_daily$daily_max"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, Rule <span class="op">=</span> <span class="st">"Daily maximum"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">daily_mean</span> <span class="op">&lt;-</span> <span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_daily$daily_mean"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">daily_max</span> <span class="op">&lt;-</span> <span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_daily$daily_max"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Statistic <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">daily_mean</span><span class="op">$</span><span class="va">Statistic</span>, <span class="st">"N valid"</span>, <span class="st">"N missing"</span><span class="op">)</span>,</span>
+<span>  `Daily mean` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">daily_mean</span><span class="op">$</span><span class="va">Value</span>, <span class="va">daily_mean</span><span class="op">$</span><span class="va">`N valid`</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">daily_mean</span><span class="op">$</span><span class="va">`N missing`</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  `Daily maximum` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">daily_max</span><span class="op">$</span><span class="va">Value</span>, <span class="va">daily_max</span><span class="op">$</span><span class="va">`N valid`</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">daily_max</span><span class="op">$</span><span class="va">`N missing`</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Site</th>
 <th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-<th align="left">Rule</th>
+<th align="right">Daily mean</th>
+<th align="right">Daily maximum</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">site</td>
 <td align="left">5%</td>
 <td align="right">66</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">69</td>
 </tr>
 <tr class="even">
-<td align="left">site</td>
 <td align="left">10%</td>
 <td align="right">66</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">69</td>
 </tr>
 <tr class="odd">
-<td align="left">site</td>
 <td align="left">25%</td>
 <td align="right">66</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">69</td>
 </tr>
 <tr class="even">
-<td align="left">site</td>
 <td align="left">50%</td>
 <td align="right">80</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">80</td>
 </tr>
 <tr class="odd">
-<td align="left">site</td>
 <td align="left">75%</td>
 <td align="right">100</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">100</td>
 </tr>
 <tr class="even">
-<td align="left">site</td>
 <td align="left">90%</td>
 <td align="right">100</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">100</td>
 </tr>
 <tr class="odd">
-<td align="left">site</td>
 <td align="left">95%</td>
 <td align="right">100</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
+<td align="right">100</td>
 </tr>
 <tr class="even">
-<td align="left">site</td>
 <td align="left">Mean</td>
 <td align="right">82</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily mean</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">69</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">69</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">69</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">80</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">100</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">100</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">100</td>
-<td align="right">36</td>
-<td align="right">12</td>
-<td align="left">Daily maximum</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
 <td align="right">83</td>
+</tr>
+<tr class="odd">
+<td align="left">N valid</td>
 <td align="right">36</td>
+<td align="right">36</td>
+</tr>
+<tr class="even">
+<td align="left">N missing</td>
 <td align="right">12</td>
-<td align="left">Daily maximum</td>
+<td align="right">12</td>
 </tr>
 </tbody>
 </table>
@@ -1120,7 +1043,7 @@
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Align meanings, units and dates before arithmetic. Native expressions preserve private inputs and declared units. BMI, MAP and ratios use named formula definitions; missing prerequisites are a reason to stop a formula study. Collapse repeated episodes explicitly instead of letting duplicate rows change an analysis.</p>
+<p>Align meanings, units and dates before arithmetic. Named formulas preserve private inputs and declared units; missing prerequisites are a reason to stop a formula study. Choose a collapse rule for repeated population episodes and a separate within-day rule for duplicate readings.</p>
 <p><strong>Next:</strong> <a href="book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

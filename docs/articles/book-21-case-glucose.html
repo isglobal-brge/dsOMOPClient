@@ -200,11 +200,11 @@
 <span>  target_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_change</a></span><span class="op">(</span><span class="va">glucose</span>, <span class="st">"time_to_threshold"</span>, threshold <span class="op">=</span> <span class="fl">95</span>, op <span class="op">=</span> <span class="st">"ge"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"measured"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">trajectory</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_glucose"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span>, <span class="st">"change"</span>, <span class="st">"per_year"</span>, <span class="st">"followup_days"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">trajectory_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span>, <span class="st">"change"</span>, <span class="st">"per_year"</span>, <span class="st">"followup_days"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">book_summary</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_glucose$"</span>, <span class="va">column</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="va">x</span><span class="op">$</span><span class="va">Statistic</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"50%"</span>, <span class="st">"Mean"</span><span class="op">)</span>, <span class="op">]</span>, Variable <span class="op">=</span> <span class="va">column</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">summary</span>, digits <span class="op">=</span> <span class="fl">3</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">trajectory_summary</span>, digits <span class="op">=</span> <span class="fl">3</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -297,7 +297,7 @@
 </tr>
 </tbody>
 </table>
-<p>All ten people have later values, but first and last are about 5–19 years apart. First and last means are 83.40 and 85.98 mg/dL; mean change is 2.58 mg/dL. Mean slope is 0.397 mg/dL per year (median 0.221). A change over many years is not a short-term treatment response, and a straight-line slope can miss fluctuations between readings.</p>
+<p>All ten people have later values, with median follow-up about 18 years. First and last means are 83.40 and 85.98 mg/dL; mean change is 2.58 mg/dL. Mean slope is 0.397 mg/dL per year (median 0.221). A change over many years is not a short-term treatment response, and a straight-line slope can miss fluctuations between readings.</p>
 </div>
 <div class="section level2">
 <h2 id="classify-values-and-distinguish-unobserved-attainment">Classify values and distinguish unobserved attainment<a class="anchor" aria-label="anchor" href="#classify-values-and-distinguish-unobserved-attainment"></a>
@@ -325,9 +325,9 @@
 </tbody>
 </table>
 <p>Four people are below 90 and six are at least 90 mg/dL. It is a presentation rule, not a diagnosis or treatment goal. More detailed categories may be withheld in a population this small.</p>
-<p>For a separate timing question, use the first <strong>observed</strong> glucose ≥95 mg/dL. A stricter 100 mg/dL rule leaves too few qualifying people here for a useful numeric summary. Prespecify scientifically meaningful thresholds in a real study; do not search cutoffs to evade a withheld result.</p>
+<p>For a separate timing question, use the first <strong>observed</strong> glucose ≥95 mg/dL. In this tiny synthetic dataset, a 100 mg/dL rule would leave too few people for a released summary, so the lesson uses 95 mg/dL as a teaching threshold. In a real study the threshold comes from the protocol, and a withheld result is reported as withheld, not avoided by changing the cutoff.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -400,21 +400,25 @@
 <div class="section level2">
 <h2 id="model-last-against-first-with-appropriate-uncertainty">Model last against first with appropriate uncertainty<a class="anchor" aria-label="anchor" href="#model-last-against-first-with-appropriate-uncertainty"></a>
 </h2>
-<p>A Gaussian regression describes the association between first and last readings. With ten complete people and two coefficients, use a t interval with eight residual degrees of freedom rather than the large-sample z interval. dsBase’s local steps may warn; check <code>$iter</code> and final errors for convergence.</p>
+<p>A Gaussian regression describes the association between first and last readings. With ten complete people and two coefficients, use a t interval with eight residual degrees of freedom rather than the large-sample z interval.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.glm.html" class="external-link">ds.glm</a></span><span class="op">(</span><span class="st">"last ~ first"</span>, data <span class="op">=</span> <span class="st">"D_glucose"</span>, family <span class="op">=</span> <span class="st">"gaussian"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="st">"first"</span>, <span class="st">"Estimate"</span><span class="op">]</span></span>
 <span><span class="va">se</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="st">"first"</span>, <span class="st">"Std. Error"</span><span class="op">]</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Estimate <span class="op">=</span> <span class="va">b</span>, Lower_95 <span class="op">=</span> <span class="va">b</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">.975</span>, <span class="fl">8</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>,</span>
-<span>  Upper_95 <span class="op">=</span> <span class="va">b</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">.975</span>, <span class="fl">8</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>, P_t <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">pt</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">b</span> <span class="op">/</span> <span class="va">se</span><span class="op">)</span>, df <span class="op">=</span> <span class="fl">8</span><span class="op">)</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>N <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">Nvalid</span>, df <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">df</span>, Estimate <span class="op">=</span> <span class="va">b</span>, Lower_95 <span class="op">=</span> <span class="va">b</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">.975</span>, <span class="va">fit</span><span class="op">$</span><span class="va">df</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>,</span>
+<span>  Upper_95 <span class="op">=</span> <span class="va">b</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">.975</span>, <span class="va">fit</span><span class="op">$</span><span class="va">df</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>, P_t <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">pt</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">b</span> <span class="op">/</span> <span class="va">se</span><span class="op">)</span>, df <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">df</span><span class="op">)</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">N</th>
+<th align="right">df</th>
 <th align="right">Estimate</th>
 <th align="right">Lower_95</th>
 <th align="right">Upper_95</th>
 <th align="right">P_t</th>
 </tr></thead>
 <tbody><tr class="odd">
+<td align="right">10</td>
+<td align="right">8</td>
 <td align="right">-0.748</td>
 <td align="right">-1.616</td>
 <td align="right">0.119</td>
@@ -431,7 +435,7 @@
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_glucose"</span>, target_years <span class="op">=</span> <span class="va">target_days</span> <span class="op">/</span> <span class="fl">365.25</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_glucose_years"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -444,56 +448,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">0.7110198</td>
+<td align="right">0.711</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">1.4220397</td>
+<td align="right">1.422</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">2.7008898</td>
+<td align="right">2.701</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">3.2005476</td>
+<td align="right">3.201</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">7.3744011</td>
+<td align="right">7.374</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">13.0590007</td>
+<td align="right">13.059</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">15.2112252</td>
+<td align="right">15.211</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">5.7535934</td>
+<td align="right">5.754</td>
 <td align="right">8</td>
 <td align="right">2</td>
 </tr>
@@ -505,7 +509,7 @@
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_glucose"</span>, difference <span class="op">=</span> <span class="va">last</span> <span class="op">-</span> <span class="va">first</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_difference"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_difference$difference"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_difference$difference"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -573,7 +577,7 @@
 </tr>
 </tbody>
 </table>
-<p>The difference agrees with native change because all ten people have a later reading. It describes only two endpoints; intermediate values can rise and fall. The slope uses those intermediate observations but still assumes a straight line.</p>
+<p>The difference agrees with native change because both calculate last minus first. All ten people have later readings, so the complete-case populations also coincide. It describes only two endpoints; intermediate values can rise and fall. The slope uses those intermediate observations but still assumes a straight line.</p>
 </details>
 </div>
 <div class="section level2">

@@ -44,9 +44,22 @@ knitr::kable(vocabulary_rows)
 | site  | Questionnaire  | 2025-01-01          |
 | site2 | Questionnaire  | 2026-01-01          |
 
+``` r
+source_rows <- do.call(rbind, lapply(names(sources), function(site)
+  data.frame(Site = site, sources[[site]][c("cdm_source_name", "cdm_version", "source_release_date")])))
+knitr::kable(source_rows, row.names = FALSE)
+```
+
+| Site  | cdm\_source\_name               | cdm\_version | source\_release\_date |
+| :---- | :------------------------------ | :----------- | :-------------------- |
+| site  | Synthetic questionnaire dataset | 5.4          | 2025-01-01            |
+| site2 | Synthetic questionnaire dataset | 5.4          | 2025-01-01            |
+
 The questionnaire vocabulary dates are 2025-01-01 and 2026-01-01. Retain
 both: newer wording can change labels even when concept IDs stay the
-same.
+same. Both source records identify the synthetic questionnaire dataset,
+CDM 5.4 and a source release date of 2025-01-01; these fields identify
+what the study record saves.
 
 ## Define and inspect the study
 
@@ -179,15 +192,15 @@ Solution 2
 circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
   CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
 circe_check <- recipe_circe_check(circe_json)
-issues <- circe_check$issues[c("path", "remedy")]
-issues$path <- paste0("`", issues$path, "`")
-knitr::kable(issues, row.names = FALSE)
+print(circe_check$issues[c("path", "remedy")], row.names = FALSE)
 ```
 
-| path                   | remedy                                                                         |
-| :--------------------- | :----------------------------------------------------------------------------- |
-| `$.AdditionalCriteria` | AdditionalCriteria has no implemented adapter; retain the complete definition. |
-| `$.PrimaryCriteria`    | Provide an object with the documented structural fields.                       |
+    #>                  path
+    #>  $.AdditionalCriteria
+    #>     $.PrimaryCriteria
+    #>                                                                          remedy
+    #>  AdditionalCriteria has no implemented adapter; retain the complete definition.
+    #>                        Provide an object with the documented structural fields.
 
 The check identifies structural problems in this example, so it is not
 ready for extraction. Attempt the strict import and read its refusal:
@@ -213,7 +226,7 @@ death-period column represent, and are they ordered?
 Solution 3
 
 ``` r
-columns <- recipe_codebook(result, output = "people", component = "people")[[1]]$columns
+columns <- recipe_codebook(result)[[1]]$columns
 period <- match("death_period", columns$name)
 knitr::kable(data.frame(Year = columns$levels[[period]]$labels,
   Type = columns$r_type[[period]]))
@@ -230,9 +243,36 @@ declaration; its name alone is insufficient.
 
 ## Exercise 4: preserve a required clean period
 
-Suppose a study requires 365 observed days without the outcome before
-entry. Can the incidence-rate analysis below implement that requirement?
-If it refuses, which scientific rule must the alternative preserve?
+A prebuilt analysis is a named catalogue procedure that returns an
+aggregate; a recipe instead lets you choose populations, variables and
+output tables. Each analysis declares its supported settings, so inspect
+its definition before using it for a study.
+
+For a small successful example, the person-count analysis needs no
+settings:
+
+``` r
+person_counts <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
+  conns = conns["site"])
+knitr::kable(person_counts$pooled[c("gender_name", "n_persons")], row.names = FALSE)
+```
+
+| gender\_name | n\_persons |
+| :----------- | ---------: |
+| MALE         |         25 |
+| FEMALE       |         20 |
+
+The default run describes all people at this site. Its male count of 25
+and female count of 20 are rounded down to five-person bands: 25–29 and
+20–24, respectively. They are not exact counts to sum for a study
+denominator.
+
+The incidence-rate analysis is a different catalogue procedure: it
+describes first-episode incidence over a follow-up window, with no clean
+period by default. Suppose a study requires 365 observed days without
+the outcome before entry. Can the incidence-rate analysis below
+implement that requirement? If it refuses, which scientific rule must
+the alternative preserve?
 
 Solution: keep the outcome-free observation period
 
@@ -244,20 +284,15 @@ tryCatch(ds.omop.analysis.run("dsomop:incidence.rate",
 
     #> unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required
 
-`unsupported_clean_window` means this analysis does not implement a
-nonzero clean period. Setting it to zero would answer a different
-question. Use a validated native risk recipe: require continuous
-observation for the preceding 365 days, exclude entrants with the
-outcome in days −365 through −1, and declare the subsequent time at
-risk, outcome and censoring rules. The [population
+`unsupported_clean_window` means this analysis cannot implement the
+required clean period. Preserve continuous prior observation, the
+outcome-free period and the specified follow-up in a reviewed recipe.
+The [population
 lessons](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md)
-introduce eligibility, and the [drug
+and [drug
 comparison](https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.md)
-shows explicit prior-event exclusion and follow-up. Adapt those rules to
-the protocol and check eligibility and person-time before estimating the
-rate; no recorded outcome alone does not establish a fully observed
-clean period. Retain the refusal and the reviewed replacement definition
-with the study record.
+show the relevant rules; setting the clean period to zero would change
+the scientific question.
 
 ## Recap
 

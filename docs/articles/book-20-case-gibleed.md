@@ -67,7 +67,11 @@ Select **1118084** (celecoxib), **1124300** (Diclofenac) and **192671**
 study-drug records are already ingredient-coded. The descendant request
 includes the seed by default: the celecoxib row below is self-inclusion,
 not a more specific product. Ingredient-to-product membership uses the
-ancestry hierarchy; Maps to serves a different purpose.
+ancestry hierarchy; Maps to serves a different purpose. This reduced
+vocabulary lacks the ingredient-to-product ancestor edge from
+**1118084** to **1118088**. A catalogue match for the capsule therefore
+does not establish a descendant relationship, which is why only the seed
+appears below.
 
 ``` r
 ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns, symbol = "book_pool")$pooled
@@ -157,7 +161,11 @@ private at each site.
 Completed age subtracts one from the difference in calendar years when
 entry occurs before the birthday. We calculate it explicitly from the
 birth components and index-date parts below; missing birth components
-preserve missing age.
+preserve missing age. GiBleed stores its birth components as numeric
+rather than integer columns, which the native age constructor does not
+accept. Use `omop_age_at("index")` where the source schema supports it;
+here the integral component values permit the completed-age calculation
+below.
 
 ## Describe the arms before modelling
 
@@ -195,9 +203,9 @@ knitr::kable(book_table2(dsBaseClient::ds.table("D_comparison$celecoxib",
 
 All 2,630 episodes have positive time. Treatment 0 is diclofenac and 1
 is celecoxib; event 1 is bleeding and 0 is censoring. The event counts
-are 124 and 355 respectively. No prior bleeding is present in this
-dataset, so the exclusion leaves these counts unchanged while making the
-study definition explicit.
+are 124 and 355 respectively. No prior bleeding is present in these
+synthetic data, so the exclusion leaves these counts unchanged while
+making the study definition explicit.
 
 ``` r
 arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
@@ -235,9 +243,7 @@ log(person-years) as an offset. The treatment coefficient is a log
 hazard ratio against diclofenac, conditional on completed age at entry.
 This is not a Cox model.
 
-dsBase’s local steps may warn; check the final `$iter` and error
-diagnostics for convergence. The known local-step warnings are hidden in
-this example.
+The known local-step warnings are hidden in this example.
 
 ``` r
 dsBaseClient::ds.log("D_comparison_model$years", newobj = "log_years", datasources = two_conns)

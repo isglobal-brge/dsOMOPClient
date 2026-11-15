@@ -225,9 +225,11 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_before_death$education",
 | NA                   |    24 |
 
 The counts remain 12 Secondary, 12 University and 24 missing: all
-observed answers preceded death. A survivor has no death anchor, so this
-definition cannot supply an answer for that person. The unchanged totals
-do not make the window irrelevant.
+observed answers preceded death. This exercise uses the raw education
+variable without the category specification, so missing answers have the
+raw `NA` label instead of the main table’s “Missing”. A survivor has no
+death anchor, so this definition cannot supply an answer for that
+person. The unchanged totals do not make the window irrelevant.
 
 **2. Use year as a number.** Find the mean first-visit year and its
 denominator. Then check how its type differs from the exact date and
@@ -252,14 +254,14 @@ knitr::kable(book_summary("D_capstone$visit_year", datasources = conns))
 
 ``` r
 columns <- recipe_codebook(result)[[1]]$columns
-knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")])
+knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")], row.names = FALSE)
 ```
 
-|    | name         | r\_type         |
-| :- | :----------- | :-------------- |
-| 8  | visit\_date  | Date            |
-| 9  | visit\_month | ordered\_factor |
-| 11 | visit\_year  | integer         |
+| name         | r\_type         |
+| :----------- | :-------------- |
+| visit\_date  | Date            |
+| visit\_month | ordered\_factor |
+| visit\_year  | integer         |
 
 All 36 visitors have year 2020, so its mean is 2020; 12 people have no
 value. The codebook distinguishes Date, factor and numeric

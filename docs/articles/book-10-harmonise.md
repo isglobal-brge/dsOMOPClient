@@ -33,7 +33,7 @@ analysis calls.
 [Chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md)
 identifies Education question (**900001**), Fever question (**900002**),
 Secondary education (**900101**), University education (**900102**), Yes
-(**900301**) and No (**900302**. The later discovery table in this
+(**900301**) and No (**900302**). The later discovery table in this
 chapter adds the concepts needed for ordering and classification.
 
 ## Translation follows the value type
@@ -238,24 +238,24 @@ catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100,
   conns = conns)$pooled
 classification <- catalogue[catalogue$vocabulary_id %in% c("ATC", "ICD10", "Language") |
   catalogue$concept_id %in% c(900101L, 900102L, 900103L, 900201L, 900202L, 950001L), ]
-knitr::kable(classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")])
+knitr::kable(classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")], row.names = FALSE)
 ```
 
-|    | concept\_id | concept\_name                | vocabulary\_id | concept\_class\_id |
-| :- | ----------: | :--------------------------- | :------------- | :----------------- |
-| 3  |      900101 | Secondary education          | Questionnaire  | Questionnaire      |
-| 4  |      900102 | University education         | Questionnaire  | Questionnaire      |
-| 5  |      900201 | Myocardial infarction        | Questionnaire  | Questionnaire      |
-| 6  |      900202 | Pneumonia                    | Questionnaire  | Questionnaire      |
-| 13 |      950001 | Questionnaire study medicine | Questionnaire  | Questionnaire      |
-| 16 |      900103 | Primary education            | Questionnaire  | Questionnaire      |
-| 17 |     4180186 | English language             | Language       | Language           |
-| 18 |      960001 | Teaching ATC first level     | ATC            | ATC 1st            |
-| 19 |      960002 | Teaching ATC second level    | ATC            | ATC 2nd            |
-| 20 |      960010 | Teaching circulatory code    | ICD10          | ICD10 Hierarchy    |
-| 21 |      960011 | Teaching respiratory code    | ICD10          | ICD10 Hierarchy    |
-| 22 |      960020 | Teaching circulatory chapter | ICD10          | ICD10 Chapter      |
-| 23 |      960021 | Teaching respiratory chapter | ICD10          | ICD10 Chapter      |
+| concept\_id | concept\_name                | vocabulary\_id | concept\_class\_id |
+| ----------: | :--------------------------- | :------------- | :----------------- |
+|      900101 | Secondary education          | Questionnaire  | Questionnaire      |
+|      900102 | University education         | Questionnaire  | Questionnaire      |
+|      900201 | Myocardial infarction        | Questionnaire  | Questionnaire      |
+|      900202 | Pneumonia                    | Questionnaire  | Questionnaire      |
+|      950001 | Questionnaire study medicine | Questionnaire  | Questionnaire      |
+|      900103 | Primary education            | Questionnaire  | Questionnaire      |
+|     4180186 | English language             | Language       | Language           |
+|      960001 | Teaching ATC first level     | ATC            | ATC 1st            |
+|      960002 | Teaching ATC second level    | ATC            | ATC 2nd            |
+|      960010 | Teaching circulatory code    | ICD10          | ICD10 Hierarchy    |
+|      960011 | Teaching respiratory code    | ICD10          | ICD10 Hierarchy    |
+|      960020 | Teaching circulatory chapter | ICD10          | ICD10 Chapter      |
+|      960021 | Teaching respiratory chapter | ICD10          | ICD10 Chapter      |
 
 ``` r
 ids <- setNames(catalogue$concept_id, catalogue$concept_name)

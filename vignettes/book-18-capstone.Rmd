@@ -253,7 +253,9 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_before_death$education",
 |NA                   |    24|
 
 The counts remain 12 Secondary, 12 University and 24 missing: all observed
-answers preceded death. A survivor has no death anchor, so this definition cannot
+answers preceded death. This exercise uses the raw education variable without
+the category specification, so missing answers have the raw `NA` label instead
+of the main table's “Missing”. A survivor has no death anchor, so this definition cannot
 supply an answer for that person. The unchanged totals do not make the window irrelevant.
 
 </details>
@@ -283,16 +285,16 @@ knitr::kable(book_summary("D_capstone$visit_year", datasources = conns))
 
 ``` r
 columns <- recipe_codebook(result)[[1]]$columns
-knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")])
+knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")], row.names = FALSE)
 ```
 
 
 
-|   |name        |r_type         |
-|:--|:-----------|:--------------|
-|8  |visit_date  |Date           |
-|9  |visit_month |ordered_factor |
-|11 |visit_year  |integer        |
+|name        |r_type         |
+|:-----------|:--------------|
+|visit_date  |Date           |
+|visit_month |ordered_factor |
+|visit_year  |integer        |
 
 All 36 visitors have year 2020, so its mean is 2020; 12 people have no value.
 The codebook distinguishes Date, factor and numeric representations. Averaging

@@ -466,7 +466,7 @@
 </tr>
 </tbody>
 </table>
-<p>The counts remain 12 Secondary, 12 University and 24 missing: all observed answers preceded death. A survivor has no death anchor, so this definition cannot supply an answer for that person. The unchanged totals do not make the window irrelevant.</p>
+<p>The counts remain 12 Secondary, 12 University and 24 missing: all observed answers preceded death. This exercise uses the raw education variable without the category specification, so missing answers have the raw <code>NA</code> label instead of the main table’s “Missing”. A survivor has no death anchor, so this definition cannot supply an answer for that person. The unchanged totals do not make the window irrelevant.</p>
 </details><p><strong>2. Use year as a number.</strong> Find the mean first-visit year and its denominator. Then check how its type differs from the exact date and month category.</p>
 <details><p><summary>Solution 2</summary></p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -540,26 +540,22 @@
 </table>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">columns</span><span class="op">[</span><span class="va">columns</span><span class="op">$</span><span class="va">name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_date"</span>, <span class="st">"visit_month"</span>, <span class="st">"visit_year"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"r_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">columns</span><span class="op">[</span><span class="va">columns</span><span class="op">$</span><span class="va">name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_date"</span>, <span class="st">"visit_month"</span>, <span class="st">"visit_year"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"r_type"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left"></th>
 <th align="left">name</th>
 <th align="left">r_type</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">8</td>
 <td align="left">visit_date</td>
 <td align="left">Date</td>
 </tr>
 <tr class="even">
-<td align="left">9</td>
 <td align="left">visit_month</td>
 <td align="left">ordered_factor</td>
 </tr>
 <tr class="odd">
-<td align="left">11</td>
 <td align="left">visit_year</td>
 <td align="left">integer</td>
 </tr>

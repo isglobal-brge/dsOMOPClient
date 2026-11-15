@@ -112,11 +112,11 @@ locally.
 
 ``` r
 describe <- function(connections) {
-  mean <- function(column) dsBaseClient::ds.mean(paste0("D_baseline$", column),
+  aggregate_mean <- function(column) dsBaseClient::ds.mean(paste0("D_baseline$", column),
     type = "combine", datasources = connections)$Global.Mean
   variance <- function(column) dsBaseClient::ds.var(paste0("D_baseline$", column),
     type = "combine", datasources = connections)$Global.Variance
-  age <- mean("age"); lab <- mean("haemoglobin")
+  age <- aggregate_mean("age"); lab <- aggregate_mean("haemoglobin")
   n <- age[1, "Ntotal"]
   numeric_text <- function(x, v) sprintf("%.2f (%.2f)", x[1, "EstimatedMean"], sqrt(v[1, "EstimatedVar"]))
   counts <- function(column) {

@@ -53,9 +53,10 @@ height_id <- height_hits$concept_id[trimws(height_hits$concept_name) == "Body he
 body_sets <- list(weight = omop_concept_set(weight_id), height = omop_concept_set(height_id))
 ```
 
-Body weight is **3025315** and Body height is **3036277**. They are
-separate concepts; choosing the exact name avoids mixing measurements
-with similar wording.
+Body weight is **3025315** and Body height is **3036277**. The same
+panel concept, **40758413**, matches both searches, but the chosen
+individual measurement concepts are different. Choosing the exact name
+avoids mixing measurements with similar wording.
 
 ``` r
 weight_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = weight_id,
@@ -109,20 +110,20 @@ height_m <- omop_number(height, omop_number_spec(unit =
 bmi <- omop_formula_bmi(weight_kg, height_m)
 body <- omop_study(weight_event, outputs = "baseline",
   baseline = list(weight = weight, height = height, bmi = bmi))
-body_result <- recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns)
-knitr::kable(book_summary("D_formula_body$bmi", datasources = conns))
+invisible(recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns))
+knitr::kable(book_summary("D_formula_body$bmi", datasources = conns), digits = 3)
 ```
 
-| Site | Statistic |    Value | N valid | N missing |
-| :--- | :-------- | -------: | ------: | --------: |
-| site | 5%        | 11.53374 |      28 |         0 |
-| site | 10%       | 13.62216 |      28 |         0 |
-| site | 25%       | 15.88957 |      28 |         0 |
-| site | 50%       | 23.86380 |      28 |         0 |
-| site | 75%       | 27.93787 |      28 |         0 |
-| site | 90%       | 30.20849 |      28 |         0 |
-| site | 95%       | 30.36386 |      28 |         0 |
-| site | Mean      | 22.11315 |      28 |         0 |
+| Site | Statistic |  Value | N valid | N missing |
+| :--- | :-------- | -----: | ------: | --------: |
+| site | 5%        | 11.534 |      28 |         0 |
+| site | 10%       | 13.622 |      28 |         0 |
+| site | 25%       | 15.890 |      28 |         0 |
+| site | 50%       | 23.864 |      28 |         0 |
+| site | 75%       | 27.938 |      28 |         0 |
+| site | 90%       | 30.208 |      28 |         0 |
+| site | 95%       | 30.364 |      28 |         0 |
+| site | Mean      | 22.113 |      28 |         0 |
 
 The mean BMI is about 22.11 kg/m². BMI is kg divided by metres squared.
 The helper uses the presented coordinates, requires positive finite
@@ -140,19 +141,19 @@ body_rounded <- omop_study(weight_event, outputs = "baseline",
   baseline = list(bmi = bmi, rounded = omop_number(bmi,
     omop_number_spec(rounding = omop_number_round("decimals", 1)))))
 invisible(recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns))
-knitr::kable(book_summary("D_formula_rounded$rounded", datasources = conns))
+knitr::kable(book_summary("D_formula_rounded$rounded", datasources = conns), digits = 3)
 ```
 
-| Site | Statistic |    Value | N valid | N missing |
-| :--- | :-------- | -------: | ------: | --------: |
-| site | 5%        | 11.52000 |      28 |         0 |
-| site | 10%       | 13.60000 |      28 |         0 |
-| site | 25%       | 15.85000 |      28 |         0 |
-| site | 50%       | 23.85000 |      28 |         0 |
-| site | 75%       | 27.90000 |      28 |         0 |
-| site | 90%       | 30.19000 |      28 |         0 |
-| site | 95%       | 30.40000 |      28 |         0 |
-| site | Mean      | 22.10357 |      28 |         0 |
+| Site | Statistic |  Value | N valid | N missing |
+| :--- | :-------- | -----: | ------: | --------: |
+| site | 5%        | 11.520 |      28 |         0 |
+| site | 10%       | 13.600 |      28 |         0 |
+| site | 25%       | 15.850 |      28 |         0 |
+| site | 50%       | 23.850 |      28 |         0 |
+| site | 75%       | 27.900 |      28 |         0 |
+| site | 90%       | 30.190 |      28 |         0 |
+| site | 95%       | 30.400 |      28 |         0 |
+| site | Mean      | 22.104 |      28 |         0 |
 
 The rounded BMI mean is about 22.1 kg/m². The final presentation
 changes; the canonical BMI expression still uses its unrounded inputs.
@@ -207,19 +208,19 @@ map <- omop_formula_map(sbp_mmhg, dbp_mmhg)
 ratio <- omop_formula_ratio(sbp_mmhg, dbp_mmhg, unit = "1")
 pressure <- omop_study(sbp_event, outputs = "baseline", baseline = list(map = map, ratio = ratio))
 invisible(recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns))
-knitr::kable(book_summary("D_formula_pressure$map", datasources = conns))
+knitr::kable(book_summary("D_formula_pressure$map", datasources = conns), digits = 3)
 ```
 
-| Site | Statistic |    Value | N valid | N missing |
-| :--- | :-------- | -------: | ------: | --------: |
-| site | 5%        | 85.70000 |      28 |         0 |
-| site | 10%       | 87.23333 |      28 |         0 |
-| site | 25%       | 90.08333 |      28 |         0 |
-| site | 50%       | 93.50000 |      28 |         0 |
-| site | 75%       | 95.75000 |      28 |         0 |
-| site | 90%       | 96.96667 |      28 |         0 |
-| site | 95%       | 99.40000 |      28 |         0 |
-| site | Mean      | 93.53571 |      28 |         0 |
+| Site | Statistic |  Value | N valid | N missing |
+| :--- | :-------- | -----: | ------: | --------: |
+| site | 5%        | 85.700 |      28 |         0 |
+| site | 10%       | 87.233 |      28 |         0 |
+| site | 25%       | 90.083 |      28 |         0 |
+| site | 50%       | 93.500 |      28 |         0 |
+| site | 75%       | 95.750 |      28 |         0 |
+| site | 90%       | 96.967 |      28 |         0 |
+| site | 95%       | 99.400 |      28 |         0 |
+| site | Mean      | 93.536 |      28 |         0 |
 
 The MAP summary describes the same-day formula, in mmHg; its mean is
 about 93.54. This is an approximation from two pressure readings.
@@ -230,19 +231,19 @@ its unit mmHg?
 Solution 2
 
 ``` r
-knitr::kable(book_summary("D_formula_pressure$ratio", datasources = conns))
+knitr::kable(book_summary("D_formula_pressure$ratio", datasources = conns), digits = 3)
 ```
 
-| Site | Statistic |    Value | N valid | N missing |
-| :--- | :-------- | -------: | ------: | --------: |
-| site | 5%        | 1.220452 |      28 |         0 |
-| site | 10%       | 1.291128 |      28 |         0 |
-| site | 25%       | 1.316157 |      28 |         0 |
-| site | 50%       | 1.516234 |      28 |         0 |
-| site | 75%       | 1.612708 |      28 |         0 |
-| site | 90%       | 1.639933 |      28 |         0 |
-| site | 95%       | 1.726477 |      28 |         0 |
-| site | Mean      | 1.487598 |      28 |         0 |
+| Site | Statistic | Value | N valid | N missing |
+| :--- | :-------- | ----: | ------: | --------: |
+| site | 5%        | 1.220 |      28 |         0 |
+| site | 10%       | 1.291 |      28 |         0 |
+| site | 25%       | 1.316 |      28 |         0 |
+| site | 50%       | 1.516 |      28 |         0 |
+| site | 75%       | 1.613 |      28 |         0 |
+| site | 90%       | 1.640 |      28 |         0 |
+| site | 95%       | 1.726 |      28 |         0 |
+| site | Mean      | 1.488 |      28 |         0 |
 
 The mean ratio is about 1.5. Its unit is not mmHg: the identical
 numerator and denominator units cancel. That does not make ratios from
@@ -257,9 +258,9 @@ max(Scr/κ, 1)^−1.2 × 0.9938^age, with κ = 0.7 and α = −0.241 for female,
 Scr is in mg/dL. See the [National Kidney Foundation
 equation](https://www.kidney.org/ckd-epi-creatinine-equation-2021).
 
-Do not substitute a different specimen because the correct source cannot
-support a release. This check distinguishes vocabulary availability from
-observed use:
+Do not use urine measurements in place of serum measurements just to
+obtain a released result. This check distinguishes vocabulary
+availability from observed use:
 
 ``` r
 creatinine_hits <- ds.omop.concept.search("Creatinine", domain = "Measurement",
@@ -297,6 +298,7 @@ age at measurement, and an explicit mapping to the equation’s
 female/male branches. It returns missing for children, nonpositive
 creatinine and unmapped sex. Save the intended serum definition in a
 named project file before moving to the separate questionnaire example.
+Saving lets later work reuse exactly the same concept definitions.
 
 ``` r
 formula_file <- "formula-concepts.rds"
@@ -307,10 +309,11 @@ saveRDS(formula_concepts, formula_file)
 
 ## Collapse repeated episodes deliberately
 
-A person may have several eligible measurement episodes. Requesting
-person grain requires an explicit collapse rule: first\_episode,
-last\_episode or any. This collapses repeated population episodes, not
-duplicate source measurements.
+With `select = "all"`, every eligible weight reading starts a population
+episode. A person can therefore have several episodes. Requesting person
+grain requires an explicit collapse rule: first\_episode, last\_episode
+or any. This collapses repeated population episodes, not duplicate
+source measurements.
 
 ``` r
 episodes <- omop_population("weights", index = omop_index(weight_event, select = "all"))
@@ -318,23 +321,23 @@ collapsed <- omop_recipe(populations = list(episodes), variables = list(weight =
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "first_episode"))
 invisible(recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns))
-knitr::kable(book_summary("D_collapsed_weights$weight", datasources = conns))
+knitr::kable(book_summary("D_collapsed_weights$weight", datasources = conns), digits = 3)
 ```
 
-| Site | Statistic |    Value | N valid | N missing |
-| :--- | :-------- | -------: | ------: | --------: |
-| site | 5%        |  2.71000 |      28 |         0 |
-| site | 10%       |  3.73000 |      28 |         0 |
-| site | 25%       | 11.05000 |      28 |         0 |
-| site | 50%       | 70.90000 |      28 |         0 |
-| site | 75%       | 75.72500 |      28 |         0 |
-| site | 90%       | 80.94000 |      28 |         0 |
-| site | 95%       | 84.83500 |      28 |         0 |
-| site | Mean      | 50.44643 |      28 |         0 |
+| Site | Statistic |  Value | N valid | N missing |
+| :--- | :-------- | -----: | ------: | --------: |
+| site | 5%        |  2.710 |      28 |         0 |
+| site | 10%       |  3.730 |      28 |         0 |
+| site | 25%       | 11.050 |      28 |         0 |
+| site | 50%       | 70.900 |      28 |         0 |
+| site | 75%       | 75.725 |      28 |         0 |
+| site | 90%       | 80.940 |      28 |         0 |
+| site | 95%       | 84.835 |      28 |         0 |
+| site | Mean      | 50.446 |      28 |         0 |
 
-The first-episode weight mean is 50.45 kg. A same-day tolerance still
-does not average duplicate readings automatically. Closest-value
-selection uses deterministic ordering; a mean weights eligible rows.
+The first-episode weight mean is 50.45 kg. Selecting the closest reading
+chooses one reading; averaging combines all eligible readings. A
+same-day window alone does not decide how duplicates are combined.
 Document whether the problem is repeated episodes or duplicated source
 records before choosing a collapse or reducer. The events chapter
 compares record counts with distinct-day counts.
@@ -346,7 +349,7 @@ last_episode <- omop_recipe(populations = list(episodes), variables = list(weigh
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "last_episode"))
 invisible(recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns))
-knitr::kable(book_summary("D_last_weights$weight", datasources = conns))
+knitr::kable(book_summary("D_last_weights$weight", datasources = conns), digits = 3)
 ```
 
 | Site | Statistic |  Value | N valid | N missing |
@@ -360,9 +363,11 @@ knitr::kable(book_summary("D_last_weights$weight", datasources = conns))
 | site | 95%       | 94.365 |      28 |         0 |
 | site | Mean      | 66.600 |      28 |         0 |
 
-The last-episode weight mean is 66.60 kg. The person roster is collapsed
-with a different temporal choice. This is not a measurement average, and
-it need not equal an average over all episodes.
+The last-episode weight mean is 66.60 kg, compared with 50.45 kg at the
+first episode. The Synthea population includes children growing across
+years, which helps explain this large difference. Each person
+contributes their selected episode; this is not an average over all
+measurements or episodes.
 
 ## Execute eGFR with declared synthetic inputs
 
@@ -409,7 +414,9 @@ Creatinine **970001** is a local teaching concept with no external
 mappings. The equation branches use Female **8532** and Male **8507**.
 The synthetic source explicitly defines standardized serum measurements
 in mg/dL. The clinical equivalents would require assay and source
-validation.
+validation. With `missing = "keep"`, the first selected missing reading
+stays missing rather than being skipped. With `scope = "episode"`, the
+age anchor is selected within the current episode.
 
 ``` r
 serum_event <- omop_event("measurement", formula_set, unit = omop_unit(8840L))
@@ -427,19 +434,19 @@ egfr_recipe <- omop_recipe(
   variables = list(egfr = egfr),
   outputs = omop_output("people", rows = "measurements", format = "wide"))
 egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", conns = conns)
-knitr::kable(book_summary("D_egfr$egfr", datasources = conns))
+knitr::kable(book_summary("D_egfr$egfr", datasources = conns), digits = 3)
 ```
 
-| Site | Statistic |     Value | N valid | N missing |
-| :--- | :-------- | --------: | ------: | --------: |
-| site | 5%        |  34.53919 |      36 |        12 |
-| site | 10%       |  34.53919 |      36 |        12 |
-| site | 25%       |  46.14291 |      36 |        12 |
-| site | 50%       |  99.23431 |      36 |        12 |
-| site | 75%       | 116.37404 |      36 |        12 |
-| site | 90%       | 118.71584 |      36 |        12 |
-| site | 95%       | 118.71584 |      36 |        12 |
-| site | Mean      |  86.11545 |      36 |        12 |
+| Site | Statistic |   Value | N valid | N missing |
+| :--- | :-------- | ------: | ------: | --------: |
+| site | 5%        |  34.539 |      36 |        12 |
+| site | 10%       |  34.539 |      36 |        12 |
+| site | 25%       |  46.143 |      36 |        12 |
+| site | 50%       |  99.234 |      36 |        12 |
+| site | 75%       | 116.374 |      36 |        12 |
+| site | 90%       | 118.716 |      36 |        12 |
+| site | 95%       | 118.716 |      36 |        12 |
+| site | Mean      |  86.115 |      36 |        12 |
 
 Mean eGFR is 86.12 mL/min/1.73 m². There are 36 valid estimates and 12
 missing because of incomplete birth dates. The output is an adult
@@ -499,29 +506,27 @@ daily <- omop_recipe(variables = list(
   daily_mean = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "mean"),
   daily_max = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "max")))
 invisible(recipe_execute(daily, out = "D_daily", conns = conns))
-knitr::kable(rbind(
-  transform(book_summary("D_daily$daily_mean", datasources = conns), Rule = "Daily mean"),
-  transform(book_summary("D_daily$daily_max", datasources = conns), Rule = "Daily maximum")))
+daily_mean <- book_summary("D_daily$daily_mean", datasources = conns)
+daily_max <- book_summary("D_daily$daily_max", datasources = conns)
+knitr::kable(data.frame(
+  Statistic = c(daily_mean$Statistic, "N valid", "N missing"),
+  `Daily mean` = c(daily_mean$Value, daily_mean$`N valid`[1], daily_mean$`N missing`[1]),
+  `Daily maximum` = c(daily_max$Value, daily_max$`N valid`[1], daily_max$`N missing`[1]),
+  check.names = FALSE), digits = 3, row.names = FALSE)
 ```
 
-| Site | Statistic | Value | N valid | N missing | Rule          |
-| :--- | :-------- | ----: | ------: | --------: | :------------ |
-| site | 5%        |    66 |      36 |        12 | Daily mean    |
-| site | 10%       |    66 |      36 |        12 | Daily mean    |
-| site | 25%       |    66 |      36 |        12 | Daily mean    |
-| site | 50%       |    80 |      36 |        12 | Daily mean    |
-| site | 75%       |   100 |      36 |        12 | Daily mean    |
-| site | 90%       |   100 |      36 |        12 | Daily mean    |
-| site | 95%       |   100 |      36 |        12 | Daily mean    |
-| site | Mean      |    82 |      36 |        12 | Daily mean    |
-| site | 5%        |    69 |      36 |        12 | Daily maximum |
-| site | 10%       |    69 |      36 |        12 | Daily maximum |
-| site | 25%       |    69 |      36 |        12 | Daily maximum |
-| site | 50%       |    80 |      36 |        12 | Daily maximum |
-| site | 75%       |   100 |      36 |        12 | Daily maximum |
-| site | 90%       |   100 |      36 |        12 | Daily maximum |
-| site | 95%       |   100 |      36 |        12 | Daily maximum |
-| site | Mean      |    83 |      36 |        12 | Daily maximum |
+| Statistic | Daily mean | Daily maximum |
+| :-------- | ---------: | ------------: |
+| 5%        |         66 |            69 |
+| 10%       |         66 |            69 |
+| 25%       |         66 |            69 |
+| 50%       |         80 |            80 |
+| 75%       |        100 |           100 |
+| 90%       |        100 |           100 |
+| 95%       |        100 |           100 |
+| Mean      |         82 |            83 |
+| N valid   |         36 |            36 |
+| N missing |         12 |            12 |
 
 The overall means are **82 and 83 kg**, each based on 36 people, with 12
 missing. Only the first group’s values change. Each observed day
@@ -531,11 +536,11 @@ otherwise give a day extra weight.
 
 ## Recap
 
-Align meanings, units and dates before arithmetic. Native expressions
-preserve private inputs and declared units. BMI, MAP and ratios use
-named formula definitions; missing prerequisites are a reason to stop a
-formula study. Collapse repeated episodes explicitly instead of letting
-duplicate rows change an analysis.
+Align meanings, units and dates before arithmetic. Named formulas
+preserve private inputs and declared units; missing prerequisites are a
+reason to stop a formula study. Choose a collapse rule for repeated
+population episodes and a separate within-day rule for duplicate
+readings.
 
 **Next:** [16. Longitudinal data: from events to
 analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md).

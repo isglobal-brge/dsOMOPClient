@@ -247,7 +247,7 @@
 </tr>
 </tbody>
 </table>
-<p>The table counts 1,037 admission rows. To count people separately, reduce each visitor’s records to a count and distinguish single from repeat visitors.</p>
+<p>The table counts exactly 1,037 admission rows; chapter 4’s locator count was floored to the five-row band starting at 1,035. To count people separately, reduce each visitor’s records to a count and distinguish single from repeat visitors.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visits_per_person</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">visits</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  admissions <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">visits</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"count"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -335,7 +335,7 @@
 <span>    First <span class="op">=</span> <span class="va">first_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span>, Last <span class="op">=</span> <span class="va">last_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span>,</span>
 <span>    Observed <span class="op">=</span> <span class="va">first_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span>, Missing <span class="op">=</span> <span class="va">first_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nmissing"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">window_results</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">window_results</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">Period</th>
@@ -347,22 +347,22 @@
 <tbody>
 <tr class="odd">
 <td align="right">1</td>
-<td align="right">13.98571</td>
-<td align="right">14.28571</td>
+<td align="right">13.986</td>
+<td align="right">14.286</td>
 <td align="right">28</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="right">2</td>
-<td align="right">15.30000</td>
-<td align="right">15.30000</td>
+<td align="right">15.300</td>
+<td align="right">15.300</td>
 <td align="right">10</td>
 <td align="right">18</td>
 </tr>
 <tr class="odd">
 <td align="right">3</td>
-<td align="right">14.56667</td>
-<td align="right">14.56667</td>
+<td align="right">14.567</td>
+<td align="right">14.567</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
@@ -477,7 +477,7 @@
 <details><p><summary>Solution: a scheduled column</summary></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span></span>
-<span>  <span class="st">"D_timepoints$measurements_hb_year5"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="st">"D_timepoints$measurements_hb_year5"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
@@ -490,56 +490,56 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">12.59000</td>
+<td align="right">12.590</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">12.88000</td>
+<td align="right">12.880</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">13.25000</td>
+<td align="right">13.250</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">16.00000</td>
+<td align="right">16.000</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">16.75000</td>
+<td align="right">16.750</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">17.20000</td>
+<td align="right">17.200</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">17.29000</td>
+<td align="right">17.290</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">15.15333</td>
+<td align="right">15.153</td>
 <td align="right">15</td>
 <td align="right">13</td>
 </tr>
@@ -745,7 +745,7 @@
 </tbody>
 </table>
 <p>Each row is one observed day at risk. More than one lab on that day is still one outcome. Time in years is a predictor; the outcome probability remains <strong>per day</strong>. The binomial GLM models log odds with a linear time trend. A study would assess that time specification and the assumption of noninformative censoring.</p>
-<p>dsBase’s local steps may warn; check <code>$iter</code> and the final errors for convergence. The known local-step warnings are hidden here.</p>
+<p>The known local-step warnings are hidden here.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hazard_fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.glm.html" class="external-link">ds.glm</a></span><span class="op">(</span><span class="st">"event ~ years"</span>, data <span class="op">=</span> <span class="st">"D_hazard"</span>,</span>
 <span>  family <span class="op">=</span> <span class="st">"binomial"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
@@ -857,56 +857,38 @@
 </tr>
 </tbody>
 </table>
-<p><code>start_date</code> is days since first BMI under the default relative-date policy. The person key, all readings and their dates stay on the servers. Preserve actual time; coding visit numbers as equally spaced would misrepresent these records. Each person has exactly one indexed episode here, so <code>cohort_row_id</code> is the person-level grouping key for these models. With multiple episodes per person, use a person-level key to model their dependence instead.</p>
+<p><code>start_date</code> is days since first BMI under the default relative-date policy. The person key, all readings and their dates stay on the servers. Preserve actual time; coding visit numbers as equally spaced would misrepresent these records. Each person has exactly one indexed episode here, so <code>cohort_row_id</code> is the person-level grouping key for these models. With multiple episodes per person, use <code>person_id</code> to group repeated observations of the same person; <code>cohort_row_id</code> identifies an episode.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_long"</span>, years <span class="op">=</span> <span class="va">start_date</span> <span class="op">/</span> <span class="fl">365.25</span>,</span>
 <span>  above_cutoff <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">value</span> <span class="op">&gt;=</span> <span class="fl">25</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_repeat"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">repeat_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_repeat$value"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="va">repeat_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_repeat$above_cutoff"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_group_comparison</span><span class="op">(</span><span class="va">repeat_counts</span>, <span class="va">repeat_mean</span>, <span class="st">"BMI reading"</span>, <span class="st">"kg/m²"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">repeat_groups</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.meanSdGp.html" class="external-link">ds.meanSdGp</a></span><span class="op">(</span><span class="st">"D_repeat$value"</span>, <span class="st">"D_repeat$above_cutoff"</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Band <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 25"</span>, <span class="st">"25 or above"</span><span class="op">)</span>,</span>
+<span>  Readings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">repeat_groups</span><span class="op">$</span><span class="va">Nvalid_gp</span><span class="op">)</span>,</span>
+<span>  Mean_BMI <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">repeat_groups</span><span class="op">$</span><span class="va">Mean_gp</span><span class="op">)</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-<th align="left">Number</th>
-<th align="left">Unit</th>
-<th align="right">Overall mean</th>
+<th align="left">Band</th>
+<th align="right">Readings</th>
+<th align="right">Mean_BMI</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">0</td>
+<td align="left">below 25</td>
 <td align="right">123</td>
-<td align="left">BMI reading</td>
-<td align="left">kg/m²</td>
-<td align="right">NA</td>
+<td align="right">19.130</td>
 </tr>
 <tr class="even">
-<td align="left">1</td>
+<td align="left">25 or above</td>
 <td align="right">315</td>
-<td align="left">BMI reading</td>
-<td align="left">kg/m²</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">NA</td>
-<td align="right">0</td>
-<td align="left">BMI reading</td>
-<td align="left">kg/m²</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">Overall (all groups)</td>
-<td align="right">NA</td>
-<td align="left">BMI reading</td>
-<td align="left">kg/m²</td>
-<td align="right">25.76941</td>
+<td align="right">28.362</td>
 </tr>
 </tbody>
 </table>
-<p>The 438 readings split into 123 below and 315 at or above 25. Their overall mean is 25.77 kg/m². This mean weights readings, not people. The cutoff is a teaching rule only: this synthetic population includes children, and an adult BMI cutoff is not an age-specific clinical classification. The continuous and binary responses answer different questions.</p>
+<p>The 438 readings split into 123 below and 315 at or above 25. Each mean’s denominator is the number of readings in that band, not the number of people. People with more readings contribute more to these means. The cutoff is a teaching rule only: this synthetic population includes children, and an adult BMI cutoff is not an age-specific clinical classification. The continuous and binary responses answer different questions.</p>
 <p><code>SLMA</code> means <strong>study-level meta-analysis</strong>. Each server fits its own mixed model; only estimates and standard errors return for pooling. It is not a single mixed model fitted jointly to concatenated rows. A fixed-effect pool assumes a common coefficient. A random-effects pool allows site coefficients to differ; here use REML to estimate their between-site variance. With only two sites, that variance and the pooled interval remain uncertain.</p>
-<p>The known upstream warning is hidden. Check <code>Convergence.error.message</code> for each model before interpreting estimates.</p>
+<p>The known upstream warning is hidden. Optimizer convergence alone does not establish that the data support a model; the binary example below illustrates this.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">linear_mixed</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.lmerSLMA.html" class="external-link">ds.lmerSLMA</a></span><span class="op">(</span><span class="st">"value ~ years + (1|cohort_row_id)"</span>,</span>
 <span>  dataName <span class="op">=</span> <span class="st">"D_repeat"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
@@ -993,10 +975,9 @@
 <span>  Time_coefficient <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">binary_mixed</span><span class="op">$</span><span class="va">betamatrix.all</span><span class="op">[</span><span class="st">"years"</span>, <span class="op">]</span><span class="op">)</span>,</span>
 <span>  Random_intercept_SD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">binary_mixed</span><span class="op">$</span><span class="va">output.summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"study1"</span>, <span class="st">"study2"</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>    <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">varcor</span><span class="op">)</span><span class="op">$</span><span class="va">sdcor</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">binary_sites</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">binary_sites</span>, digits <span class="op">=</span> <span class="fl">2</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left"></th>
 <th align="left">Site</th>
 <th align="right">Intercept</th>
 <th align="right">Time_coefficient</th>
@@ -1004,14 +985,12 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">study1</td>
 <td align="left">north</td>
 <td align="right">-9.37</td>
 <td align="right">1.28</td>
 <td align="right">17.31</td>
 </tr>
 <tr class="even">
-<td align="left">study2</td>
 <td align="left">south</td>
 <td align="right">9.25</td>
 <td align="right">0.00</td>

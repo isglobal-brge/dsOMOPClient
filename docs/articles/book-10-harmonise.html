@@ -107,7 +107,7 @@
 <span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"questionnaire"</span>, categories <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 <p>The connection is ready; <code>conns</code> identifies the server used by the analysis calls.</p>
-<p><a href="book-04-vocabulary.html">Chapter 4</a> identifies Education question (<strong>900001</strong>), Fever question (<strong>900002</strong>), Secondary education (<strong>900101</strong>), University education (<strong>900102</strong>), Yes (<strong>900301</strong>) and No (<strong>900302</strong>. The later discovery table in this chapter adds the concepts needed for ordering and classification.</p>
+<p><a href="book-04-vocabulary.html">Chapter 4</a> identifies Education question (<strong>900001</strong>), Fever question (<strong>900002</strong>), Secondary education (<strong>900101</strong>), University education (<strong>900102</strong>), Yes (<strong>900301</strong>) and No (<strong>900302</strong>). The later discovery table in this chapter adds the concepts needed for ordering and classification.</p>
 </div>
 <div class="section level2">
 <h2 id="translation-follows-the-value-type">Translation follows the value type<a class="anchor" aria-label="anchor" href="#translation-follows-the-value-type"></a>
@@ -310,10 +310,9 @@
 <span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">classification</span> <span class="op">&lt;-</span> <span class="va">catalogue</span><span class="op">[</span><span class="va">catalogue</span><span class="op">$</span><span class="va">vocabulary_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ATC"</span>, <span class="st">"ICD10"</span>, <span class="st">"Language"</span><span class="op">)</span> <span class="op">|</span></span>
 <span>  <span class="va">catalogue</span><span class="op">$</span><span class="va">concept_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">900101L</span>, <span class="fl">900102L</span>, <span class="fl">900103L</span>, <span class="fl">900201L</span>, <span class="fl">900202L</span>, <span class="fl">950001L</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">classification</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">classification</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left"></th>
 <th align="right">concept_id</th>
 <th align="left">concept_name</th>
 <th align="left">vocabulary_id</th>
@@ -321,91 +320,78 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">3</td>
 <td align="right">900101</td>
 <td align="left">Secondary education</td>
 <td align="left">Questionnaire</td>
 <td align="left">Questionnaire</td>
 </tr>
 <tr class="even">
-<td align="left">4</td>
 <td align="right">900102</td>
 <td align="left">University education</td>
 <td align="left">Questionnaire</td>
 <td align="left">Questionnaire</td>
 </tr>
 <tr class="odd">
-<td align="left">5</td>
 <td align="right">900201</td>
 <td align="left">Myocardial infarction</td>
 <td align="left">Questionnaire</td>
 <td align="left">Questionnaire</td>
 </tr>
 <tr class="even">
-<td align="left">6</td>
 <td align="right">900202</td>
 <td align="left">Pneumonia</td>
 <td align="left">Questionnaire</td>
 <td align="left">Questionnaire</td>
 </tr>
 <tr class="odd">
-<td align="left">13</td>
 <td align="right">950001</td>
 <td align="left">Questionnaire study medicine</td>
 <td align="left">Questionnaire</td>
 <td align="left">Questionnaire</td>
 </tr>
 <tr class="even">
-<td align="left">16</td>
 <td align="right">900103</td>
 <td align="left">Primary education</td>
 <td align="left">Questionnaire</td>
 <td align="left">Questionnaire</td>
 </tr>
 <tr class="odd">
-<td align="left">17</td>
 <td align="right">4180186</td>
 <td align="left">English language</td>
 <td align="left">Language</td>
 <td align="left">Language</td>
 </tr>
 <tr class="even">
-<td align="left">18</td>
 <td align="right">960001</td>
 <td align="left">Teaching ATC first level</td>
 <td align="left">ATC</td>
 <td align="left">ATC 1st</td>
 </tr>
 <tr class="odd">
-<td align="left">19</td>
 <td align="right">960002</td>
 <td align="left">Teaching ATC second level</td>
 <td align="left">ATC</td>
 <td align="left">ATC 2nd</td>
 </tr>
 <tr class="even">
-<td align="left">20</td>
 <td align="right">960010</td>
 <td align="left">Teaching circulatory code</td>
 <td align="left">ICD10</td>
 <td align="left">ICD10 Hierarchy</td>
 </tr>
 <tr class="odd">
-<td align="left">21</td>
 <td align="right">960011</td>
 <td align="left">Teaching respiratory code</td>
 <td align="left">ICD10</td>
 <td align="left">ICD10 Hierarchy</td>
 </tr>
 <tr class="even">
-<td align="left">22</td>
 <td align="right">960020</td>
 <td align="left">Teaching circulatory chapter</td>
 <td align="left">ICD10</td>
 <td align="left">ICD10 Chapter</td>
 </tr>
 <tr class="odd">
-<td align="left">23</td>
 <td align="right">960021</td>
 <td align="left">Teaching respiratory chapter</td>
 <td align="left">ICD10</td>

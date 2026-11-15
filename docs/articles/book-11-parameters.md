@@ -192,8 +192,8 @@ be read or written; class-1 source names are also refused.
 [Privacy](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md)
 explains those protections.
 
-For derivation inside a new recipe, prefer the native expressions taught
-in [Derived numeric
+For derivation inside a new recipe, prefer the named formulas taught in
+[Derived numeric
 formulas](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.md).
 This chapter deliberately teaches standalone mutation of an **already
 assigned** table, including sequential assignments, new objects and

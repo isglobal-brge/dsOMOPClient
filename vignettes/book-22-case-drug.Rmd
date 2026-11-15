@@ -113,21 +113,21 @@ study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
     discontinued = omop_number_flag(persistence, "lt", 365)))
 invisible(recipe_execute(study, out = c(baseline = "D_supply"), conns = conns))
 invisible(ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns))
-knitr::kable(book_summary("D_use$pdc", datasources = conns))
+knitr::kable(book_summary("D_use$pdc", datasources = conns), digits = 3)
 ```
 
 
 
-|Site |Statistic |     Value| N valid| N missing|
-|:----|:---------|---------:|-------:|---------:|
-|site |5%        | 0.1643836|      36|         0|
-|site |10%       | 0.1643836|      36|         0|
-|site |25%       | 0.1643836|      36|         0|
-|site |50%       | 0.3287671|      36|         0|
-|site |75%       | 1.0000000|      36|         0|
-|site |90%       | 1.0000000|      36|         0|
-|site |95%       | 1.0000000|      36|         0|
-|site |Mean      | 0.4977169|      36|         0|
+|Site |Statistic | Value| N valid| N missing|
+|:----|:---------|-----:|-------:|---------:|
+|site |5%        | 0.164|      36|         0|
+|site |10%       | 0.164|      36|         0|
+|site |25%       | 0.164|      36|         0|
+|site |50%       | 0.329|      36|         0|
+|site |75%       | 1.000|      36|         0|
+|site |90%       | 1.000|      36|         0|
+|site |95%       | 1.000|      36|         0|
+|site |Mean      | 0.498|      36|         0|
 
 Mean PDC is **0.4977** across 36 people: (365 + 120 + 60)/(3 × 365).
 PDC is a dimensionless fraction of eligible days. It measures recorded supply,
@@ -172,23 +172,6 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_use$persistence", datasources
 |120      |    12|
 |365      |    12|
 |NA       |     0|
-
-``` r
-knitr::kable(book_summary("D_use$persistence", datasources = conns))
-```
-
-
-
-|Site |Statistic |    Value| N valid| N missing|
-|:----|:---------|--------:|-------:|---------:|
-|site |5%        |  30.0000|      36|         0|
-|site |10%       |  30.0000|      36|         0|
-|site |25%       |  30.0000|      36|         0|
-|site |50%       | 120.0000|      36|         0|
-|site |75%       | 365.0000|      36|         0|
-|site |90%       | 365.0000|      36|         0|
-|site |95%       | 365.0000|      36|         0|
-|site |Mean      | 171.6667|      36|         0|
 
 First eras last 30, 120 and 365 days, with 12 people in each and mean **171.67**
 days. The gap before the restart exceeds 30 days, so the second course does not
@@ -257,7 +240,7 @@ feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
 invisible(recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns))
-knitr::kable(book_summary("D_feasibility$covered", datasources = conns))
+knitr::kable(book_summary("D_feasibility$covered", datasources = conns), digits = 3)
 ```
 
 

@@ -135,13 +135,39 @@
 </tr>
 </tbody>
 </table>
-<p>The questionnaire vocabulary dates are 2025-01-01 and 2026-01-01. Retain both: newer wording can change labels even when concept IDs stay the same.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">source_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">sources</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">site</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Site <span class="op">=</span> <span class="va">site</span>, <span class="va">sources</span><span class="op">[[</span><span class="va">site</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cdm_source_name"</span>, <span class="st">"cdm_version"</span>, <span class="st">"source_release_date"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">source_rows</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">cdm_source_name</th>
+<th align="left">cdm_version</th>
+<th align="left">source_release_date</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">Synthetic questionnaire dataset</td>
+<td align="left">5.4</td>
+<td align="left">2025-01-01</td>
+</tr>
+<tr class="even">
+<td align="left">site2</td>
+<td align="left">Synthetic questionnaire dataset</td>
+<td align="left">5.4</td>
+<td align="left">2025-01-01</td>
+</tr>
+</tbody>
+</table>
+<p>The questionnaire vocabulary dates are 2025-01-01 and 2026-01-01. Retain both: newer wording can change labels even when concept IDs stay the same. Both source records identify the synthetic questionnaire dataset, CDM 5.4 and a source release date of 2025-01-01; these fields identify what the study record saves.</p>
 </div>
 <div class="section level2">
 <h2 id="define-and-inspect-the-study">Define and inspect the study<a class="anchor" aria-label="anchor" href="#define-and-inspect-the-study"></a>
 </h2>
 <p>Education question <strong>900001</strong> was found in <a href="book-04-vocabulary.html">chapter 4</a>. Include education so that a repeated run can reveal differences between sites. Death year is an ordered calendar category; age is completed age at death.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">education</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, <span class="fl">900001L</span><span class="op">)</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="va">education</span>,</span>
@@ -191,7 +217,7 @@
 <h2 id="save-the-study-record">Save the study record<a class="anchor" aria-label="anchor" href="#save-the-study-record"></a>
 </h2>
 <p>The recipe stores the selection rules. Its explanation makes those rules readable, and its digest identifies the definition. Save the codebook, software information, and both sites’ source metadata alongside it. These files contain definitions and metadata, not patient rows.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">record_dir</span> <span class="op">&lt;-</span> <span class="st">"questionnaire-study"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">record_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_save.html">recipe_save</a></span><span class="op">(</span><span class="va">check</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"recipe.json"</span><span class="op">)</span><span class="op">)</span></span>
@@ -243,7 +269,7 @@
 <div class="section level2">
 <h2 id="run-the-saved-definition-at-the-second-site">Run the saved definition at the second site<a class="anchor" aria-label="anchor" href="#run-the-saved-definition-at-the-second-site"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">restored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_load.html">recipe_load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"recipe.json"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">second_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">restored</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_repeated"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site2"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">second_result</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"codebook-site2.rds"</span><span class="op">)</span><span class="op">)</span></span>
@@ -276,7 +302,7 @@
 </h2>
 <p><strong>1. Compare data, not just definitions.</strong> Tabulate education at each site after the separate runs. What changed?</p>
 <details><p><summary>Solution 1</summary></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">first_counts</span> <span class="op">&lt;-</span> <span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_documented$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">second_counts</span> <span class="op">&lt;-</span> <span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_repeated$education"</span>,</span>
@@ -320,43 +346,27 @@
 <p>Site has 12 Secondary and 12 University answers; site2 has 24 University answers. Both have 24 missing answers. The newer catalogue calls University education “University qualification”. Because these were separate executions, their labels were resolved separately; a joint execution reconciles them as shown in chapter 10.</p>
 </details><p><strong>2. Inspect an unsupported cohort rule.</strong> Circe JSON describes an OHDSI cohort. Does a successful strict import establish the intended clinical meaning?</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">circe_json</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">toJSON</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>AdditionalCriteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Type <span class="op">=</span> <span class="st">"ALL"</span>,</span>
 <span>  CriteriaList <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>unsupported <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, auto_unbox <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">circe_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_circe_check.html">recipe_circe_check</a></span><span class="op">(</span><span class="va">circe_json</span><span class="op">)</span></span>
-<span><span class="va">issues</span> <span class="op">&lt;-</span> <span class="va">circe_check</span><span class="op">$</span><span class="va">issues</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"remedy"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">issues</span><span class="op">$</span><span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"`"</span>, <span class="va">issues</span><span class="op">$</span><span class="va">path</span>, <span class="st">"`"</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">issues</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<colgroup>
-<col width="22%">
-<col width="77%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">path</th>
-<th align="left">remedy</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left"><code>$.AdditionalCriteria</code></td>
-<td align="left">AdditionalCriteria has no implemented adapter; retain the complete definition.</td>
-</tr>
-<tr class="even">
-<td align="left"><code>$.PrimaryCriteria</code></td>
-<td align="left">Provide an object with the documented structural fields.</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">circe_check</span><span class="op">$</span><span class="va">issues</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"remedy"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;                  path</span></span>
+<span><span class="co">#&gt;  $.AdditionalCriteria</span></span>
+<span><span class="co">#&gt;     $.PrimaryCriteria</span></span>
+<span><span class="co">#&gt;                                                                          remedy</span></span>
+<span><span class="co">#&gt;  AdditionalCriteria has no implemented adapter; retain the complete definition.</span></span>
+<span><span class="co">#&gt;                        Provide an object with the documented structural fields.</span></span></code></pre>
 <p>The check identifies structural problems in this example, so it is not ready for extraction. Attempt the strict import and read its refusal:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_import_circe.html">recipe_import_circe</a></span><span class="op">(</span><span class="va">circe_json</span><span class="op">)</span>,</span>
 <span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.</span></span></code></pre>
 <p><code>unsupported_circe_construct</code> identifies the unsupported <code>AdditionalCriteria</code> rule. Keep the complete cohort definition and implement that rule in a reviewed native recipe before extracting. A successful strict import means every construct had an adapter; you must still compare the translated population with the intended inclusion and exclusion rules. Never delete a scientific criterion merely to make an import succeed.</p>
 </details><p><strong>3. Read the actual calendar levels.</strong> Which years can the assigned death-period column represent, and are they ordered?</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span>, output <span class="op">=</span> <span class="st">"people"</span>, component <span class="op">=</span> <span class="st">"people"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span></span>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span></span>
 <span><span class="va">period</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="st">"death_period"</span>, <span class="va">columns</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Year <span class="op">=</span> <span class="va">columns</span><span class="op">$</span><span class="va">levels</span><span class="op">[[</span><span class="va">period</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">labels</span>,</span>
 <span>  Type <span class="op">=</span> <span class="va">columns</span><span class="op">$</span><span class="va">r_type</span><span class="op">[[</span><span class="va">period</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -382,14 +392,37 @@
 <div class="section level2">
 <h2 id="exercise-4-preserve-a-required-clean-period">Exercise 4: preserve a required clean period<a class="anchor" aria-label="anchor" href="#exercise-4-preserve-a-required-clean-period"></a>
 </h2>
-<p>Suppose a study requires 365 observed days without the outcome before entry. Can the incidence-rate analysis below implement that requirement? If it refuses, which scientific rule must the alternative preserve?</p>
+<p>A prebuilt analysis is a named catalogue procedure that returns an aggregate; a recipe instead lets you choose populations, variables and output tables. Each analysis declares its supported settings, so inspect its definition before using it for a study.</p>
+<p>For a small successful example, the person-count analysis needs no settings:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">person_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:demo.person_count_by_gender"</span>,</span>
+<span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">person_counts</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gender_name"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">gender_name</th>
+<th align="right">n_persons</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">MALE</td>
+<td align="right">25</td>
+</tr>
+<tr class="even">
+<td align="left">FEMALE</td>
+<td align="right">20</td>
+</tr>
+</tbody>
+</table>
+<p>The default run describes all people at this site. Its male count of 25 and female count of 20 are rounded down to five-person bands: 25–29 and 20–24, respectively. They are not exact counts to sum for a study denominator.</p>
+<p>The incidence-rate analysis is a different catalogue procedure: it describes first-episode incidence over a follow-up window, with no clean period by default. Suppose a study requires 365 observed days without the outcome before entry. Can the incidence-rate analysis below implement that requirement? If it refuses, which scientific rule must the alternative preserve?</p>
 <details><p><summary>Solution: keep the outcome-free observation period</summary></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:incidence.rate"</span>,</span>
 <span>  params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>clean_window <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
 <span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required</span></span></code></pre>
-<p><code>unsupported_clean_window</code> means this analysis does not implement a nonzero clean period. Setting it to zero would answer a different question. Use a validated native risk recipe: require continuous observation for the preceding 365 days, exclude entrants with the outcome in days −365 through −1, and declare the subsequent time at risk, outcome and censoring rules. The <a href="book-07-populations.html">population lessons</a> introduce eligibility, and the <a href="book-20-case-gibleed.html">drug comparison</a> shows explicit prior-event exclusion and follow-up. Adapt those rules to the protocol and check eligibility and person-time before estimating the rate; no recorded outcome alone does not establish a fully observed clean period. Retain the refusal and the reviewed replacement definition with the study record.</p>
+<p><code>unsupported_clean_window</code> means this analysis cannot implement the required clean period. Preserve continuous prior observation, the outcome-free period and the specified follow-up in a reviewed recipe. The <a href="book-07-populations.html">population lessons</a> and <a href="book-20-case-gibleed.html">drug comparison</a> show the relevant rules; setting the clean period to zero would change the scientific question.</p>
 </details>
 </div>
 <div class="section level2">
