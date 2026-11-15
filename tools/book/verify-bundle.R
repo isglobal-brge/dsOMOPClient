@@ -20,6 +20,11 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
         try(DSI::datashield.logout(two_conns), silent=TRUE)
       }
       if (exists("pair", inherits=FALSE)) unlink(pair$path)
+        if (exists("formula_conns", inherits=FALSE)) {
+          try(dsOMOPClient::ds.omop.disconnect(conns=formula_conns, symbol="book_formula"), silent=TRUE)
+          try(DSI::datashield.logout(formula_conns), silent=TRUE)
+          unlink(formula_practice$path)
+        }
     })
     output <- sub("\\.orig$", "", input)
     knitr::knit(input, output=output, envir=environment(), quiet=TRUE)
@@ -41,7 +46,7 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
       print(data.frame(line=head(at,12),expected=expected_lines[head(at,12)],actual=actual_lines[head(at,12)]))
       stop("Reader output differs: ",basename(input))
     }
-    if (grepl("book-18-verbal-autopsy", input)) {
+    if (grepl("book-18-capstone", input)) {
       stopifnot(identical(recipe_to_plan(va), recipe_to_plan(reference)))
       # These are public synthetic fixtures: verify the actual assigned tables too.
       original <- DSLite::getDSLiteData(conns, "D_va")$site

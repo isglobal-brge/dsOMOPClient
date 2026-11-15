@@ -32,7 +32,7 @@ explicitly where a requested analysis cannot be supported.
 - [15. Derived numeric formulas](articles/book-15-formulas.html)
 - [16. Longitudinal data: from events to analysis](articles/book-16-longitudinal.html)
 - [17. Checking and recording a study](articles/book-17-reproduce.html)
-- [18. Capstone: a cause-of-death wide table](articles/book-18-verbal-autopsy.html)
+- [18. Capstone: a cause-of-death wide table](articles/book-18-capstone.html)
 
 ## Case studies
 

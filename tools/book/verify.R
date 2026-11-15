@@ -30,7 +30,7 @@ verify_chapter <- function(input, env) {
     stopifnot(nrow(get_data("D_visit_study"))==18,
               all(get_data("D_visit_study")$first_days==0))
   }
-  if (grepl("book-18-verbal-autopsy", input)) {
+  if (grepl("book-18-capstone", input)) {
     d <- get_data("D_va")
     stopifnot(nrow(d)==24L, length(unique(d$person_id))==24L,
       all(grepl("^p2",d$person_id)),

@@ -171,7 +171,7 @@ age and sex. Its public formula is
 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.2 × 0.9938^age,
 with κ = 0.7 and α = −0.241 for female, κ = 0.9 and α = −0.302
 for male, and a further factor 1.012 for female. Scr is in mg/dL.
-See the [National Kidney Foundation equation](https://www.kidney.org/professionals/ckd-epi-creatinine-equation-2021).
+See the [National Kidney Foundation equation](https://www.kidney.org/ckd-epi-creatinine-equation-2021).
 
 Do not substitute a different specimen because the correct source is sparse.
 This check distinguishes vocabulary availability from observed use:
@@ -196,32 +196,8 @@ The formula returns missing for children, nonpositive creatinine and unmapped se
 
 The source check above is a reason to stop this Synthea calculation: neither
 renaming Blood as Serum nor declaring an assay coordinate establishes specimen
-or assay suitability. The following definition shows the required bindings using
-the intended serum concept. Its prospective codebook records the exact equation;
-we do not publish an eGFR estimate from an unvalidated source.
-
-```{r egfr-definition}
-knitr::kable(ds.omop.concept.lookup(8840L, conns = conns)$pooled["concept_name"])
-serum_event <- omop_event("measurement", serum_set, unit = omop_unit(8840L))
-creatinine <- omop_variable(event = serum_event,
-  reducer = omop_reduce("first_value", missing = "keep"))
-creatinine <- omop_number(creatinine, omop_number_spec(unit =
-  omop_number_unit("unit:8840", "coordinate:idms_creatinine_mg_dl", factor = 1)))
-sex_hits <- ds.omop.concept.search(NULL, domain = "Gender", conns = conns)$pooled
-knitr::kable(sex_hits[c("concept_name", "concept_id")])
-sex_ids <- setNames(sex_hits$concept_id, tolower(sex_hits$concept_name))
-egfr <- omop_formula_egfr_ckdepi2021(creatinine,
-  age = omop_age_at(omop_anchor(serum_event, which = "first")),
-  sex = omop_variable(table = "person", column = "gender_concept_id"), sex_map = list(female = paste0("concept:", sex_ids[["female"]]),
-    male = paste0("concept:", sex_ids[["male"]])))
-egfr_recipe <- omop_recipe(variables = list(egfr = egfr))
-formula_record <- recipe_codebook(egfr_recipe)[[1]]$formulas[[1]]
-print(formula_record[c("id", "version", "equation", "unit", "eligibility")])
-```
-
-Here the sex mapping and assay coordinate are explicit protocol assumptions to
-validate, not facts inferred from the patient values. Look up the source unit in
-chapter 4 before reusing this binding on another resource.
+or assay suitability. The worked formula below uses a separate synthetic teaching example with known
+input meaning. It does not reinterpret the Synthea records.
 
 **Exercise 3.** Why would using the first creatinine search hit be unsafe? Save
 the intended serum definition instead.
@@ -311,6 +287,71 @@ knitr::kable(book_summary(dsBaseClient::ds.summary("D_last_weights$weight", data
 
 The person roster is collapsed with a different temporal choice. This is not a
 measurement average, and it need not equal an average over all episodes.
+
+</details>
+
+## Execute eGFR with declared synthetic inputs
+
+The questionnaire helper can create synthetic standardized serum creatinine
+measurements and explicitly named equation-sex categories. This is formula
+practice, separate from the two clinical practice resources. Its partial birth
+dates remain incomplete so that missing age still produces missing eGFR.
+
+```{r egfr-practice-discovery}
+source("tools/book/fixture.R")
+formula_practice <- book_fixture(formulas = TRUE, symbol = "book_formula")
+formula_conns <- formula_practice$conns
+formula_hits <- ds.omop.concept.search("Teaching standardized serum creatinine",
+  domain = "Measurement", conns = formula_conns, symbol = "book_formula")$pooled
+sex_hits <- ds.omop.concept.search(NULL, domain = "Gender", conns = formula_conns, symbol = "book_formula")$pooled
+knitr::kable(rbind(formula_hits, sex_hits)[c("concept_name", "standard_concept", "vocabulary_id")])
+formula_id <- formula_hits$concept_id
+formula_set <- omop_concept_set(formula_id)
+knitr::kable(ds.omop.concept.locate(formula_id, scope = "pooled", conns = formula_conns, symbol = "book_formula")$pooled)
+knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = formula_id,
+  scope = "pooled", conns = formula_conns, symbol = "book_formula")$pooled)
+sex_ids <- setNames(sex_hits$concept_id, sex_hits$concept_name)
+saveRDS(list(creatinine = formula_set, sex = sex_ids), formula_file)
+```
+
+These are local teaching concepts with no external mappings or ancestors.
+The synthetic source explicitly defines standardized serum measurements in mg/dL.
+The clinical equivalents would require assay and source validation.
+
+```{r egfr-run}
+serum_event <- omop_event("measurement", formula_set, unit = omop_unit(8840L))
+creatinine <- omop_variable(event = serum_event,
+  reducer = omop_reduce("first_value", missing = "keep"))
+creatinine <- omop_number(creatinine, omop_number_spec(unit =
+  omop_number_unit("unit:8840", "coordinate:idms_creatinine_mg_dl", factor = 1)))
+egfr <- omop_formula_egfr_ckdepi2021(creatinine,
+  age = omop_age_at(omop_anchor(serum_event, which = "first", scope = "episode")),
+  sex = omop_variable(table = "person", column = "gender_concept_id"),
+  sex_map = list(female = paste0("concept:", sex_ids[["Female equation branch"]]),
+    male = paste0("concept:", sex_ids[["Male equation branch"]])))
+egfr_recipe <- omop_recipe(
+  populations = omop_population("measurements", index = omop_index(serum_event)),
+  variables = list(egfr = egfr),
+  outputs = omop_output("people", rows = "measurements", format = "wide"))
+egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", conns = formula_conns, symbol = "book_formula")
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_egfr$egfr", datasources = formula_conns)))
+```
+
+The output is an adult estimate in mL/min/1.73 m². Age is completed calendar years
+at the selected creatinine measurement. Missing age or an unmapped equation-sex
+category remains missing; the helper never guesses a branch or adds a race term.
+
+**Exercise.** Inspect the formula provenance retained with the table.
+
+<details><summary>Solution: retain the equation and its eligibility rules</summary>
+
+```{r egfr-provenance}
+formula_record <- recipe_codebook(egfr_result)[[1]]$formulas[[1]]
+print(formula_record[c("id", "version", "equation", "unit", "eligibility")])
+```
+
+The formula definition version is separate from package version. Saving this
+record makes the units, equation and adult eligibility explicit for a reviewer.
 
 </details>
 

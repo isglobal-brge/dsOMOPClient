@@ -60,11 +60,26 @@ for p in [root/'docs/index.html', root/'docs/authors.html', *sorted((root/'docs/
             target_parser=Links(); target_parser.feed(target.read_text())
             if unquote(url.fragment) not in target_parser.ids:
                 missing.append({'page':str(p.relative_to(root)), 'href':link})
+# Check every rendered article's visible text, excluding generated recipe-explain
+# output (which may identify its machine language) and site navigation metadata.
+class Visible(HTMLParser):
+    def __init__(self): super().__init__(); self.words=[]; self.skip=0
+    def handle_starttag(self,tag,attrs):
+        if tag in ('script','style'): self.skip+=1
+    def handle_endtag(self,tag):
+        if tag in ('script','style'): self.skip-=1
+    def handle_data(self,data):
+        if not self.skip: self.words.append(data)
+for p in (root/'docs/articles').glob('*.html'):
+    parser=Visible();parser.feed(p.read_text());visible=' '.join(parser.words)
+    assert not re.search(r'APHRC|HDSS|Nairobi|Ethiopia|colleague|RECORDED OUTPUT|actions/runs|opal-e2e',visible,re.I),p
+    if p.name.startswith('book-'):
+        assert not re.search(r'precomput|[.]Rmd[.]orig|Migrating older recipes|Reproduction and migration',visible,re.I),p
 assert not missing, missing
 report={'chapters':len(chapters),
         'executed_source_chunks':sum(len(re.findall(r'^```\{r ', p.read_text(), re.M))
                                      for p in (root/'vignettes').glob('book-*.Rmd.orig')),
         'rendered_r_code_blocks':sum(counts.values()),'code_blocks_by_chapter':counts,
         'missing_local_links':missing,'uncomputed_chunks':0,'untranslated_fixture_id_outputs':0}
-(root/'tools/book/evidence/book4a/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
+(root/'tools/book/evidence/book4/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))

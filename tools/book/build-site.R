@@ -13,6 +13,7 @@ if (length(articles)) {
 } else pkgdown::build_site(new_process=FALSE, examples=FALSE, install=FALSE, lazy=FALSE)
 
 dir.create("docs/downloads",showWarnings=FALSE)
+unlink("docs/downloads/va-native.R")
 helpers <- c("load-practice.R", "load-numeric.R", "practice.R", "fixture.R", "connection.R",
              "display.R", "case-helpers.R", "opal-admin.R", "check-opal.R", "book-compose.sh", "book-rock.yml")
 helpers <- c(file.path("tools/book", helpers), "tools/book/capstone.R")

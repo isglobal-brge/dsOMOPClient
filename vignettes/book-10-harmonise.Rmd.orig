@@ -264,7 +264,7 @@ factor level without inventing a clinical answer.
 missing_recipe <- omop_recipe(variables = list(
   education = omop_category(education, omop_category_spec(
     missing = omop_category_missing(na = "level", unknown = "level"))),
-  sex = omop_category(omop_variable(table = "person", column = "gender_concept_id"), omop_category_spec(
+  sex = omop_category(omop_variable(name = "sex", table = "person", column = "gender_concept_id"), omop_category_spec(
     missing = omop_category_missing(na = "level", unknown = "level")))))
 missing_result <- recipe_execute(missing_recipe, out = "D_missing_categories", conns = conns)
 ds.omop.table("D_missing_categories", "education", conns = conns)
@@ -341,10 +341,11 @@ resolve them in the study protocol with explicit priority or multiple membership
 Do not resolve ambiguity by inspecting patient frequencies.
 
 ```{r category-rollups}
-drug_value <- omop_variable(event = omop_event("drug_exposure", classification_sets$drug),
-  reducer = omop_reduce("last_value", value = "drug_concept_id"))
-cause_value <- omop_variable(event = omop_event("death"),
-  reducer = omop_reduce("first_value", value = "cause_concept_id"))
+drug_value <- omop_category_reduce(
+  omop_category_rows(omop_event("drug_exposure", classification_sets$drug), "concept_id"),
+  omop_reduce("last_value"))
+cause_value <- omop_category_reduce(
+  omop_category_rows(omop_event("death"), "concept_id"), omop_reduce("first_value"))
 rollups <- omop_recipe(variables = list(
   atc_first = omop_category(drug_value, omop_category_spec(rollup =
     omop_category_rollup("atc", level = 1, domain = classification_sets$drug))),

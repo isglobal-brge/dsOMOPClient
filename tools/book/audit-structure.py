@@ -15,6 +15,8 @@ assert [m for m in re.findall(r'\]\(articles/(book-.*?)\.html\)',index) if m!='b
 rows=[]
 for p in paths:
     s=p.read_text();slug=p.name.removesuffix('.Rmd.orig')
+    forbidden=r"\b(?:v[12]|language[ -]2|legacy plan|plan version|APHRC|HDSS|Nairobi|Ethiopia|colleague)\b|RECORDED OUTPUT|precomput|[.]Rmd[.]orig|actions/runs|opal-e2e"
+    assert not re.search(forbidden,s,re.I),(p,"Forbidden reader wording")
     if slug!='book-showcase':
         title=re.search(r'^title: "(.*?)"',s,re.M)[1]
         assert title.startswith(str(int(p.name[5:7]))+'. '),(p,title)
@@ -23,10 +25,10 @@ for p in paths:
     assert re.search(r'\*\*Next:\*\* .*\n?$',s),p
     rows.append(dict(page=slug,lines=len(s.splitlines()),solutions=s.count('<summary>Solution'),
                      chunks=len(re.findall(r'^```\{r ',s,re.M))))
-assert order[19]=='book-18-verbal-autopsy'
+assert order[19]=='book-18-capstone'
 assert all('case-' in s for s in order[20:])
 report=dict(pages=len(rows),numbered_chapters=list(range(24)),
             capstone_last_tutorial=True,case_studies=5,
             total_solutions=sum(x['solutions'] for x in rows),pages_detail=rows)
-(root/'tools/book/evidence/book4a/structure-audit.json').write_text(json.dumps(report,indent=2)+'\n')
+(root/'tools/book/evidence/book4/structure-audit.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({k:v for k,v in report.items() if k!='pages_detail'},indent=2))

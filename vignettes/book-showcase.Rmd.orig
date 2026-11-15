@@ -222,7 +222,7 @@ ds.omop.table("D_tour_va", "cause_of_death", conns = conns)
 The cause counts summarise the synthetic questionnaire data.
 The person key and patient rows stay private; education and cause are each one
 named categorical column in the same table.
-[Build this table step by step →](book-18-verbal-autopsy.html)
+[Build this table step by step →](book-18-capstone.html)
 
 </div>
 

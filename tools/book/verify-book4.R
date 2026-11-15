@@ -17,7 +17,47 @@ verify_book4 <- function(input,env) {
     pair<-merge(first_sbp,dbp,by=c('person_id','measurement_date'),suffixes=c('_sbp','_dbp'))
     pair<-pair[!duplicated(pair$person_id),]
     same(sort(data('D_formula_pressure')$map),sort((pair$value_as_number_sbp+2*pair$value_as_number_dbp)/3))
-    message('BOOK4 FORMULAS PASS: BMI arithmetic, rounding, source-aligned MAP, unique episode collapse')
+    weights <- DBI::dbGetQuery(db,"SELECT person_id, measurement_date, value_as_number FROM measurement WHERE measurement_concept_id=3025315 AND unit_concept_id=9529")
+    by_day <- aggregate(value_as_number ~ person_id + measurement_date,weights,mean)
+    by_day_max <- aggregate(value_as_number ~ person_id + measurement_date,weights,max)
+    same(sort(data("D_daily_weights")$weight),sort(aggregate(value_as_number~person_id,by_day,mean)$value_as_number))
+    same(sort(data("D_daily_max_weights")$weight),sort(aggregate(value_as_number~person_id,by_day_max,mean)$value_as_number))
+    egfr <- DSLite::getDSLiteData(env$formula_conns,"D_egfr")$site$egfr
+    # Independent direct-power equation; no reuse of the helper's log/exp expansion.
+    scr <- rep(c(.7,.9,1.4,1.8),6); age <- rep(c(43,34,NA,49),6)
+    female <- rep(c(TRUE,FALSE,TRUE,FALSE),6)
+    k <- ifelse(female,.7,.9);alpha <- ifelse(female,-.241,-.302)
+    expected <- 142*pmin(scr/k,1)^alpha*pmax(scr/k,1)^(-1.2)*.9938^age*ifelse(female,1.012,1)
+    same(egfr,expected)
+    stopifnot(sum(is.na(egfr))==6L,all(egfr[!is.na(egfr)]>0),
+      env$formula_record$id=="dsomop.formula.egfr_ckdepi2021")
+    message('BOOK4 FORMULAS PASS: BMI, rounding, MAP, daily mean/max, episode collapse, independent eGFR power oracle and provenance')
+  }
+  if(grepl('book-10-harmonise',input)) {
+    d <- env$category_snapshot
+    stopifnot(is.ordered(d$D_ordered$education),
+      identical(levels(d$D_ordered$education),c("primary","secondary","tertiary")),
+      sum(is.na(d$D_ordered$education))==12L,
+      sum(d$D_missing_categories$education=="Missing")==12L,
+      all(d$D_missing_categories$sex=="Unknown"),
+      is.logical(d$D_flags$logical_flag),is.integer(d$D_flags$integer_flag),
+      identical(as.integer(d$D_flags$logical_flag),d$D_flags$integer_flag),
+      identical(as.character(d$D_flags$named_flag),ifelse(d$D_flags$integer_flag==1,"yes","no")),
+      sum(d$D_rollups$atc_first=="Teaching ATC first level",na.rm=TRUE)==18L,
+      sum(d$D_rollups$atc_second=="Teaching ATC second level",na.rm=TRUE)==18L,
+      sum(d$D_rollups$chapter=="Teaching circulatory chapter",na.rm=TRUE)==12L,
+      sum(d$D_rollups$chapter=="Teaching respiratory chapter",na.rm=TRUE)==6L)
+    cols <- env$book[[1]]$columns
+    stopifnot(identical(cols$name,names(d$D_ordered)),
+      cols$r_type[cols$name=="education"]=="ordered_factor")
+    message("BOOK4 CATEGORIES PASS: exact order, missing/unknown, flag types, rollups, and published schema")
+  }
+  if(grepl('book-16-longitudinal',input)) {
+    repeated <- data("D_timepoints")
+    same(repeated$measurements_hb_baseline,data("D_windows")$first1)
+    stopifnot(identical(recipe_codebook(env$repeated_result)[[1]]$columns$name,names(repeated)),
+      all(c("measurements_hb_baseline","measurements_hb_year3") %in% names(repeated)))
+    message("BOOK4 REPEATED PASS: exact baseline alignment and expanded published schema")
   }
   if(grepl('book-19-case-mortality',input)) {
     d<-data('D_mortality_rate')
@@ -51,6 +91,7 @@ verify_book4 <- function(input,env) {
     message('BOOK4 GLUCOSE PASS: category type, observed times and independent Gaussian fit')
   }
   if(grepl('book-22-case-drug',input)) {
+    same(env$class_pdc$Global.Mean[1,1],30/365)
     d<-data('D_utilisation_analysis')
     stopifnot(nrow(d)>5,all(d$pdc>=0 & d$pdc<=1),all(d$covered>=0 & d$covered<=365))
     same(d$pdc,d$covered/365)

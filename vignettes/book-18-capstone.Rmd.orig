@@ -308,7 +308,7 @@ The identities below come from the catalogue search at the start of this chapter
 answer_keys <- paste0("concept:", unname(va_ids[c("Secondary education", "University education")]))
 va_presented <- va_numeric
 va_presented$variables$education <- omop_category(education, omop_category_spec(
-  levels = answer_keys, order = omop_category_order(answer_keys), ordered = TRUE,
+  levels = answer_keys, order = omop_category_order(c(answer_keys, "special:missing")), ordered = TRUE,
   missing = omop_category_missing(na = "level")))
 capstone_result <- recipe_execute(va_presented, out = c(people = "D_capstone"), conns = conns)
 ds.omop.table("D_capstone", "education", conns = conns)

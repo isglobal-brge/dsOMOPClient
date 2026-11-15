@@ -68,7 +68,7 @@ navbar:
         - text: "17. Checking and recording a study"
           href: articles/book-17-reproduce.html
         - text: "18. Capstone: a cause-of-death wide table"
-          href: articles/book-18-verbal-autopsy.html
+          href: articles/book-18-capstone.html
         - text: "19. Case study: cause-specific mortality by age, sex and period"
           href: articles/book-19-case-mortality.html
         - text: "20. Case study: celecoxib versus diclofenac"
@@ -102,7 +102,7 @@ articles:
       - book-15-formulas
       - book-16-longitudinal
       - book-17-reproduce
-      - book-18-verbal-autopsy
+      - book-18-capstone
   - title: Case studies
     navbar: ~
     contents:

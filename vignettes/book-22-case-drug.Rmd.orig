@@ -45,6 +45,62 @@ On an ATC-enabled resource, search the intended class with `standard_only = FALS
 inspect its class level and descendants, check prevalence, then save that set.
 Do not infer an ATC hierarchy from a drug's spelling.
 
+## Run the ATC-class selection on the teaching catalogue
+
+The category chapter's synthetic catalogue lets us execute the class-selection
+workflow without pretending that GiBleed contains an ATC hierarchy. The class,
+its descendant medicine and its exposure records are all explicitly synthetic.
+
+```{r atc-practice}
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
+source("tools/book/fixture.R")
+class_practice <- book_fixture(categories = TRUE)
+class_conns <- class_practice$conns
+classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE,
+  conns = class_conns)$pooled
+knitr::kable(classes[c("concept_name", "concept_class_id", "standard_concept")])
+class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
+knitr::kable(ds.omop.concept.descendants(class_id, conns = class_conns)$pooled)
+knitr::kable(ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = class_conns)$pooled)
+class_set <- omop_concept_set(class_id, descendants = TRUE)
+class_file <- tempfile(fileext = ".rds")
+saveRDS(class_set, class_file)
+```
+
+A classification concept groups descendants; it is not a standard ingredient
+substitution through Maps to. The descendant list establishes the selected
+medicine before the protected inventory establishes its use.
+
+```{r atc-utilisation}
+class_users <- omop_new_users(class_set, washout_days = 365)
+class_users$filters <- c(class_users$filters, list(omop_observed(after = 364)))
+class_drug <- omop_event("drug_exposure", class_set)
+class_era <- omop_era(class_drug, gap = 30, by = "ingredient", stockpile = TRUE)
+class_days <- omop_variable(event = class_era, reducer = omop_reduce("covered_days",
+  window = omop_window(0, 364), coverage = "effective_supply"))
+class_study <- omop_study(class_users, outputs = "baseline", baseline = list(
+  pdc = omop_number_derive(list(days = class_days),
+    book_expr(book_op("/", book_col("days"), book_lit(365))), unit = "1")))
+class_result <- recipe_execute(class_study, out = c(baseline = "D_class_use"), conns = class_conns)
+class_pdc <- dsBaseClient::ds.mean("D_class_use$pdc", type = "combine", datasources = class_conns)
+class_pdc$Global.Mean
+```
+
+The synthetic PDC describes covered supply during a complete first year. The
+class has one ingredient in this catalogue; a protocol with several ingredients
+must decide whether switching still counts as persistence on the class.
+The rest of this case uses the unmodified GiBleed ingredient data to teach
+persistence, discontinuation and interpretation with varied histories.
+
+```{r return-to-gibleed}
+ds.omop.disconnect(conns = class_conns)
+DSI::datashield.logout(class_conns)
+unlink(class_practice$path)
+practice <- book_connect("gibleed")
+conns <- practice$conns
+```
+
 ## Find the executable ingredient set
 
 ```{r utilisation-discovery}

@@ -1,176 +1,42 @@
-# Reproducing book 4a
+# Reproducing the tutorial book
 
-The authoring branch is docs/book. Book 4a executes the A-29 2.10.5 packages
-from the read-only numbers worktrees in a private pod library. Run
-`tools/book/run-pod.sh` to install them and precompute; pass `precompute` to reuse
-the installed runtime. `BOOK_SERVER_SOURCE` and `BOOK_CLIENT_SOURCE` can override
-the default package sources. They are copied only into this job's pod directory.
-Do not install the docs-only source package over the numeric runtime.
+Work in the book client checkout on docs/book. The matching book server and client
+worktrees are both at 2.10.5. `tools/book/run-pod.sh` installs them into this job's
+private pod library and executes every `.Rmd.orig` chapter and solution. Pass
+`precompute` to reuse the installed runtime and an optional chapter regular
+expression to run only changed lessons. No other worktree is used.
 
-The book has 25 pages: a showcase and chapters 0–23. Chapters 0–18 form the
-tutorial, ending with the verbal-autopsy capstone; chapters 19–23 are case studies.
-Files, titles, navbar, article index and explicit Next links use this same order.
-Source is `.Rmd.orig`; generated `.Rmd` contains executed code and real output.
-The site build needs no server. Run `Rscript tools/book/build-site.R`, then
-`Rscript tools/book/verify-bundle.R` for fresh reader sessions using only the ZIP.
-The five case studies use the same private DSLite paths and release checks.
+`tools/book/precompute.R` runs fresh R processes and the source-data assertions in
+verify.R, verify-book2.R, verify-book3.R, verify-book4.R, verify-longitudinal.R and
+verify-standalone-showcase.R. These assertions alone may inspect public synthetic
+server memory; reader helpers and chapters use protected analyst calls.
 
-Targeted validation comprises all chapter chunks and solutions, the existing
-source-data oracles, `verify-book4.R` formula/model/rate checks, content and output
-HTML audits, and desktop/mobile browser checks including actual long-block scroll.
-Run the package-level `test-book-examples.R` only; full suites belong to integration.
-Evidence for this update is in `tools/book/evidence/book4a/`.
+Build with `tools/book/pod.sh Rscript tools/book/build-site.R`, retrieve docs/,
+then run `verify-bundle.R` on the pod to execute every chapter in a fresh directory
+using only the downloadable helper ZIP. Generated `.Rmd` and HTML contain actual
+knitr output. `book_symbols()` displays only the returned symbol mapping; keep
+an execution result to inspect its attached codebook explicitly.
 
-Book 4a deliberately excludes the pending categorical/layout extension. It states
-where the current runtime or source cannot support a request: absent ATC vocabulary,
-unknown questionnaire sex, unpopulated serum/plasma creatinine, and the all-missing
-reference-category publication refusal. The numeric chapter uses public finite
-pipeline bounds because this build rejects infinite endpoints in that form.
-No private source rows are fabricated and no disclosure rule is weakened.
+The 25 pages comprise a showcase, chapters 0–18 and five case studies (19–23).
+Chapter 18 is the final tutorial capstone. The YAML menu, article index and Next
+links share that order. `audit-structure.py`, `audit-content.py` and
+`audit-outputs.py` verify structure, wording, links and exact HTML output fidelity.
+Run `audit-site.js` with Playwright Chromium for mobile and desktop geometry,
+copy controls, collapsible solutions and actual bounded output scrolling.
 
-The historical notes below describe prior validation rounds and their evidence.
+Evidence for this job is in tools/book/evidence/book4/. The targeted package
+wrapper test-book-examples.R invokes the same chapter execution path. Full
+package suites belong to integration/release and are not run for this book job.
 
-# Reproducing the book
+Practice data are the public synthetic GiBleed and Synthea27Nj resources. The
+separate questionnaire fixture models missing answers and partial birth dates;
+its optional category catalogue contains explicitly synthetic ATC/ICD teaching
+relationships. Neither clinical resource is altered to manufacture an absent
+classification, assay or sex assignment. The formula chapter checks the Synthea eGFR prerequisites, then executes the
+named helper on explicitly synthetic standardized serum inputs from the optional
+questionnaire fixture. An independent direct-power equation verifies the result.
 
-Use the locally released 2.10.4 pair. From the client package root, run
-`tools/book/run-pod.sh`. It installs only the book pair in its private pod library
-and runs `precompute.R`. If absent, it first loads the two pinned public practice
-databases with `load-practice.R`. The pod also needs dsBase/dsBaseClient (the release test
-library `/root/rt/labels-deps`), DSLite, DBI, RSQLite, resourcer, knitr and withr.
-
-The source is `vignettes/book-*.Rmd.orig`. Knitr executes it against the
-synthetic SQLite fixture and writes `.Rmd` containing ordinary fenced code and
-recorded output. Thus `pkgdown::build_site()` needs no live database. Each chapter
-executes its visible fresh-session setup; the precompute runner never creates
-`conns` or selects a dataset for the reader. The downloadable helper ZIP supports
-readers without a source checkout. `connection.R` is the sole public-practice
-driver/project/resource configuration. Assertions in `verify.R` inspect synthetic server memory only;
-none of those row-reading calls is an analyst lesson.
-
-The fixture extends the released `helper-dates-va.R`: 24 synthetic people,
-six copies of four patterns, with inpatient/outpatient concepts and a second
-fever answer. Book 2 adds separate measurements, prescriptions and results cohort 1
-without changing the original observation/visit/death records. It retains threshold 5, ordinary factor gates and pseudonyms.
-The second optional site differs only in public vocabulary labels/version.
-It is not Eunomia GiBleed; the optional Opal deployment is described separately.
-
-DSLite 1.5 has a quoted-string lexer defect exposed by dsBase calls. The fixture
-uses the same scoped tokenizer repair as the released concept-label analysis
-tests. It does not mock ds.table, results, allowlists or disclosure checks. The
-repair is restored when the fixture scope ends and is unnecessary for Opal.
-
-The bslib theme uses the [OHDSI web style guide](https://www.ohdsi.org/web/wiki/development%3Astyle_guide)
-navy `#003142`, orange `#f19119`, blue `#337ab7` and system font stack.
-Body text is intentionally larger than the old application guide for book reading.
-
-After precomputing, run `Rscript tools/book/build-site.R` on the pod. This invokes
-`pkgdown::build_site()` with reference examples disabled; the book code has already
-executed and the build itself never needs a server. Retrieve `docs/` and inspect
-it with `python3 tools/book/audit-content.py`,
-`python3 tools/book/audit-outputs.py` (all console blocks and tables versus HTML), and
-`PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js` (the latter
-needs Playwright Chromium). Copy `docs/` to the requested design/book-preview.
-
-Book 2 adds chapters 6–12, moves the visit walkthrough to chapter 13 and the
-capstone to 14, and retains the older URLs. Book 2 had 16 pages including Appendix A; Book 3 adds one more.
-The reading order lives in `_pkgdown.yml` and `pkgdown/index.md`; filenames retain
-stable URLs rather than encoding the current order for every page.
-
-For a focused edit, `tools/book/run-pod.sh precompute 'book-09-dates'` reuses the
-installed pair and executes only that source. The final validation executes every
-chapter. `verify-book2.R` checks reducer values, population/episode counts, matching,
-format components and joins, death censoring, date types and expected refusal
-rollback. Expected refusal messages are printed through `tryCatch`; they are
-lessons, not ignored knitting errors. Book 2 evidence lives in `evidence/book2/`.
-
-The completed Book 2 also follows the expanded 14 November brief: chapters 0–4
-use GiBleed; chapters 6, 8 and 11 use Eunomia Synthea27Nj (the numeric workstream's
-chosen dataset). The other chapters state when they use the 24-person questionnaire
-fixture. This fixture remains temporary and is not a third practice resource.
-Both practice CDMs are public synthetic data, loaded without changing their rows.
-`practice.R` registers both as `gibleed` and `numeric` on one real DSLite server.
-
-Run `Rscript tools/book/load-practice.R ../practice-data` for a portable SQLite
-installation. `BOOK_PRACTICE_DIR` can point the helper to that loaded directory.
-The same files can be mounted into Rock and registered with the resource URLs in
-chapter 0; no data changes are needed to move them to a different host.
-
-The loader writes source archive hashes, revision, counts and provenance to
-`manifest.json` in the selected practice-data directory. Appendix A reads that
-file, respecting `BOOK_PRACTICE_DIR` and the `../practice-data` default.
-`evidence/book2/practice-manifest.json` retains historical build evidence. The loader preserves textual vocabulary
-and device identifiers instead of guessing that every `_id` column is numeric.
-GiBleed's header-only COST.csv has an incomplete final line; the recorded loader
-warning is harmless and the empty table is created with its columns.
-
-Styling follows the [OHDSI web style guide](https://www.ohdsi.org/web/wiki/doku.php?id=development:style_guide)
-with its native system font stack, navy/orange/blue palette, and a Bootstrap 5
-bslib theme. The chapter navigation and in-page contents remain accessible on
-phones. Code and recorded outputs are separate fences; pkgdown supplies code-copy
-buttons. Author bylines and the book footer are site metadata; DESCRIPTION is unchanged.
-
-Review-1 fixes: `verify-book2.R` checks the actual released numeric summaries and
-count tables against the public synthetic oracle, including the count exercise.
-`display.R` formats only successful releases; full responses are retained in
-expandable details. `audit-content.py` rejects normal-return failure lists unless
-visibly delimited as an expected refusal lesson. The deliberately refused table
-in the verification probe must make the formatter stop.
-
-Run `Rscript tools/book/verify-setup.R` with the same pod library after installation.
-It executes chapter 2's actual attach/switch chunks against renamed resources in
-DSLite and checks the Opal scripts' API signatures. This is not a live Opal test.
-The optional provisioning scripts and Compose mount are shipped in the helper
-ZIP; chapter 0 states the live-deployment validation limit explicitly.
-
-After building, `Rscript tools/book/verify-bundle.R` unpacks the downloadable ZIP
-into a separate empty reader directory for each of the 17 chapters and executes
-all chunks, including exercises and solutions, in fresh R processes. Only the
-lesson text, runner and expected output are staged outside the ZIP; no checkout
-helpers or verification harness are sourced. Every regenerated lesson must match
-the precomputed `.Rmd` byte-for-byte. The capstone also checks native plan and
-assigned-table equality and cause counts using the public synthetic fixture.
-Appendix A runs again with a custom `BOOK_PRACTICE_DIR` and no default data path.
-The verifier reuses loader-produced practice data and its manifest via symlinks
-and removes its temporary directories afterwards. The ZIP includes the unchanged
-released `tools/dates/va-native.R` as well as the nine `tools/book/` helpers.
-
-Book 3 adds chapter 15, **Working with lab values**, bringing the book to 17
-articles including Appendix A. It covers concept/unit discovery, per-person
-first/last/mean/min/max, an index offset with a seven-day tolerance, slope,
-declared unit conversion, bins and source-range flags, first-to-last change,
-and real dsBase mean/quantileMean/Gaussian GLM pooling. Each teaching section
-ends with an exercise and a collapsible solution. Chapters 6 and 8 gain numeric
-exercises on change and the weighting implied by the output grain.
-
-`load-numeric.R` is the unchanged loader from server commit `184bd6b` described
-in `numeric-tests.report.md`. The book loader invokes it with PostgreSQL disabled,
-then adapts its typed DuckDB output to the existing SQLite practice resource;
-no rows or reference ranges are invented. `duckdb` is now in the chapter 0
-installation block. The PostgreSQL/DuckDB loader can also be used directly by
-an administrator; its environment overrides and defaults remain unchanged.
-The book's one-place resource configuration stays in `connection.R`.
-
-`book_numeric_pair()` is explicitly offline-only: it splits the 28 public
-synthetic people into two disjoint groups of 14 using temporary SQLite copies.
-The `book_pool` session symbol keeps the demonstration separate from the main
-practice connection. The precompute/bundle runners disconnect both sessions and
-remove these temporary copies after checking the chapter. Interactive readers
-can end those connections with `ds.omop.disconnect(symbol="book_pool",
-conns=two_conns)` and `DSI::datashield.logout(two_conns)`, then remove the temporary
-files with `unlink(pair$path)`; the main connection uses the usual `omop` symbol.
-
-`verify-book3.R` independently computes the reducers and fit from source
-measurements, checks actual released summaries/counts, and verifies disjoint
-site files and weighted-site quantiles. `verify-numeric-loader.R DIRECTORY`
-compares every scalar in all 39 adapted tables with the checksum-pinned CSVs.
-Book 3 evidence is in `tools/book/evidence/book3/`. Run only
-`test-book-examples.R` for the package-level targeted check; the full package
-suites remain the integration/release job's responsibility.
-
-Book 3 review round 2 adds the six-card capability showcase and expands chapter 11
-into a worked mutate-v1/filter lesson. There are now 19 articles. The precompute
-runner snapshots only public synthetic test objects before intentional refusal
-and connection-switch chunks; `verify-standalone-showcase.R` checks exact rollback,
-BMI from same-day kg/cm source readings, age/date/recoding solutions, 12 output
-shapes and all showcase numeric releases. The snapshots never appear in the book
-or downloadable reader runtime. Final audits/evidence use `evidence/book3-fix2/`.
+The fixture and practice helpers apply a scoped DSLite quoted-string lexer repair
+needed by dsBase calls. Real server methods and disclosure gates remain in use.
+Only disclosed tables and summaries appear in the book. Package version and
+exact runtime source hashes are retained with the evidence and job report.

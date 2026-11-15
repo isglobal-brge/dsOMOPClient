@@ -8,7 +8,7 @@ const path = require('path');
   const results=[];
   let scrollChecks=0;
   const chapters=fs.readdirSync('docs/articles').filter(x=>/^book-.*\.html$/.test(x));
-  for (const width of [1365,390]) {
+  for (const width of [1280,1365,1400,1920,390]) {
     const page=await browser.newPage({viewport:{width,height:900},permissions:['clipboard-read','clipboard-write']});
     for (const slug of ['index',...chapters.map(x=>'articles/'+x.replace(/\.html$/,''))]) {
       await page.goto('file://'+path.resolve('docs',slug+'.html'));
@@ -21,6 +21,10 @@ const path = require('path');
         byline:document.querySelector('.page-header')?.innerText.includes('David Sarrat González'),
         copyButtons:document.querySelectorAll('.btn-copy-ex').length,
         numericNoWrap:[...document.querySelectorAll('td.book-number')].every(td=>getComputedStyle(td).whiteSpace==='nowrap'),
+        tocInside:[...document.querySelectorAll('.book-page aside, .book-page #toc')].filter(x=>x.getClientRects().length).every(x=>{
+          const r=x.getBoundingClientRect();return r.left>=0 && r.right<=innerWidth;
+        }),
+        outputLabelAbsent:[...document.querySelectorAll('main pre')].every(x=>!getComputedStyle(x,'::before').content.includes('RECORDED OUTPUT')),
         outputs:document.querySelectorAll('main pre:not(.sourceCode)').length,
         footer:document.querySelector('footer')?.textContent.includes('Book by'),
         headings:[...document.querySelectorAll('h1')].map(x=>x.textContent.trim())}));
@@ -47,7 +51,7 @@ const path = require('path');
           await contents.locator('summary').click();
         }
       }
-      if(slug==='articles/book-18-verbal-autopsy' && !result.headings.some(x=>x.startsWith('18.')))
+      if(slug==='articles/book-18-capstone' && !result.headings.some(x=>x.startsWith('18.')))
         throw new Error('Stale capstone number');
       if(['articles/book-showcase','articles/book-11-parameters','articles/book-06-events','articles/book-14-labs','articles/book-16-longitudinal'].includes(slug)) {
         await page.locator('div.sourceCode').first().hover();
@@ -90,11 +94,12 @@ const path = require('path');
         scrollChecks += scrolling;
         result.scrollableBlocks = scrolling;
       }
+      if(!result.tocInside || !result.outputLabelAbsent) throw new Error('Clipped contents or output label: '+slug+' '+width);
       if(result.overflow) throw new Error('Page horizontal overflow: '+slug+' '+width);
       results.push({slug,...result});
-      if(['articles/book-showcase','articles/book-11-parameters','articles/book-16-longitudinal','articles/book-14-labs','articles/book-00-start','articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs','articles/book-10-harmonise','articles/book-18-verbal-autopsy'].includes(slug)) {
+      if(['articles/book-showcase','articles/book-11-parameters','articles/book-16-longitudinal','articles/book-14-labs','articles/book-00-start','articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs','articles/book-10-harmonise','articles/book-18-capstone'].includes(slug)) {
         await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
-        await page.screenshot({path:`tools/book/evidence/book4a/${slug.split('/')[1]}-${width}.png`,fullPage:false});
+        await page.screenshot({path:`tools/book/evidence/book4/${slug.split('/')[1]}-${width}.png`,fullPage:false});
       }
     }
     for (const [slug, headings] of [
@@ -106,24 +111,24 @@ const path = require('path');
         throw new Error('Expected six capability cards');
       for (let i=0;i<headings.length;i++) {
         await page.locator('h2').filter({hasText:headings[i]}).scrollIntoViewIfNeeded();
-        await page.screenshot({path:`tools/book/evidence/book4a/${slug}-section-${i}-${width}.png`,fullPage:false});
+        await page.screenshot({path:`tools/book/evidence/book4/${slug}-section-${i}-${width}.png`,fullPage:false});
       }
     }
     await page.goto('file://'+path.resolve('docs/articles/book-16-longitudinal.html'));
     for (const [heading, name] of [['The same people, two shapes','shapes'], ['Irregular measurements','windows'], ['Ask the recipe','reshape'], ['Repeated measures','mixed']]) {
       await page.locator('h2').filter({hasText:heading}).scrollIntoViewIfNeeded();
-      await page.screenshot({path:`tools/book/evidence/book4a/longitudinal-${name}-${width}.png`,fullPage:false});
+      await page.screenshot({path:`tools/book/evidence/book4/longitudinal-${name}-${width}.png`,fullPage:false});
     }
     await page.locator('main table').last().scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book4a/longitudinal-model-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book4/longitudinal-model-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/articles/book-14-labs.html'));
     await page.locator('h2').filter({hasText:'Pool across two connections'}).scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book4a/lab-pooling-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book4/lab-pooling-${width}.png`,fullPage:false});
     await page.locator('main table').last().scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book4a/lab-model-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book4/lab-model-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/articles/book-06-events.html'));
     await page.locator('h2').filter({hasText:'Value bins and explicit high/low flags'}).scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book4a/numeric-bins-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book4/numeric-bins-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/authors.html'));
     if(!await page.locator('main').innerText().then(x=>x.includes('Tutorial book by David Sarrat González')))
       throw new Error('Book credit missing on authors page');
@@ -131,6 +136,6 @@ const path = require('path');
   }
   if (scrollChecks < 10) throw new Error("Insufficient real long-block scrolling coverage");
   await browser.close();
-  fs.writeFileSync('tools/book/evidence/book4a/site-browser-audit.json',JSON.stringify(results,null,2)+'\n');
-  console.log('PASS: all 52 desktop/mobile pages; bylines, chapter navigation, copy buttons, contents, solutions and overflow checked.');
+  fs.writeFileSync('tools/book/evidence/book4/site-browser-audit.json',JSON.stringify(results,null,2)+'\n');
+  console.log('PASS: all 130 desktop/mobile pages; bylines, chapter navigation, copy buttons, contents, solutions and overflow checked.');
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -1,5 +1,5 @@
 # Synthetic-only fixture derived from tests/testthat/helper-dates-va.R.
-book_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, categories=FALSE, env=parent.frame()) {
+book_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, categories=FALSE, formulas=FALSE, symbol="omop", env=parent.frame()) {
 library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
@@ -16,7 +16,7 @@ lexer$public_fields$t_DBLSTRING <- r"("([^"\\]|\\.)*")"
 lexer$public_fields$t_STRING <- r"('([^'\\]|\\.)*')"
 withr::local_options(list(nfilter.subset = 5, default.nfilter.subset = 5,
         dsomop.pseudonym_provider = "injected",
-        dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-colleague-fixture")))),
+        dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-questionnaire-fixture")))),
         .local_envir = env)
 fixture_path <- tempfile(fileext = ".sqlite")
 db <- DBI::dbConnect(RSQLite::SQLite(), fixture_path)
@@ -48,7 +48,7 @@ DBI::dbWriteTable(db, "concept", data.frame(
   vocabulary_id = "Fixture", concept_class_id = "Fixture", standard_concept = "S",
   concept_code = as.character(c(900001L, 900002L, 900101L, 900102L, 900201L, 900202L, 900301L)),
   valid_start_date = "1970-01-01", valid_end_date = "2099-12-31", invalid_reason = NA_character_))
-DBI::dbWriteTable(db, "cdm_source", data.frame(cdm_source_name = "Synthetic colleague fixture",
+DBI::dbWriteTable(db, "cdm_source", data.frame(cdm_source_name = "Synthetic questionnaire fixture",
   cdm_source_abbreviation = "fixture", cdm_holder = "test", source_description = "Synthetic only",
   source_documentation_reference = "", cdm_etl_reference = "", source_release_date = "2025-01-01",
   cdm_release_date = "2025-01-01", cdm_version = "5.4", cdm_version_concept_id = 0L,
@@ -138,6 +138,21 @@ if (categories) {
     relationship_id=c("Maps to","Maps to","Is a","Is a"),
     valid_start_date="1970-01-01",valid_end_date="2099-12-31",invalid_reason=NA_character_),overwrite=TRUE)
 }
+# Optional explicitly synthetic formula practice, separate from Synthea.
+if (formulas) {
+  new <- data.frame(concept_id=c(970001L,970002L,970003L,8840L),
+    concept_name=c("Teaching standardized serum creatinine","Female equation branch",
+      "Male equation branch","milligram per deciliter"),
+    domain_id=c("Measurement","Gender","Gender","Unit"),
+    vocabulary_id="Fixture",concept_class_id="Fixture",standard_concept="S",
+    concept_code=c("scr","female","male","mg/dL"),valid_start_date="1970-01-01",
+    valid_end_date="2099-12-31",invalid_reason=NA_character_)
+  DBI::dbWriteTable(db,"concept",new,append=TRUE)
+  DBI::dbExecute(db,"UPDATE person SET gender_concept_id = CASE WHEN person_id % 2 = 1 THEN 970002 ELSE 970003 END")
+  DBI::dbWriteTable(db,"measurement",data.frame(measurement_id=1001:1024,person_id=1:24,
+    measurement_concept_id=970001L,measurement_date="2024-06-01",measurement_type_concept_id=0L,
+    value_as_number=rep(c(.7,.9,1.4,1.8),6),unit_concept_id=8840L),append=TRUE)
+}
 DBI::dbDisconnect(db)
 
 config <- DSLite::defaultDSConfiguration(include = c("dsOMOP","dsBase"))
@@ -162,7 +177,7 @@ builder <- DSI::newDSLoginBuilder()
 builder$append(server = "site", url = "server", driver = "DSLiteDriver")
 if(two_sites) builder$append(server="site2",url="server2",driver="DSLiteDriver")
 conns <- DSI::datashield.login(builder$build(), assign = FALSE)
-ds.omop.connect(resource = "fixture", conns = conns)
+ds.omop.connect(resource = "fixture", conns = conns, symbol = symbol)
 
 
  list(conns=conns, server=server, path=c(fixture_path,second_path))

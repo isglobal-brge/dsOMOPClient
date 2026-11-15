@@ -1,9 +1,9 @@
 ---
-title: "Getting Started with dsOMOP v2"
+title: "Getting Started with dsOMOP"
 description: "Connect to OMOP CDM resources and run a first reviewed workflow."
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting Started with dsOMOP v2}
+  %\VignetteIndexEntry{Getting Started with dsOMOP}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ## Overview
 
-**dsOMOP v2** provides a typed interface to OMOP Common Data Model databases
+**dsOMOP** provides a typed interface to OMOP Common Data Model databases
 through the DataSHIELD framework. The server implements endpoint-specific
 disclosure controls, but deployment safety also depends on its complete method
 allowlist, policy options, database role and downstream consumers. It consists
@@ -28,7 +28,7 @@ of two packages:
 
 ## Prerequisites
 
-- A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2 installed
+- A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP installed
 - An OMOP CDM database configured as a DataSHIELD resource
 - The `dsOMOPClient` package installed locally
 

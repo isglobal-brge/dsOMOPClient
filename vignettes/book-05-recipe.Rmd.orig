@@ -117,8 +117,7 @@ independently. That is a teaching definition to choose explicitly in a real stud
 
 <details><summary>Full plan explanation (optional)</summary>
 
-The semantic version identifies the rules used to interpret the recipe. A label
-contract records the category names and their ordering. Federation reconciliation
+A label contract records the category names and their ordering. Federation reconciliation
 makes those categories agree across sites. A bytewise tie compares the bytes of
 text to make a repeated choice deterministic. You do not need to configure these
 for this first recipe.
@@ -130,9 +129,7 @@ The explanation contains declarations, not observed patient frequencies.
 
 Print all the chosen defaults:
 
-```{r explain-full}
-recipe_explain(people)
-```
+The explanation above records the chosen defaults before execution.
 
 </details>
 

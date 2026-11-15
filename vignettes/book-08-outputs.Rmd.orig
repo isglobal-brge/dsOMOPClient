@@ -100,7 +100,8 @@ The template already contains an executable wide output.
 ## Wide: named columns
 
 ```{r wide}
-book_symbols(recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns))
+wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns)
+book_symbols(wide_result)
 dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
 ```
 
@@ -229,7 +230,8 @@ Use sparse for many covariates when most combinations have no contribution.
 sparse <- base
 sparse$outputs <- list(sparse = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
-book_symbols(recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns))
+sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns)
+book_symbols(sparse_result)
 dsBaseClient::ds.colnames("D_fmt_sparse", datasources = conns)
 ```
 
@@ -287,13 +289,47 @@ Only the final joined output is published. The two input outputs are private
 intermediate steps and do not each need a separately published symbol.
 
 ```{r join-run}
-book_symbols(recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns))
+joined_result <- recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns)
+book_symbols(joined_result)
 dsBaseClient::ds.colnames("D_fmt_joined", datasources = conns)
 ```
 
 A left join retains the first input's rows. Here each episode has exactly one
 counts row and one ages row. Repeated event rows would require a different,
 explicit cardinality; do not silently multiply a study population.
+
+## A codebook for every published component
+
+Save the result of `recipe_execute()` to retain metadata about the assigned
+objects. The sparse result contains more than one table: its data and its
+reference components each have their own schema and row meaning.
+
+```{r format-codebooks}
+books <- c(recipe_codebook(wide_result), recipe_codebook(sparse_result),
+  recipe_codebook(joined_result))
+knitr::kable(do.call(rbind, lapply(books, function(x) data.frame(
+  Output = x$output, Component = x$component, Status = x$status,
+  Grain = x$row_grain, Columns = nrow(x$columns)))))
+```
+
+This is a local metadata operation. It does not count patient rows. Use the same
+call for long, period, survival or interval results; multi-component outputs
+return one entry per published table.
+
+**Exercise.** Inspect the sparse reference table's column types.
+
+<details><summary>Solution: choose the exact component</summary>
+
+```{r format-codebook-component}
+sparse_books <- recipe_codebook(sparse_result)
+reference_key <- grep("covariateRef$", names(sparse_books), value = TRUE)
+knitr::kable(sparse_books[[reference_key]]$columns[c("name", "r_type", "semantic_type")])
+```
+
+The covariate reference describes feature identities. It is distinct from the
+matrix of private person-linked values and from an observed-frequency table.
+
+</details>
 
 ## Try it
 

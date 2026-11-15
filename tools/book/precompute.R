@@ -38,12 +38,22 @@ if (!"--chapter-worker" %in% args) {
           try(DSI::datashield.logout(two_conns), silent=TRUE)
         }
         if (exists("pair", inherits=FALSE)) unlink(pair$path)
+        if (exists("formula_conns", inherits=FALSE)) {
+          try(dsOMOPClient::ds.omop.disconnect(conns=formula_conns, symbol="book_formula"), silent=TRUE)
+          try(DSI::datashield.logout(formula_conns), silent=TRUE)
+          unlink(formula_practice$path)
+        }
       })
       knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=FALSE)
       chapter_env <- environment()
       knitr::opts_hooks$set(label = function(options) {
         if (grepl("book-11-parameters", input) && options$label == "unknown-function")
           chapter_env$rollback_snapshot <- DSLite::getDSLiteData(chapter_env$conns, "D_bmi")$site
+        if (grepl("book-10-harmonise", input) && options$label == "two-connections") {
+          symbols <- c("D_ordered", "D_styled", "D_missing_categories", "D_flags", "D_rollups")
+          chapter_env$category_snapshot <- setNames(lapply(symbols, function(symbol)
+            DSLite::getDSLiteData(chapter_env$conns, symbol)$site), symbols)
+        }
         if (grepl("book-showcase", input) && options$label == "showcase-numeric-connection") {
           symbols <- DSI::datashield.symbols(chapter_env$conns)$site
           symbols <- symbols[grepl("^D_tour_", symbols)]

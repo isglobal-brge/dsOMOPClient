@@ -72,7 +72,7 @@ Keep the numeric loader filename `load-numeric.R`; the practice loader sources i
 Save the [capstone helper](../downloads/capstone.R) in `book-work/tools/book/`;
 chapter 18's solution uses it.
 
-`display.R` formats released summaries and tables for reading. It does not
+`display.R` formats released summaries, tables and returned symbol mappings for reading. It does not
 retrieve patient rows. `practice.R` defines `book_connect()` and the local
 practice server; it reads the connection settings and attaches the selected
 resource. Source these downloaded files in the order shown in each chapter.
@@ -122,6 +122,8 @@ with redistributed copies.
 The categorical, date and mortality lessons also use a small **synthetic
 questionnaire dataset**, created temporarily by `fixture.R`. It contains education,
 fever, visits and causes of death, including missing answers and partial birth dates.
+Its category and formula exercises add clearly labelled synthetic vocabulary
+relationships and standardized creatinine inputs.
 It is separate from the two practice resources; each chapter identifies its dataset.
 </div>
 

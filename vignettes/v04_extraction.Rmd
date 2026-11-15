@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-These 2.10.5 examples use the integrated recipe-language-2 implementation.
+These 2.10.5 examples use the integrated recipe API implementation.
 They are not evaluated during documentation builds because they need live
 DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the
 data; use reviewed DataSHIELD methods to analyse them. The previous chapter
@@ -235,7 +235,7 @@ A dense available-but-event-free source keeps its declared columns and zero/NA
 rules; an unavailable source is NA. Multi-concept source columns retain concept
 identity. Carry-forward is per source and concept, evaluated at period start.
 
-Survival windows and censoring are explicit. Native v2 adds no implicit
+Survival windows and censoring are explicit. The recipe API adds no implicit
 cohort-end cap; request `index_end` when intended. A named TAR yields its own
 inventory entry, such as `D_tte.itt`. Each independently accessible patient
 component must pass distinct-person support; a passing roster does not permit
