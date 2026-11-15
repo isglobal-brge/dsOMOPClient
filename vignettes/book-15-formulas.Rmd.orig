@@ -312,8 +312,8 @@ category remains missing; the helper never guesses a branch or adds a race term.
 
 ```{r egfr-provenance}
 formula_record <- recipe_codebook(egfr_result)[[1]]$formulas[[1]]
-knitr::kable(data.frame(Field = c("Equation", "Unit"),
-  Value = c(formula_record$equation, formula_record$unit)))
+cat("Equation:", formula_record$equation, "\n")
+cat("Unit:", formula_record$unit, "\n")
 ```
 
 The equation and unit identify what was calculated. Keep the full formula record

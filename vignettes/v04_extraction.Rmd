@@ -100,7 +100,9 @@ education_text <- omop_variable(name = "education_text", table = "observation",
 # recipe_to_plan() refuses a recipe that releases this class-1 source.
 ```
 
-`value_as_string` and `cause_source_value` are free source text (class 1).
+`value_as_string` holds a source string; `cause_source_value` retains the original
+source cause code, such as an ICD-10 code. Both are protected source fields
+(class 1), even when a source code is structured rather than narrative text.
 Selecting a categorical type or renaming the column does not make them safe.
 Use coded `value_as_concept_id` and `cause_concept_id` for the portable recipe.
 An administrator's existing sensitive-column override is not permission to

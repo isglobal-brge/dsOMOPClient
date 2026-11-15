@@ -142,7 +142,7 @@ linear slope does not forecast a person's next reading.
 
 ## Convert, round and classify in a declared order
 
-Target unit **8636** is gram per liter (g/L), found in chapter 4. Multiplication
+Target unit **8636** is gram per liter (g/L), found in [chapter 6](book-06-events.html#convert-to-a-common-unit-before-reducing). Multiplication
 by ten converts g/dL to g/L. Here the conversion is applied to the person mean;
 an event-level `omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0)))`
 would convert before reduction instead.
@@ -199,6 +199,10 @@ outcome. Index on the first lab and restrict last to days 1 onward. Use two
 disjoint practice sites; their combined population is the same 28 people.
 The named `paired` session keeps the earlier single-site tables available for
 the exercises below.
+
+For real servers, replace the next two connection lines with the
+[two-site Opal login](book-00-start.html#connect-to-two-opal-sites).
+Keep the earlier `conns` connection for the later single-site exercises.
 
 ```{r two-sites}
 practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool", session = "paired")
