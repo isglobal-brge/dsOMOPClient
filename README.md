@@ -1,5 +1,33 @@
 # dsOMOPClient
 
+## Release 2.10.5
+
+Install matching dsOMOP and dsOMOPClient 2.10.5 and republish the server's methods
+and Options in Opal after upgrading. Check installed and published versions with
+`ds.omop.server.version(conns)`. Existing private roots remain valid; this release
+requires no new privacy configuration, epoch change or database TLS setting.
+
+This release adds checked recursive numeric expressions and exact signed64
+transport, typed categorical presentation and shared prospective/executed
+codebooks, four versioned clinical formulas, and explicit recorded-day numeric
+reduction. It also repairs staging ownership/cleanup, final DP provenance seals,
+and the supported OHDSI/Circe bridge. The broader workflow/declaration-library
+redesign is deferred.
+
+Re-run affected recipes and rebuild codebooks. Keep native row keys as opaque
+character strings. Arithmetic that would lose integer precision is refused;
+retain raw/count identity representation when exact binary64 conversion is not
+possible. Re-import OHDSI definitions to obtain the executable validity policy,
+and use a server advertising the required capabilities. See NEWS for each
+corrected or newly refused case and its migration path.
+
+Release validation: [Opal contract run 43661271157](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661271157)
+and [end-to-end run 43661274062](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661274062).
+The release pipeline records both as successful; the end-to-end artifacts cover
+fresh installation and upgrade from 2.10.4 on Opal 6.2.1, including preservation
+of the existing DP noise root. These runs do not establish live execution on
+every SQL dialect or exercise the separate numeric scenario N.
+
 ## Introduction
 
 `dsOMOPClient` is the analyst-facing interface for typed operations over remote
@@ -90,13 +118,13 @@ the new version's methods: an administrator publishes its settings again
 `ds.omop.connect()` stops with the same explanation when a server cannot be
 used, and reports each server's own error instead of DSI's generic notice.
 
-### Upgrading to 2.10.4
+### Upgrading to 2.10.5
 
-The matching release is dsOMOP 2.10.4 plus dsOMOPClient 2.10.4. Automatic
+The matching release is dsOMOP 2.10.5 plus dsOMOPClient 2.10.5. Automatic
 server protection needs no privacy settings, secret provisioning, epoch bump,
 ETL coordination or TLS change. Existing valid roots survive package upgrade.
 Opal's installed-package and published-profile versions are distinct; the
-version check identifies an installed 2.10.4 whose profile still has older
+version check identifies an installed 2.10.5 whose profile still has older
 methods, so ordinary profile publication completes that package upgrade.
 
 Language-2 execution requires the publication methods at every site. Supported
@@ -128,7 +156,7 @@ use explicit numeric representations for date arithmetic. See
 
 The release candidate passed recipe/publication and end-to-end checks for fresh installations and upgrades on Opal 5.7.6 and 6.1.3. These checks do not establish live execution on every supported SQL dialect.
 
-## Recipe language 2 in 2.10.4
+## Recipe language 2 in 2.10.5
 
 Use `omop_study()` for a study with explicit baseline and follow-up inputs, or
 compose `omop_event()`, `omop_population()`, `omop_reduce()` and `omop_output()`
@@ -140,7 +168,7 @@ level and cause of death. Examples use `eval = FALSE` because they need authenti
 study-specific CDM. The integrated compilers are exercised by the release runs
 below; advertised operations still determine what an installed server runs.
 
-| Backend | Required 2.10.4 verification | Runtime release target |
+| Backend | Required 2.10.5 verification | Runtime release target |
 |---|---|---|
 | PostgreSQL | Live typed SQL and recipe tests | 16 (development pod: 14) |
 | SQLite / RSQLite | Embedded tests and runtime window-frame probe | Actual SQLite and RSQLite versions recorded |
@@ -153,7 +181,7 @@ The server README contains the construct-by-construct matrix. A supported
 connector alone does not establish recipe support. Unsupported constructs
 refuse at preflight with `dialect_unsupported`. Check both installed and
 published package versions with `ds.omop.server.version()`; use matching
-2.10.4 packages and republish methods and Options on Opal after upgrading.
+2.10.5 packages and republish methods and Options on Opal after upgrading.
 
 Small private inputs are allowed. Each independently accessible final patient
 component needs `nfilter.subset` distinct persons. Strict servers refuse the
