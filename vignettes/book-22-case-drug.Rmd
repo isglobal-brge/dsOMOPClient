@@ -117,7 +117,10 @@ saveRDS(class_set, class_file)
 
 A classification concept groups descendants; it is not a standard ingredient
 substitution through Maps to. The descendant list establishes the selected
-medicine before the protected inventory establishes its use.
+medicine before the protected inventory establishes its use. The prevalence
+entry is a disclosure-controlled count band (15 here), not the exact cohort size.
+The subsequent admitted analysis summary reports 18 valid people; use that
+analysis denominator when interpreting its mean.
 
 
 ``` r
