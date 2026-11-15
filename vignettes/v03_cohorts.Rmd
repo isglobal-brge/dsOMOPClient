@@ -158,7 +158,7 @@ available; cohort handles are private inputs, not a way to retrieve rows.
 ## Inspect, execute and retain the inventory
 
 ```{r}
-ds.omop.server.version(conns)
+ds.omop.server.version(conns)[c("server", "published", "running", "ready")]
 recipe_lint(recipe)
 recipe_validate(recipe, conns = conns)
 recipe_explain(recipe, conns = conns)

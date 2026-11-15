@@ -158,7 +158,7 @@ Use an explicit handle for a different table, then verify the current server ver
 
 ```{r book4-exercise-3}
 knitr::kable(ds.omop.columns("death", symbol = "omop", conns = conns)$site)
-ds.omop.server.version(conns = conns)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
 ```
 
 The same handle routes both calls to the current resource. A symbol name does not describe which dataset it contains.
