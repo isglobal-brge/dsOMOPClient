@@ -66,6 +66,14 @@ test_that("recipe_explain renders the normalised plan with its defaults, never c
                                options = list(outcomes = list(mi = mi), censor = "observation_end"))))
   ex <- recipe_explain(r, detail = "semantics")
   expect_s3_class(ex, "omop_recipe_explain")
+  expect_identical(ex$text[[1L]], "Recipe plan")
+  expect_identical(capture.output(print(ex))[[1L]], "Recipe plan")
+  expect_identical(ex$language_version, "2.0")
+  expect_identical(ex$semantic_version, "2.0.0")
+  expect_identical(ex$language_version, ex$plan$meta$language_version)
+  expect_identical(ex$semantic_version, ex$plan$meta$semantic_version)
+  expect_identical(ex$language_version, ex$payload$meta$language_version)
+  expect_identical(ex$semantic_version, ex$payload$meta$semantic_version)
   txt <- paste(ex$text, collapse = "\n")
   expect_match(txt, "select = \"first_eligible\"")
   expect_match(txt, "coverage: unique/drop/drop")
@@ -79,6 +87,9 @@ test_that("recipe_explain renders the normalised plan with its defaults, never c
   expect_identical(ex$digest, dsOMOPClient:::.plan_v2_digest(recipe_to_plan(r))$sha256)
   expect_output(print(ex), "Population 'c1'")
   summary_ex <- recipe_explain(r)
+  expect_identical(summary_ex$text[[1L]], "Recipe plan")
+  expect_identical(summary_ex$language_version, ex$language_version)
+  expect_identical(summary_ex$semantic_version, ex$semantic_version)
   expect_lt(length(summary_ex$text), length(ex$text))
 })
 
@@ -111,6 +122,10 @@ test_that("explain selects the plan exactly as execution does (A-14)", {
   expect_s3_class(ex$payload, "omop_plan")
   expect_null(ex$digest)
   expect_null(ex$plan)
+  expect_named(ex, c("text", "selected", "payload", "plan", "language_version",
+                     "semantic_version", "defaults", "server", "digest", "refusal"))
+  expect_null(ex$language_version)
+  expect_null(ex$semantic_version)
   expect_match(paste(ex$text, collapse = "\n"), "not available offline")
   # a newly permitted shape and a language-2 recipe are explained as v2
   negated <- omop_recipe(variables = omop_variable_age(),
@@ -139,7 +154,9 @@ test_that("server explain receives the selected wire plan; missing explain is re
     .ds_safe_aggregate = function(conns, expr, ...) {
       sent <<- expr
       stats::setNames(lapply(names(conns), function(s) {
-        list(semantic_digest = "d1", plan = list(populations = list(base = list(
+        list(semantic_digest = "d1", plan = list(
+          meta = list(language_version = "2.0", semantic_version = "2.0.0"),
+          populations = list(base = list(
           kind = "index", index = list(source = list(legacy_spec = list()))))))
       }), names(conns))
     }, .package = "dsOMOPClient")
@@ -150,6 +167,10 @@ test_that("server explain receives the selected wire plan; missing explain is re
   expect_identical(as.character(sent[[1L]]), "omopPlanExplainDS")
   expect_null(.decode(sent[[3L]])$version)             # the v1 plan, as executed
   expect_identical(ex$digest, "d1")
+  expect_identical(ex$language_version, ex$plan$meta$language_version)
+  expect_identical(ex$semantic_version, ex$plan$meta$semantic_version)
+  expect_identical(ex$language_version, "2.0")
+  expect_identical(ex$semantic_version, "2.0.0")
   txt <- paste(ex$text, collapse = "\n")
   expect_match(txt, "compatibility variants: legacy_spec")
   expect_match(txt, "Server explain is unavailable on b \\(the profile does not publish omopPlanExplainDS\\)")

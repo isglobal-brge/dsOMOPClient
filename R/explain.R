@@ -42,7 +42,9 @@
 #' @return An \code{omop_recipe_explain} object: \code{$text} (character
 #'   lines), \code{$selected} (\code{"v1"} or \code{"v2"}), \code{$payload}
 #'   (the selected wire plan), \code{$plan} (the normalised plan, or
-#'   \code{NULL} for an offline v1 explanation), \code{$defaults} (a data
+#'   \code{NULL} for an offline v1 explanation), \code{$language_version}
+#'   and \code{$semantic_version} (from \code{$plan$meta}, or \code{NULL}
+#'   when the normalised plan is unavailable), \code{$defaults} (a data
 #'   frame of the defaults relied on), \code{$digest} (the semantic digest,
 #'   or \code{NULL} when unavailable), \code{$server} (per-server explain
 #'   payloads, when \code{conns} is given) and \code{$refusal} (why
@@ -165,6 +167,8 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     text <- c(text, paste0("Execution on these servers would be refused: ", refusal))
   }
   structure(list(text = text, selected = if (v2) "v2" else "v1", payload = plan, plan = norm,
+                 language_version = norm$meta$language_version,
+                 semantic_version = norm$meta$semantic_version,
                  defaults = defaults, server = server, digest = digest, refusal = refusal),
             class = c("omop_recipe_explain", "list"))
 }
@@ -376,8 +380,7 @@ print.omop_recipe_explain <- function(x, ...) {
 }
 
 .explain_text <- function(norm, defaults, detail) {
-  lines <- c(paste0("Recipe plan (language ", norm$meta$language_version, ", semantic ",
-                    norm$meta$semantic_version, ")"))
+  lines <- "Recipe plan"
   for (id in names(norm$populations)) {
     p <- norm$populations[[id]]
     head <- paste0("Population '", id, "' (", p$kind, ")")
