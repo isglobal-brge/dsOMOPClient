@@ -11,336 +11,192 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Attach a resource and learn the two kinds of name used in a session.
+Distinguish a connection, a resource and a symbol, and change databases deliberately.
 </div>
 
-This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+**You need:** the packages, helpers and loaded practice data from
+[Getting started](book-00-start.html#before-you-start). Start a fresh R session
+in `book-work` and run the sections in order.
 
 ## Start this chapter
-
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
 
 
 ``` r
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+practice <- book_connect("gibleed")
 conns <- practice$conns
-names(conns)
 ```
 
-```
-#> [1] "site"
-```
+## Three names with different jobs
 
-The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
-
-## One connection list
-
-A *connection* is a logged-in session. Our DSLite helper made one, named `site`.
+A **connection** is a logged-in DataSHIELD session. A **resource** describes how
+the server opens a database. A **symbol** is an object name in that session.
+Here `site` names the connection, `gibleed` selects the resource and `omop` names
+the attached database handle.
 
 
 ``` r
-names(conns)
+DSI::datashield.symbols(conns)
 ```
 
 ```
-#> [1] "site"
+#> $site
+#> [1] "omop"
 ```
 
-Most calls accept `conns`. Passing it explicitly makes clear where a request goes.
+Under `site`, `omop` is the private handle created by `book_connect()`. Later,
+`D_people` will name a table created by a recipe, rather than a database handle.
 
-## The Opal login path
+For an Opal study server, use the
+[login block in Getting started](book-00-start.html#connect-to-your-opal-server).
+Your administrator provides resource names including their project prefix.
 
-For a study server, replace the local connection chunk with the
-[Opal login chunk in Getting started](book-00-start.html#connect-to-your-opal-server).
-It uses DSI and DSOpal with the URL, credentials, profile and resources supplied
-by your administrator. The attach and analysis calls below then use that `conns`
-list and its resource names.
-
-For local practice, keep the setup above. `book_connect()` reads the same
-connection settings when a later section changes datasets. Questionnaire
-chapters identify their separate local dataset.
+## Use a handle explicitly
 
 
 ``` r
-resource_names
+knitr::kable(as.data.frame(ds.omop.table.stats("person", symbol = "omop", conns = conns)$per_site$site))
 ```
 
-```
-#>   gibleed   numeric 
-#> "gibleed" "numeric"
-```
 
-These are the names used by every attach and switch below. With Opal they include
-the configured project prefix, even when you rename either resource.
 
-## A resource is a route to a database
+| rows| persons|
+|----:|-------:|
+| 2690|    2690|
 
-A *resource* stores the connection details on the server. On the practice server its name
-is `gibleed`. On Opal, use the project-qualified name supplied by your administrator.
+The request goes to GiBleed through `omop`: its person count is in the
+2,690–2,694 band. Most dsOMOP calls default to `symbol = "omop"`, so you can
+omit it when you have just one attached database.
+`ds.omop.server.version()` is different: it reports the server's installed and
+available methods, independently of any database handle.
 
-A *symbol* is an R object name inside the DataSHIELD session. Attach the resource
-and deliberately name the session handle `omop`:
+## Switch resources
+
+The practice helper closes the current session and opens the requested resource.
+Always replace `conns` with the returned connection:
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = resource_names[["gibleed"]], symbol = "omop", conns = conns)
+practice <- book_switch("numeric")
+conns <- practice$conns
+knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
 ```
 
-The server opens its database connection. This does not copy the database into R
-on your laptop. The shared configuration supplies the correct resource name for either driver.
 
-## Reuse the handle
+
+| rows| persons|
+|----:|-------:|
+|   25|      25|
+
+The person band is now 25–29, containing Synthea27Nj's 28 people. The handle can
+still be called `omop` even though its database changed. Switching does not
+combine the two populations. On Opal, use the disconnect/attach pair in
+[Getting started](book-00-start.html#connect-to-your-opal-server) instead.
 
 
 ``` r
-ds.omop.columns("person", symbol = "omop", conns = conns)$site
+practice <- book_switch("gibleed")
+conns <- practice$conns
+knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
 ```
 
-```
-#>                    column_name cdm_datatype db_datatype      concept_role
-#> 1                    person_id      integer        real       non_concept
-#> 2            gender_concept_id      integer        real attribute_concept
-#> 3                year_of_birth      integer        real       non_concept
-#> 4               month_of_birth      integer        real       non_concept
-#> 5                 day_of_birth      integer        real       non_concept
-#> 6               birth_datetime     datetime        text       non_concept
-#> 7              race_concept_id      integer        real attribute_concept
-#> 8         ethnicity_concept_id      integer        real attribute_concept
-#> 9                  location_id      integer        real       non_concept
-#> 10                 provider_id      integer        real       non_concept
-#> 11                care_site_id      integer        real       non_concept
-#> 12         person_source_value  varchar(50)        text       non_concept
-#> 13         gender_source_value  varchar(50)        text       non_concept
-#> 14    gender_source_concept_id      integer        real    source_concept
-#> 15           race_source_value  varchar(50)        text       non_concept
-#> 16      race_source_concept_id      integer        real    source_concept
-#> 17      ethnicity_source_value  varchar(50)        text       non_concept
-#> 18 ethnicity_source_concept_id      integer        real    source_concept
-#>    semantic_class fk_domain is_date is_extension is_untyped_identifier is_sensitive
-#> 1        ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 2         concept    Gender   FALSE        FALSE                 FALSE        FALSE
-#> 3        ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 4        ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 5        ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 6        ordinary              TRUE        FALSE                 FALSE         TRUE
-#> 7         concept      Race   FALSE        FALSE                 FALSE        FALSE
-#> 8         concept Ethnicity   FALSE        FALSE                 FALSE        FALSE
-#> 9        ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 10       ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 11       ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 12       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 13       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 14        concept             FALSE        FALSE                 FALSE         TRUE
-#> 15       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 16        concept             FALSE        FALSE                 FALSE         TRUE
-#> 17       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 18        concept             FALSE        FALSE                 FALSE         TRUE
-#>    is_blocked is_quasi_identifier
-#> 1       FALSE               FALSE
-#> 2       FALSE               FALSE
-#> 3        TRUE                TRUE
-#> 4        TRUE                TRUE
-#> 5        TRUE                TRUE
-#> 6        TRUE                TRUE
-#> 7       FALSE               FALSE
-#> 8       FALSE               FALSE
-#> 9       FALSE               FALSE
-#> 10      FALSE               FALSE
-#> 11      FALSE               FALSE
-#> 12       TRUE               FALSE
-#> 13       TRUE               FALSE
-#> 14       TRUE               FALSE
-#> 15       TRUE               FALSE
-#> 16       TRUE               FALSE
-#> 17       TRUE               FALSE
-#> 18       TRUE               FALSE
-```
-
-Subsequent calls can omit `symbol` because its default is `omop`. An output symbol
-such as `D_people` is different: it names a table built later by a recipe.
-
-## End a session deliberately
-
-At the end of your own work, call `ds.omop.disconnect(conns = conns)` and then
-`DSI::datashield.logout(conns)`. Start again with the practice helper for another
-chapter.
-
-## Switch between the two practice resources
-
-The same practice server also offers the numeric Synthea27Nj database. Disconnect
-the current OMOP handle, then attach that resource on the same login connection:
 
 
-``` r
-ds.omop.disconnect(conns = conns)
-numeric_session <- ds.omop.connect(resource = resource_names[["numeric"]], conns = conns)
-class(numeric_session)
-```
+| rows| persons|
+|----:|-------:|
+| 2690|    2690|
 
-```
-#> [1] "omop_session"
-```
+The 2,690–2,694 band confirms that GiBleed is attached again. Choosing the
+resource explicitly prevents running a lab analysis against its empty numeric fields.
 
-This changes the database behind the OMOP handle. It does not copy or combine
-patient rows between resources. On Opal, `resource_names[["numeric"]]` selects the resource you configured.
-Return to GiBleed for the next introductory chapters:
+## Exercise 1: keep two handles in one session
 
-
-``` r
-ds.omop.disconnect(conns = conns)
-session <- ds.omop.connect(resource = resource_names[["gibleed"]], conns = conns)
-class(session)
-```
-
-```
-#> [1] "omop_session"
-```
-
-The numeric chapters will open their own fresh `numeric` session. Keeping resource
-selection explicit prevents accidentally running a lab recipe against GiBleed's
-empty numeric-value fields.
-
-## Try it
-
-Repeat the column request without specifying the symbol.
+Attach the numeric resource as `labs`, keeping `omop` attached to GiBleed.
+List the names and count people through each. Does attaching `labs` combine them?
+For Opal, substitute the supplied numeric resource name.
 
 <details><summary>Solution</summary>
 
 
+``` r
+labs_session <- ds.omop.connect(resource = "numeric", symbol = "labs", conns = conns)
+DSI::datashield.symbols(conns)
+```
+
+```
+#> $site
+#> [1] "labs" "omop"
+```
+
+`labs` and `omop` are two distinct handles in the same session.
+
 
 ``` r
-ds.omop.columns("person", conns = conns)$site
+handle_counts <- lapply(c("omop", "labs"), function(handle) {
+  counts <- ds.omop.table.stats("person", stats = "persons",
+    symbol = handle, conns = conns)$per_site$site
+  data.frame(Handle = handle, counts)
+})
+knitr::kable(do.call(rbind, handle_counts), row.names = FALSE)
 ```
 
+
+
+|Handle | persons|
+|:------|-------:|
+|omop   |    2690|
+|labs   |      25|
+
+``` r
+ds.omop.disconnect(symbol = "labs", conns = conns)
 ```
-#>                    column_name cdm_datatype db_datatype      concept_role
-#> 1                    person_id      integer        real       non_concept
-#> 2            gender_concept_id      integer        real attribute_concept
-#> 3                year_of_birth      integer        real       non_concept
-#> 4               month_of_birth      integer        real       non_concept
-#> 5                 day_of_birth      integer        real       non_concept
-#> 6               birth_datetime     datetime        text       non_concept
-#> 7              race_concept_id      integer        real attribute_concept
-#> 8         ethnicity_concept_id      integer        real attribute_concept
-#> 9                  location_id      integer        real       non_concept
-#> 10                 provider_id      integer        real       non_concept
-#> 11                care_site_id      integer        real       non_concept
-#> 12         person_source_value  varchar(50)        text       non_concept
-#> 13         gender_source_value  varchar(50)        text       non_concept
-#> 14    gender_source_concept_id      integer        real    source_concept
-#> 15           race_source_value  varchar(50)        text       non_concept
-#> 16      race_source_concept_id      integer        real    source_concept
-#> 17      ethnicity_source_value  varchar(50)        text       non_concept
-#> 18 ethnicity_source_concept_id      integer        real    source_concept
-#>    semantic_class fk_domain is_date is_extension is_untyped_identifier is_sensitive
-#> 1        ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 2         concept    Gender   FALSE        FALSE                 FALSE        FALSE
-#> 3        ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 4        ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 5        ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 6        ordinary              TRUE        FALSE                 FALSE         TRUE
-#> 7         concept      Race   FALSE        FALSE                 FALSE        FALSE
-#> 8         concept Ethnicity   FALSE        FALSE                 FALSE        FALSE
-#> 9        ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 10       ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 11       ordinary             FALSE        FALSE                 FALSE        FALSE
-#> 12       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 13       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 14        concept             FALSE        FALSE                 FALSE         TRUE
-#> 15       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 16        concept             FALSE        FALSE                 FALSE         TRUE
-#> 17       ordinary             FALSE        FALSE                 FALSE         TRUE
-#> 18        concept             FALSE        FALSE                 FALSE         TRUE
-#>    is_blocked is_quasi_identifier
-#> 1       FALSE               FALSE
-#> 2       FALSE               FALSE
-#> 3        TRUE                TRUE
-#> 4        TRUE                TRUE
-#> 5        TRUE                TRUE
-#> 6        TRUE                TRUE
-#> 7       FALSE               FALSE
-#> 8       FALSE               FALSE
-#> 9       FALSE               FALSE
-#> 10      FALSE               FALSE
-#> 11      FALSE               FALSE
-#> 12       TRUE               FALSE
-#> 13       TRUE               FALSE
-#> 14       TRUE               FALSE
-#> 15       TRUE               FALSE
-#> 16       TRUE               FALSE
-#> 17       TRUE               FALSE
-#> 18       TRUE               FALSE
-```
+
+`omop` gives 2690 and `labs` gives 25. Each is a separate protected count; the
+populations were not combined. Disconnecting `labs` leaves `omop` available.
 
 </details>
 
-## Exercise 2: a common variant
+## Exercise 2: diagnose a wrong name
 
-Resolve resource names for an Opal project called teaching. Do you need to reconnect for this local calculation?
+Ask for a person count through `missing_handle`. What needs fixing: the table
+name or the handle name?
 
-<details><summary>Solution 2</summary>
+<details><summary>Solution</summary>
 
+<!-- expected-refusal:start -->
 
 ``` r
-book_resource_names("Opal", "teaching", c(gibleed = "bleeding", numeric = "labs"))
+tryCatch(ds.omop.table.stats("person", symbol = "missing_handle", conns = conns),
+  error = function(e) cat(conditionMessage(e), "\n"))
 ```
 
 ```
-#>             gibleed             numeric 
-#> "teaching.bleeding"     "teaching.labs"
+#> No OMOP session 'missing_handle'. Call ds.omop.connect() first.
 ```
+<!-- expected-refusal:end -->
 
-No. Name resolution is local; attaching the resolved resource is a separate server operation.
+The message identifies a missing session handle. It says nothing about whether
+the database has a person table. Use `omop`, or attach a resource under the name
+you intend to query.
 
 </details>
 
-## Exercise 3: a pitfall to avoid
-
-Use an explicit handle for a different table, then verify the current server version.
-
-<details><summary>Solution 3</summary>
+## End the session
 
 
 ``` r
-knitr::kable(ds.omop.columns("death", symbol = "omop", conns = conns)$site)
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
 ```
 
+Disconnect releases the database handle; logout ends the DataSHIELD session.
+The next chapter opens a fresh connection.
 
-
-|column_name             |cdm_datatype |db_datatype |concept_role      |semantic_class |fk_domain    |is_date |is_extension |is_untyped_identifier |is_sensitive |is_blocked |is_quasi_identifier |
-|:-----------------------|:------------|:-----------|:-----------------|:--------------|:------------|:-------|:------------|:---------------------|:------------|:----------|:-------------------|
-|person_id               |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
-|death_date              |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
-|death_datetime          |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
-|death_type_concept_id   |integer      |real        |type_concept      |concept        |Type Concept |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
-|cause_concept_id        |integer      |real        |attribute_concept |concept        |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
-|cause_source_value      |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
-|cause_source_concept_id |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
-
-``` r
-ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
-```
-
-```
-#>   server published running ready
-#> 1   site    2.10.5  2.10.5  TRUE
-```
-
-The same handle routes both calls to the current resource. A symbol name does not describe which dataset it contains.
-
-</details>
 ## Recap
 
-The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.
+A resource selects a database, a connection carries requests, and a symbol names
+a private server object. Check the selected resource before analysing it.
 
 **Next:** [3. Exploring the CDM](book-03-explore.html).
