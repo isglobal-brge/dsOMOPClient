@@ -31,8 +31,8 @@ library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
 source("tools/book/practice.R")
-pair <- book_numeric_pair(resource = "gibleed")
-two_conns <- pair$conns
+practice_pair <- book_connect("gibleed", two_sites = TRUE, symbol = "book_pool")
+two_conns <- practice_pair$conns
 ```
 
 The helper partitions public GiBleed people into two disjoint sites. It never

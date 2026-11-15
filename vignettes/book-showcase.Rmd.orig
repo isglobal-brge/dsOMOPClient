@@ -44,7 +44,7 @@ named <- omop_recipe(variables = list(education = education))
 assigned <- recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
 education_counts <- dsBaseClient::ds.table("D_tour_named$education",
   useNA = "always", datasources = conns)
-knitr::kable(education_counts$output.list$TABLE_rvar.by.study_counts)
+knitr::kable(book_site_counts(education_counts))
 ```
 
 Site 1 has 12 Secondary and 12 University answers; site 2 has 0 and 24.

@@ -332,10 +332,11 @@ The absence of a repeat lab is not a normal result.
 For this section use the same disjoint public Synthea split as chapter 14:
 14 people at each of two local DSLite servers. No people are duplicated. A real
 multisite study must establish nonoverlapping populations separately.
+The named `paired` session keeps the earlier single-site connection available.
 
 ```{r two-sites}
-pair <- book_numeric_pair()
-two_conns <- pair$conns
+practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool", session = "paired")
+two_conns <- practice_pair$conns
 ```
 
 The panel already stops at observation coverage. Attach one first-outcome day

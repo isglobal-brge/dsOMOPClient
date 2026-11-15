@@ -8,20 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (/^(?:[<>]\s*)?[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(cell.textContent.trim()))
       cell.classList.add('book-number');
   });
-  // Preserve every recorded warning, with an explicit expandable label on the
-  // one lesson that explains dsBase's single-iteration local setup fits.
-  if (/book-(14-labs|16-longitudinal|20-case-gibleed|21-case-glucose)\.html$/.test(location.pathname)) {
-    main.querySelectorAll('pre:not(.sourceCode)').forEach(pre => {
-      const lines = pre.textContent.trim().split('\n');
-      if (!lines.length || !lines.every(line => line.trim() ===
-          '#> Warning: glm.fit: algorithm did not converge')) return;
-      const details = document.createElement('details');
-      details.className = 'model-warnings';
-      const summary = document.createElement('summary');
-      summary.textContent = `Local fitting warnings (${lines.length})`;
-      pre.before(details); details.append(summary, pre);
-    });
-  }
   const links = [...document.querySelectorAll('.navbar .dropdown-menu a')]
     .filter(a => /book-.*\.html$/.test(a.getAttribute('href') || ''));
   const nav = document.createElement('nav');

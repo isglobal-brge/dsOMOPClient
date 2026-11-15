@@ -14,6 +14,16 @@ book_counts <- function(result) {
   data.frame(Category = names(counts), Count = as.numeric(counts), check.names = FALSE)
 }
 
+# A joint release retains the sites' common category labels and zero cells.
+book_site_counts <- function(result) {
+  .book_released_counts(result)
+  counts <- result$output.list$TABLE_rvar.by.study_counts
+  if (!is.matrix(counts) || !is.numeric(counts) || anyNA(counts) ||
+      is.null(rownames(counts)) || is.null(colnames(counts)))
+    stop("No complete released per-site counts in this result.")
+  counts
+}
+
 # The ds.table two-way result includes many proportions; show just its counts.
 book_table2 <- function(result) {
   counts <- .book_released_counts(result)

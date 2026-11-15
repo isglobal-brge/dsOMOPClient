@@ -30,8 +30,8 @@ library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
 source("tools/book/practice.R")
-pair <- book_numeric_pair()
-two_conns <- pair$conns
+practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool")
+two_conns <- practice_pair$conns
 ```
 
 ## Confirm the measurement and units at both sites

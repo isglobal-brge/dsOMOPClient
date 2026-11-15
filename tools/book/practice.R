@@ -35,11 +35,11 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
 
 # Offline-only administrator fixture: disjoint halves of public synthetic people.
 # No records are invented. The permanent practice resources are never modified.
-book_numeric_pair <- function(env=parent.frame(), resource=c("numeric", "gibleed")) {
+book_numeric_pair <- function(env=parent.frame(), resource=c("numeric", "gibleed"), symbol="book_pool") {
   resource <- match.arg(resource)
   force(env)
-  base <- book_practice(resource, env=env, symbol="book_pool")
-  ds.omop.disconnect(conns=base$conns, symbol="book_pool")
+  base <- book_practice(resource, env=env, symbol=symbol)
+  ds.omop.disconnect(conns=base$conns, symbol=symbol)
   DSI::datashield.logout(base$conns)
   source_db <- DBI::dbConnect(RSQLite::SQLite(), base$database)
   ids <- sort(DBI::dbReadTable(source_db, "person")$person_id)
@@ -71,7 +71,7 @@ book_numeric_pair <- function(env=parent.frame(), resource=c("numeric", "gibleed
   builder <- DSI::newDSLoginBuilder()
   for (site in names(groups)) builder$append(server=site, url=site, driver="DSLiteDriver")
   conns <- DSI::datashield.login(builder$build(), assign=FALSE)
-  ds.omop.connect(resource="numeric", conns=conns, symbol="book_pool")
+  ds.omop.connect(resource="numeric", conns=conns, symbol=symbol)
   complete <- TRUE
   list(conns=conns, path=paths, groups=groups)
 }

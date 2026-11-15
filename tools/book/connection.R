@@ -21,18 +21,38 @@ book_resource_names <- function(driver, project, resources) {
 if (!exists("resource_names", inherits = TRUE))
   resource_names <- book_resource_names(book_driver, opal_project, opal_resources)
 
-book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop", ...) {
+book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop",
+                         two_sites = FALSE, session = "default",
+                         conns = NULL, resources = NULL, ...) {
   force(env)
   stopifnot(length(name) == 1L, book_driver %in% c("DSLite", "Opal"))
-  if (book_driver == "DSLite") {
+  stopifnot(length(session) == 1L, nzchar(session), session != "practice",
+    is.logical(two_sites), length(two_sites) == 1L, !is.na(two_sites))
+  if (!is.null(.book_connection_state[[session]])) book_disconnect(session)
+  if (!is.null(conns)) {
+    # Use real analyst connections and their configured resource names as given.
+    if (is.null(resources) || length(resources) != length(conns) ||
+        !identical(names(resources), names(conns)) || any(!nzchar(resources)) ||
+        (two_sites && length(conns) != 2L))
+      stop("Supply one named resource for each connection (two for two_sites = TRUE).")
+    complete <- FALSE
+    on.exit(if (!complete) DSI::datashield.logout(conns), add = TRUE)
+    for (site in names(conns))
+      dsOMOPClient::ds.omop.connect(resource = resources[[site]],
+        conns = conns[site], symbol = symbol)
+    practice <- list(conns = conns, path = character())
+    complete <- TRUE
+  } else if (book_driver == "DSLite") {
     if (name == "questionnaire") {
       source("tools/book/fixture.R", local = TRUE)
-      practice <- book_fixture(env = env, symbol = symbol, ...)
+      practice <- book_fixture(env = env, symbol = symbol, two_sites = two_sites, ...)
     } else {
       source("tools/book/practice.R", local = TRUE)
-      practice <- book_practice(name, env = env, symbol = symbol, ...)
+      practice <- if (two_sites) book_numeric_pair(resource = name, env = env, symbol = symbol, ...)
+      else book_practice(name, env = env, symbol = symbol, ...)
     }
   } else {
+    if (two_sites) stop("For two Opal sites, supply conns and matching named resources.")
     library(DSOpal)
     resources <- book_resource_names(book_driver, opal_project, opal_resources)
     if (!name %in% names(resources)) stop("No Opal resource configured for: ", name)
@@ -57,21 +77,30 @@ book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop"
   }
   practice$resource <- name
   practice$symbol <- symbol
-  .book_connection_state$practice <- practice
+  practice$session <- session
+  .book_connection_state[[session]] <- practice
+  if (session == "default") .book_connection_state$practice <- practice
   practice
 }
 
-book_switch <- function(name, env = parent.frame(), ...) {
-  previous <- .book_connection_state$practice
+# Named sessions allow a lesson to keep earlier assigned tables while opening
+# a second pair. Switching or closing one session leaves the others available.
+book_disconnect <- function(session = "default") {
+  previous <- .book_connection_state[[session]]
   if (!is.null(previous)) {
-    # Logout still runs if detaching the resource fails. Never remove permanent
-    # practice databases: only helpers' temporary paths are recorded in $path.
     tryCatch(dsOMOPClient::ds.omop.disconnect(conns = previous$conns,
       symbol = previous$symbol), finally = {
-        DSI::datashield.logout(previous$conns)
-        unlink(previous$path)
-        .book_connection_state$practice <- NULL
+        tryCatch(DSI::datashield.logout(previous$conns), finally = {
+          unlink(previous$path)
+          .book_connection_state[[session]] <- NULL
+          if (session == "default") .book_connection_state$practice <- NULL
+        })
       })
   }
-  book_connect(name, env = env, ...)
+  invisible(NULL)
+}
+
+book_switch <- function(name, env = parent.frame(), session = "default", ...) {
+  book_disconnect(session)
+  book_connect(name, env = env, session = session, ...)
 }
