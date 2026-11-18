@@ -5,19 +5,26 @@
 .conceptRefuseUnsafe <- function(per_server) {
   sites <- names(per_server) %||% as.character(seq_along(per_server))
   refused <- character()
+  all_rules <- character()
   for (i in seq_along(per_server)) {
     report <- per_server[[i]]
     for (column in report$unsafe %||% character()) {
       rules <- as.character(unlist(report$unsafe_rules[[column]], use.names = FALSE))
       if (!length(rules)) rules <- c("nfilter.levels.max", "nfilter.levels.density")
+      all_rules <- c(all_rules, rules)
       refused <- c(refused, paste0("column '", column, "' on site '", sites[[i]],
         "' (", paste(unique(rules), collapse = " / "), ")"))
     }
   }
+  # Each server applies its own DataSHIELD options, so its administrator may
+  # also admit more levels; declared levels need no server change at all.
   if (length(refused)) stop("Concept factor publication refused: ",
     paste(refused, collapse = "; "),
-    ". Declare the levels, group them with omop_category_recode() / omop_category_rollup(), or narrow the events with concepts =.",
-    call. = FALSE)
+    ". Declare the levels (omop_category_spec(levels = ), for example from omop_concept_levels()), ",
+    "group them with omop_category_recode() / omop_category_rollup(), or narrow the events with concepts =",
+    if (any(grepl("^nfilter[.]levels", all_rules)))
+      "; otherwise the server's administrator can raise nfilter.levels.max / nfilter.levels.density" else "",
+    ".", call. = FALSE)
   invisible(NULL)
 }
 
