@@ -152,8 +152,9 @@
         # Consume the private source map here: publishing it (or its digest)
         # would reveal locally expanded vocabulary identities unnecessarily.
         ids <- vapply(ids,function(key)if(is.na(key))NA_character_ else records[[key]]$effective_id %||% key,"")
-        records <- target_records
-        declared <- public_targets
+        sentinels <- records[grepl("^special:",names(records))]
+        records <- c(target_records,sentinels)
+        declared <- union(public_targets,names(sentinels))
         discovered <- character()
         rollup <- list(adapter=rollup$adapter,levels=as.list(public_targets))
         producer <- list(kind="concept"); producer_order <- character(); producer_ordered <- FALSE
