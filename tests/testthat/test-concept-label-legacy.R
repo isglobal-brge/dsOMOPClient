@@ -19,10 +19,11 @@ test_that('A27 baseline and long streams use factors in memory and staged output
     expect_true(all(vapply(frames,function(f) is.factor(f$value_as_concept_id),logical(1))))
   }
   raw <- recipe_to_plan(.clf_recipe());raw$options$translate_concepts <- FALSE
-  ds.omop.plan.execute(raw,out=c(output='Numeric'),symbol='labels',conns=ctx$conns)
-  for(f in .clf_frames(ctx,'Numeric')) {
-    expect_true(is.numeric(f$education));expect_false(is.factor(f$cause))
-    expect_true(all(na.omit(f$education) %in% c(45000123L,45000124L,45000125L)))
+  ds.omop.plan.execute(raw,out=c(output='Ids'),symbol='labels',conns=ctx$conns)
+  for(f in .clf_frames(ctx,'Ids')) {
+    expect_true(is.factor(f$education));expect_true(is.factor(f$cause))
+    expect_identical(levels(f$education), as.character(45000123:45000126))
+    expect_true(all(na.omit(as.character(f$education)) %in% as.character(45000123:45000125)))
   }
 })
 

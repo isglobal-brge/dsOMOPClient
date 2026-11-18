@@ -666,7 +666,12 @@ test_that("assign-mode analysis commits only after every server owns the symbol"
   symbols <- list(a = character(0), b = character(0))
 
   local_mocked_bindings(
-    datashield.aggregate = function(conns, expr, ...) {
+    datashield.aggregate = function(conns, expr, success = NULL, ...) {
+      if (identical(as.character(expr[[1L]]), "omopFactorLevelsDS")) {
+        report <- list(levels = list(), unsafe = character(), nfilter_levels_max = 40)
+        for (site in names(conns)) if (is.function(success)) success(site, report)
+        return(stats::setNames(rep(list(report), length(conns)), names(conns)))
+      }
       server <- names(conns)[[1L]]
       stats::setNames(list(list(name = "dsomop:loader", mode = "assign")),
                       server)

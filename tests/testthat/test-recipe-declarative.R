@@ -791,19 +791,19 @@ add_arch("32_named_filter_ids",
     r
   })
 
-# 33. Plan options override (translate/factor off).
+# 33. Plan options override (ID-labelled concept factors).
 add_arch("33_options_override",
   decl = function() omop_recipe(
     variables = omop_variable_sex(),
     outputs = omop_output(name = "w", type = "wide"),
-    options = list(translate_concepts = FALSE, factor_concepts = FALSE)),
+    options = list(translate_concepts = FALSE, factor_concepts = TRUE)),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w",
                                                          type = "wide"))
     r <- dsOMOPClient:::recipe_set_options(r, translate_concepts = FALSE,
-                                           factor_concepts = FALSE)
+                                           factor_concepts = TRUE)
     r
   })
 

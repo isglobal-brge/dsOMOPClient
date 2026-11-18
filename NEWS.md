@@ -1,3 +1,28 @@
+# dsOMOPClient 2.10.6 (2026-11-18)
+
+- Concept IDs are categories everywhere; DataSHIELD's factor-level rule.
+  Every published concept column is a factor with identical levels across
+  retained sites, including untranslated, staged, joined and reducer outputs.
+  `translate_concepts = FALSE` now chooses decimal ID labels in numeric ID
+  order: compare labels such as `"4306655"`, not numbers.
+  `factor_concepts = TRUE` remains accepted; `factor_concepts = FALSE` is gone.
+- Observed level discovery follows dsBase 6.3.5 `asFactorDS1`: the site's
+  distinct non-declared levels must fit `nfilter.levels.max` and
+  `nfilter.levels.density` times its output rows, including missing values.
+  Per-level `nfilter.tab` support and the shared-union cap no longer apply.
+  A stricter rule protects nothing: `ds.asFactor` releases the same levels
+  under this rule, and means of published per-concept 0/1 flags already give
+  exact counts. A looser rule would expose levels DataSHIELD refuses.
+  Count/table `nfilter.tab`, subset, DP and sensitive-column rules are unchanged.
+- Declared levels need no discovery: explicit category levels, complete recodes,
+  binary flags, IDs in label maps and complete public hierarchy domains do not
+  reveal site occurrence. Local vocabulary expansions and kept unmapped values
+  remain observed. Complete recodes can group rare source concepts before
+  publication. Refusals name the column, site and rule without counts, explain
+  how to declare/group levels or narrow events, and revoke the publication.
+  Legacy untagged outputs also refuse unsafe reconciliation instead of retaining
+  numeric concept columns. Shared level assignment has no level-count rule.
+
 # dsOMOPClient 2.10.5 (2026-11-15)
 
 - Release: paired server/client 2.10.5, with checked numeric expressions,

@@ -236,16 +236,15 @@ test_that("an unlistable site's profile stops all assignments", {
   expect_identical(state$assigns, c(first = 0L, last = 0L))
 })
 
-test_that("numeric DP preflight needs its assign method but no factor recoding methods", {
+test_that("DP preflight requires the common factor reconciliation methods", {
   state <- .legacy_federation(new = c("first", "last"),
                               unpublished = "omopDpPlanExecuteDS")
   expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "lacks omopDpPlanExecuteDS")
   expect_identical(state$assigns, c(first = 0L, last = 0L))
   state <- .legacy_federation(new = c("first", "last"),
                               unpublished = c("omopFactorLevelsDS", "omopAsFactorColumnsDS"))
-  expect_silent(out <- ds.omop.dp.prepare(.legacy_recipe_b1()))
-  expect_identical(out, c(ages = "D_ages"))
-  expect_identical(state$assigns, c(first = 1L, last = 1L))
+  expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "lacks omopAsFactorColumnsDS|lacks omopFactorLevelsDS")
+  expect_identical(state$assigns, c(first = 0L, last = 0L))
 })
 
 test_that("legacy fallback names every old site exactly once", {

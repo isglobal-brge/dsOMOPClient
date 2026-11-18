@@ -271,10 +271,8 @@ test_that("explain checks the factor methods required by ordinary memory executi
       expect_error(recipe_execute(r), paste0("a lacks ", method))
       expect_identical(unname(state$assigns), 0L)
 
-      enabled <- recipe_explain(recipe_set_options(r, factor_concepts = FALSE, translate_concepts = FALSE), conns = list(a = "a"))
-      expect_null(enabled$refusal)
-      expect_match(paste(enabled$text, collapse = "\n"),
-                   "Execution would use the publication protocol on every site")
+      ids <- recipe_explain(recipe_set_options(r, translate_concepts = FALSE), conns = list(a = "a"))
+      expect_match(ids$refusal, paste0("a lacks ", method))
     }
     empty <- dsOMOPClient:::recipe_set_publish(recipes[[2L]], character(0))
     expect_null(recipe_explain(empty, conns = list(a = "a"))$refusal)

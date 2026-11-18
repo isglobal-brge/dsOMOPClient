@@ -101,19 +101,22 @@ test_that('A27 strict/error/skip reconciliation uses each retained component onl
   })
 })
 
-test_that('A27 incomplete and excessive shared contracts roll back every site', {
+test_that('A27 incomplete and refused observed-level contracts roll back every site', {
   ctx <- .clf_setup()
   original <- .conceptUnionReports
   for(kind in c('incomplete','cardinality')) local({
     testthat::local_mocked_bindings(.conceptUnionReports=function(reports) {
-      if(kind=='cardinality') reports[[1L]]$nfilter_levels_max <- 1L
+      if(kind=='cardinality') {
+        reports[[1L]]$unsafe <- 'education'
+        reports[[1L]]$unsafe_rules <- list(education = 'nfilter.levels.max')
+      }
       spec <- original(reports)
       if(kind=='incomplete') spec$columns$education <- NULL
       spec
     })
     p <- recipe_to_plan(.clf_recipe())
     expect_error(ds.omop.plan.execute(p,out=c(output='Rollback'),symbol='labels',conns=ctx$conns,on_small_site='skip'),
-      if(kind=='cardinality') 'factor-level cap' else 'recoding failed')
+      if(kind=='cardinality') 'education.*site1.*nfilter.levels.max' else 'recoding failed')
     inventories <- DSI::datashield.symbols(ctx$conns)
     expect_true(all(vapply(inventories,function(x) !'Rollback' %in% x,logical(1))))
   })

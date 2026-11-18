@@ -2,7 +2,7 @@
   plan <- ds.omop.plan()
   # Transport-only fixtures do not implement categorical reconciliation.
   for (root in roots) plan <- ds.omop.plan.baseline(plan, name = root, derived = character())
-  ds.omop.plan.options(plan, factor_concepts = FALSE, translate_concepts = FALSE)
+  ds.omop.plan.options(plan, factor_concepts = TRUE, translate_concepts = FALSE)
 }
 
 test_that("status is retrieved before deletion and dynamic symbols are returned", {

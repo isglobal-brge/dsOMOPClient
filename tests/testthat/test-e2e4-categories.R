@@ -50,7 +50,7 @@ test_that("published categorical values retain pooled domains over DSLite and st
   }
   # Turning off concept recoding must not disable non-concept categories.
   p$variables <- p$variables[c("sex", "band", "birth_band")]
-  p$options <- list(translate_concepts = FALSE, factor_concepts = FALSE)
+  p$options <- list(translate_concepts = FALSE, factor_concepts = TRUE)
   for (mode in c("memory", "staged")) {
     ds.omop.plan.execute(p, out = c(output = "RawCategories"), symbol = "labels", conns = ctx$conns, output_mode = mode)
     frames <- .clf_frames(ctx, "RawCategories")

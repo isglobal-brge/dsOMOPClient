@@ -54,10 +54,15 @@
       }
       invisible(NULL)
     },
-    datashield.aggregate = function(conns, expr, ...) {
+    datashield.aggregate = function(conns, expr, success = NULL, ...) {
       method <- as.character(expr[[1L]])
       state$calls[[length(state$calls) + 1L]] <- list(method = method,
                                                      sites = names(conns))
+      if (method == "omopFactorLevelsDS") {
+        report <- list(levels = list(), unsafe = character(), nfilter_levels_max = 40)
+        for (site in names(conns)) if (is.function(success)) success(site, report)
+        return(stats::setNames(rep(list(report), length(conns)), names(conns)))
+      }
       if (method == "omopPlanStatusDS") {
         if (retrieve_error) stop("status transport failed")
         for (site in names(conns)) {

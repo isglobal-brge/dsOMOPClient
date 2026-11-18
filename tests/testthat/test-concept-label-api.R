@@ -17,9 +17,11 @@ test_that('A27 appended maps survive native rendering and binding', {
   r2$options$labels[['2']] <- 'different'
   expect_false(identical(.planNormalizedDigest(p)$sha256, .planNormalizedDigest(recipe_to_plan(r2))$sha256))
   expect_match(paste(recipe_explain(r)$text, collapse = '\n'), 'merge')
-  expect_error(recipe_to_plan(.cl_recipe(options = list(factor_concepts = FALSE))), 'translate_concepts = FALSE')
-  disabled <- .cl_recipe(options = list(translate_concepts = FALSE, factor_concepts = FALSE))
-  expect_match(paste(recipe_explain(disabled)$text, collapse = '\n'), 'inactive')
+  expect_error(recipe_to_plan(.cl_recipe(options = list(factor_concepts = FALSE))), 'always categories since 2.10.6')
+  expect_error(recipe_to_plan(.cl_recipe(options = list(translate_concepts = FALSE, factor_concepts = FALSE))),
+    'always categories since 2.10.6')
+  ids <- .cl_recipe(options = list(translate_concepts = FALSE))
+  expect_match(paste(recipe_explain(ids)$text, collapse = '\n'), 'factors labelled by decimal concept ID')
 })
 
 test_that('A27 capability negotiation refuses maps on older servers', {
@@ -43,7 +45,8 @@ test_that('A27 federation resolves names by ID and retains unused declarations',
   expect_identical(spec$columns$education$levels, c('New','Same [2]','Same [3]','unused'))
   expect_identical(.conceptUnionReports(rev(sites)), spec)
   sites$c$unsafe <- 'education'
-  expect_error(.conceptUnionReports(sites), 'disclosure policy')
+  sites$c$unsafe_rules <- list(education = 'nfilter.levels.max')
+  expect_error(.conceptUnionReports(sites), "education.*site 'c'.*nfilter.levels.max.*Declare")
 })
 
 test_that('A27 merge prefixes stable keys while targets and concept recodes stay literal', {

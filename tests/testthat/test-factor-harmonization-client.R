@@ -9,10 +9,15 @@ test_that("factor_concepts defaults to TRUE on a fresh plan", {
   expect_true(plan$options$factor_concepts)
 })
 
-test_that("plan.options can disable factor_concepts", {
-  plan <- ds.omop.plan()
-  plan <- ds.omop.plan.options(plan, factor_concepts = FALSE)
-  expect_false(plan$options$factor_concepts)
+test_that("factor_concepts FALSE is rejected in both translation modes", {
+  for (translate in c(TRUE, FALSE)) {
+    expect_error(ds.omop.plan.options(ds.omop.plan(),
+      translate_concepts = translate, factor_concepts = FALSE),
+      "concept IDs are always categories since 2.10.6", fixed = TRUE)
+    expect_error(recipe_set_options(omop_recipe(),
+      translate_concepts = translate, factor_concepts = FALSE),
+      "concept IDs are always categories since 2.10.6", fixed = TRUE)
+  }
 })
 
 test_that("plan.options leaves factor_concepts untouched when omitted", {
@@ -74,39 +79,37 @@ test_that("unionConceptLevels sorts non-numeric labels by radix", {
   expect_equal(spec$x_concept_id, c("female", "male", "other"))
 })
 
-test_that("unionConceptLevels drops a column unsafe on any one server", {
+test_that("unionConceptLevels refuses a column unsafe on any one server", {
   per_server <- list(
     a = list(levels = list(c_concept_id = c("1", "2", "3")),
              unsafe = character(0), nfilter_levels_max = 40),
     b = list(levels = list(),
              unsafe = "c_concept_id", nfilter_levels_max = 40)
   )
-  spec <- dsOMOPClient:::.unionConceptLevels(per_server)
-  expect_false("c_concept_id" %in% names(spec))
-  expect_equal(length(spec), 0L)
+  per_server$b$unsafe_rules <- list(c_concept_id = "nfilter.levels.density")
+  expect_error(dsOMOPClient:::.unionConceptLevels(per_server),
+    "column 'c_concept_id' on site 'b'.*nfilter.levels.density.*Declare.*omop_category_recode.*concepts =")
 })
 
-test_that("unionConceptLevels honors the smallest server cap", {
+test_that("unionConceptLevels applies no shared union cap", {
   per_server <- list(
     a = list(levels = list(x_concept_id = c("1", "2", "3", "4")),
              unsafe = character(0), nfilter_levels_max = 40),
     b = list(levels = list(x_concept_id = c("1", "2")),
              unsafe = character(0), nfilter_levels_max = 3)
   )
-  # Union has 4 levels but the tightest server cap is 3 => drop the column.
   spec <- dsOMOPClient:::.unionConceptLevels(per_server)
-  expect_false("x_concept_id" %in% names(spec))
+  expect_identical(spec$x_concept_id, as.character(1:4))
 })
 
-test_that("unionConceptLevels harmonizes a column present on only one server", {
+test_that("unionConceptLevels refuses incompatible column schemas", {
   per_server <- list(
     a = list(levels = list(gender_concept_id = c("8532", "8507")),
              unsafe = character(0), nfilter_levels_max = 40),
     b = list(levels = list(),
              unsafe = character(0), nfilter_levels_max = 40)
   )
-  spec <- dsOMOPClient:::.unionConceptLevels(per_server)
-  expect_equal(spec$gender_concept_id, c("8507", "8532"))
+  expect_error(dsOMOPClient:::.unionConceptLevels(per_server), "Incompatible concept-column schemas")
 })
 
 test_that("unionConceptLevels rejects NULL server entries", {
@@ -129,13 +132,13 @@ test_that("unionConceptLevels returns an empty list when nothing is harmonizable
   )
 })
 
-test_that("unionConceptLevels falls back to cap 40 when a server omits it", {
+test_that("unionConceptLevels does not require an assignment cap", {
   per_server <- list(
     a = list(levels = list(x_concept_id = as.character(1:30)),
              unsafe = character(0), nfilter_levels_max = NULL)
   )
   spec <- dsOMOPClient:::.unionConceptLevels(per_server)
-  # 30 <= fallback cap 40, so it survives.
+  # Only the per-site observed-level report has a level-count rule.
   expect_equal(length(spec$x_concept_id), 30L)
 })
 
@@ -273,4 +276,10 @@ test_that("factor harmonization ignores unrelated prefixed user symbols", {
   expect_length(aggregated, 1L)
   expect_match(aggregated, "D")
   expect_false(any(grepl("D.model", aggregated, fixed = TRUE)))
+})
+
+test_that("legacy all-missing concept columns retain an empty factor contract", {
+  report <- list(levels = list(cause_concept_id = character()), unsafe = character())
+  expect_identical(.unionConceptLevels(list(a = report, b = report)),
+                   list(cause_concept_id = character()))
 })
