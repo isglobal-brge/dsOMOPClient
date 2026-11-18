@@ -365,7 +365,7 @@ test_that("legacy untagged reports refuse instead of leaving concept IDs numeric
   .cf_shared(ctx, "Untagged", "cause_concept_id", c("45000123", "45000124", "45000125", "45000127"))
 })
 
-test_that("catalog loaders publish shared concept factors and revoke refused assignments", {
+test_that("catalog loaders keep concept IDs as text codes, whatever their number", {
   ctx <- .cf_setup(loader = TRUE)
   for (path in ctx$paths) {
     db <- DBI::dbConnect(RSQLite::SQLite(), path)
@@ -374,18 +374,23 @@ test_that("catalog loaders publish shared concept factors and revoke refused ass
       "WHERE observation_id <= 18"))
     DBI::dbDisconnect(db)
   }
-  result <- ds.omop.analysis.run("dsomop:observation.load", symbol = "labels",
-    conns = ctx$conns, date_handling = "remove")
-  target <- result$meta$assign_symbol
-  frames <- .clf_frames(ctx, target)
-  columns <- grep("(^|_)concept_id$", names(frames[[1L]]), value = TRUE)
-  expect_true("value_as_concept_id" %in% columns)
-  for (column in columns) .cf_shared(ctx, target, column)
-  before <- lapply(DSI::datashield.symbols(ctx$conns), sort)
+  check <- function(result) {
+    frames <- .clf_frames(ctx, result$meta$assign_symbol)
+    columns <- grep("(^|_)concept_id$", names(frames[[1L]]), value = TRUE)
+    expect_true("value_as_concept_id" %in% columns)
+    for (frame in frames) for (column in columns) {
+      # Categories, never numbers: the same ID text at every site.
+      expect_type(frame[[column]], "character")
+      expect_true(all(is.na(frame[[column]]) | grepl("^[0-9]+$", frame[[column]])))
+    }
+  }
+  check(ds.omop.analysis.run("dsomop:observation.load", symbol = "labels",
+    conns = ctx$conns, date_handling = "remove"))
+  # A loader is not refused because its concepts outnumber nfilter.levels.max:
+  # no level list leaves the server.
   ctx$servers$site2$option("nfilter.levels.max", "2")
-  expect_error(ds.omop.analysis.run("dsomop:observation.load", symbol = "labels",
-    conns = ctx$conns, date_handling = "remove"), "nfilter[.]levels[.]max")
-  expect_identical(lapply(DSI::datashield.symbols(ctx$conns), sort), before)
+  check(ds.omop.analysis.run("dsomop:observation.load", symbol = "labels",
+    conns = ctx$conns, date_handling = "remove"))
 })
 
 test_that("factor_concepts FALSE is rejected for both label policies", {
