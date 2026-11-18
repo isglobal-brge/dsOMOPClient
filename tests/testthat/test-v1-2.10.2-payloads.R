@@ -26,8 +26,8 @@ test_that("execute, DP and sticky send the full selected v1 payload on both prot
   for (old in list(character(0), "old")) {
     state <- .legacy_federation(old = old, new = "new")
     if (length(old)) {
-      expect_error(recipe_execute(r), "Concept presentation requires output.concept_labels")
-      expect_error(ds.omop.dp.prepare(r), "Concept presentation requires output.concept_labels")
+      expect_error(recipe_execute(r), "Concept factors require server support for output.concept_labels on: old")
+      expect_error(ds.omop.dp.prepare(r), "Concept factors require server support for output.concept_labels on: old")
       expect_identical(sum(state$assigns), 0L)
       next
     }
@@ -90,7 +90,10 @@ test_that("validate, preview and explain preserve every tagged representative pa
     expect_null(ex$plan)
     expect_null(ex$digest)
     expect_match(paste(ex$text, collapse = "\n"), "Server explain is unavailable on old")
-    expect_match(paste(ex$text, collapse = "\n"), "Execution would run the legacy call")
+    # Since 2.10.6 no legacy call runs: every site must reconcile concept factors.
+    expect_match(paste(ex$text, collapse = "\n"),
+      "Execution on these servers would be refused: Concept factors require server support for output.concept_labels on: old",
+      fixed = TRUE)
   }
 })
 
