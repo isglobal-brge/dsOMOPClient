@@ -44,8 +44,9 @@
   server's administrator to raise the limits.
 - Plan executions and catalog assignments declare `concept_protocol = 1`: this
   client reconciles every published concept factor. dsOMOP 2.10.6 servers
-  refuse untranslated legacy plans and concept-bearing catalog assignments from
-  older clients, which would leave level sets that differ between servers.
+  refuse untranslated legacy plans from older clients, which would leave level
+  sets that differ between servers. Catalog loaders keep concept IDs as text
+  codes on 2.10.6 servers.
 
 # dsOMOPClient 2.10.5 (2026-11-15)
 
