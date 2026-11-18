@@ -1,5 +1,5 @@
 # Real, three-site DSLite execution; direct session inspection is test-only.
-.clf_setup <- function(env = parent.frame(), strict = TRUE, excluded = FALSE, parser_strict = TRUE, drop_tables = character()) {
+.clf_setup <- function(env = parent.frame(), strict = TRUE, excluded = FALSE, parser_strict = TRUE, drop_tables = character(), prepare_db = NULL) {
   for (pkg in c('DSLite','DSI','dsOMOP','resourcer','RSQLite')) testthat::skip_if_not_installed(pkg)
   source <- testthat::test_path('..','..','..','dsOMOP','tests','fixtures','create_test_db.R')
   builders <- new.env(); sys.source(source, builders)
@@ -52,6 +52,7 @@
     DBI::dbWriteTable(conn, 'concept', vocab, append = TRUE)
     DBI::dbWriteTable(conn, 'vocabulary', data.frame(vocabulary_id = 'A27', vocabulary_version = if(i == 1L) '2025-01-01' else '2026-01-01'), overwrite = TRUE)
     for(table in drop_tables)DBI::dbExecute(conn,paste0("DROP TABLE IF EXISTS ",DBI::dbQuoteIdentifier(conn,table)))
+    if (!is.null(prepare_db)) prepare_db(conn)
     DBI::dbDisconnect(conn)
     resource <- resourcer::newResource(name = 'labels', url = paste0('omop+dbi:sqlite://',db), format = 'omop.dbi.db')
     config <- DSLite::defaultDSConfiguration(include = if(requireNamespace('dsBase',quietly=TRUE)) c('dsOMOP','dsBase') else 'dsOMOP')
@@ -86,4 +87,3 @@
     reducer = omop_reduce('last_value', value = 'value_as_concept_id')),
   omop_variable('cause', table = 'death', column = 'cause_concept_id')),
   labels = c('45000126' = 'declared only'))
-

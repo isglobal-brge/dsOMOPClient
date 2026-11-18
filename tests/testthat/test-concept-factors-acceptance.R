@@ -1,7 +1,15 @@
 # Three-site publication acceptance for concept categories. Session inspection
 # and database edits below are test-only; no clinical rows cross the client API.
-.cf_setup <- function(env = parent.frame(), values = NULL) {
-  ctx <- .clf_setup(env = env)
+.cf_setup <- function(env = parent.frame(), values = NULL, loader = FALSE) {
+  prepare_db <- if (loader) function(db) {
+    # The recipe fixture omits optional CDM fields selected by table loaders.
+    optional <- c(observation_datetime = "TEXT", observation_type_concept_id = "INTEGER",
+      qualifier_concept_id = "INTEGER", unit_concept_id = "INTEGER",
+      visit_occurrence_id = "INTEGER", visit_detail_id = "INTEGER", provider_id = "INTEGER")
+    for (column in setdiff(names(optional), DBI::dbListFields(db, "observation")))
+      DBI::dbExecute(db, paste("ALTER TABLE observation ADD COLUMN", column, optional[[column]]))
+  } else NULL
+  ctx <- .clf_setup(env = env, prepare_db = prepare_db)
   .numeric_lexer(env)
   # DSLite 1.5 applies options only at login, in a shared R process. Real sites
   # have independent options; restore that behavior around each test endpoint.
@@ -46,8 +54,8 @@
     labels = labels, options = list(translate_concepts = translate))
 }
 
-.cf_shared <- function(ctx, symbol, column, expected = NULL) {
-  frames <- .clf_frames(ctx, symbol)
+.cf_shared <- function(ctx, symbol, column, expected = NULL, frames = NULL) {
+  if (is.null(frames)) frames <- .clf_frames(ctx, symbol)
   reference <- levels(frames[[1L]][[column]])
   for (frame in frames) {
     expect_s3_class(frame[[column]], "factor")
@@ -256,19 +264,29 @@ test_that("every output layout preserves concept factors in memory and staged pu
   ctx <- .cf_setup()
   recipe <- .cf_format_recipe()
   for (mode in c("memory", "staged")) {
-    targets <- setNames(paste0("Format_", names(recipe$outputs), "_", mode), names(recipe$outputs))
-    result <- recipe_execute(recipe, out = targets, symbol = "labels", conns = ctx$conns, output_mode = mode)
-    books <- recipe_codebook(result)
     observed <- character()
-    for (key in names(books)) {
-      parts <- strsplit(key, "/", fixed = TRUE)[[1L]]
-      symbol <- paste0(targets[[parts[[1L]]]], if (parts[[2L]] != parts[[1L]]) paste0(".", parts[[2L]]))
-      columns <- books[[key]]$columns
-      concepts <- columns$name[columns$semantic_type == "concept"]
-      for (column in concepts) {
-        .cf_shared(ctx, symbol, column)
-        expect_identical(columns$r_type[columns$name == column], "factor", info = key)
-        observed <- union(observed, parts[[1L]])
+    # Each staged component validates its containing publication. Small families
+    # exercise every layout without repeatedly validating unrelated layouts.
+    for (layout in names(recipe$outputs)) {
+      family <- recipe
+      required <- switch(layout, dictionary = c("long", "dictionary"),
+        joined = c("membership", "wide", "joined"), layout)
+      family$outputs <- recipe$outputs[required]
+      targets <- setNames(paste0("Format_", layout, "_", required, "_", mode), required)
+      result <- recipe_execute(family, out = targets, symbol = "labels", conns = ctx$conns,
+        output_mode = mode)
+      books <- recipe_codebook(result)
+      for (key in names(books)) {
+        parts <- strsplit(key, "/", fixed = TRUE)[[1L]]
+        symbol <- paste0(targets[[parts[[1L]]]], if (parts[[2L]] != parts[[1L]]) paste0(".", parts[[2L]]))
+        columns <- books[[key]]$columns
+        concepts <- columns$name[columns$semantic_type == "concept"]
+        frames <- if (length(concepts)) .clf_frames(ctx, symbol) else NULL
+        for (column in concepts) {
+          .cf_shared(ctx, symbol, column, frames = frames)
+          expect_identical(columns$r_type[columns$name == column], "factor", info = key)
+          observed <- union(observed, parts[[1L]])
+        }
       }
     }
     expect_true(all(c("wide", "baseline", "features", "long", "event_log", "intervals", "panel", "sparse", "temporal",
@@ -303,7 +321,7 @@ test_that("legacy untagged reports refuse instead of leaving concept IDs numeric
 })
 
 test_that("catalog loaders publish shared concept factors and revoke refused assignments", {
-  ctx <- .cf_setup()
+  ctx <- .cf_setup(loader = TRUE)
   for (path in ctx$paths) {
     db <- DBI::dbConnect(RSQLite::SQLite(), path)
     DBI::dbExecute(db, paste0("UPDATE observation SET value_as_concept_id = ",
