@@ -34,10 +34,15 @@
   publication.
   Legacy untagged outputs also refuse unsafe reconciliation instead of retaining
   numeric concept columns. Shared level assignment has no level-count rule.
-- Exploration with many categories: with dsOMOP 2.10.6 servers,
+- Exploration with many concept codes: with dsOMOP 2.10.6 servers,
   `ds.omop.value.counts()`, `ds.omop.crosstab()` and concept drilldowns return
-  the values with enough persons even when a column has more than
-  `nfilter.levels.max` distinct values; rare values stay hidden.
+  the codes with enough persons even when a concept column has more than
+  `nfilter.levels.max` distinct codes; rare codes stay hidden, and date columns
+  keep their level gate.
+- Plan executions and catalog assignments declare `concept_protocol = 1`: this
+  client reconciles every published concept factor. dsOMOP 2.10.6 servers
+  refuse untranslated legacy plans and concept-bearing catalog assignments from
+  older clients, which would leave level sets that differ between servers.
 
 # dsOMOPClient 2.10.5 (2026-11-15)
 
