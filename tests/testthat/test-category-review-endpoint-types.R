@@ -1,5 +1,6 @@
 # R8: generated date factors consume recipe category defaults without a variable.
 .endpoint_books <- function(recipe, ctx, symbol, mode, ordered, public_domain=FALSE, whole_schema=TRUE, schema_types=FALSE) {
+  if (identical(mode, "staged")) skip_if_not_installed("arrow")
   plan <- recipe_to_plan(recipe,version=2)
   symbols <- setNames(paste0(symbol,"_",names(plan$outputs)),names(plan$outputs))
   result <- ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode)
