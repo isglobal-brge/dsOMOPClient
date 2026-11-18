@@ -28,11 +28,11 @@
   conns <- list(s1 = "s1", s2 = "s2")
   state$methods <- .current_published_methods(conns)
   state$capabilities <- lapply(conns, function(x) {
-    list(recipe_language = list(version = 2L, operations = as.list(ops)))
+    list(recipe_language = list(version = 2L, operations = as.list(unique(c("output.concept_labels", ops)))))
   })
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = conns, capabilities = state$capabilities,
-                                      last_output = "D"),
+                                      last_output = "D", server_versions = .current_versions(names(conns))),
     .dsomop_published_methods = function(conns, ...) state$methods[names(conns)],
     .record_session_owned_symbol = function(...) invisible(NULL),
     .package = "dsOMOPClient", .env = env)

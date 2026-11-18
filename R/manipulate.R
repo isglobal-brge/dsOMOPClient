@@ -66,6 +66,7 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
                           newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  .conceptAssertSupport(session, names(conns))
   type <- match.arg(type, c("inner", "left"))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(y) || length(y) != 1L) {
@@ -135,6 +136,7 @@ ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
     tree <- .verb_predicate_tree(expr)
     session <- .get_session(symbol)
     conns <- conns %||% session$conns
+  .conceptAssertSupport(session, names(conns))
     .verb_assert_supported(session, conns, "verb.filter_expr",
                            "ds.omop.filter(expr = )", "omopFilterDS")
     x <- .resolve_target_symbol(x, session, "x")
@@ -152,6 +154,7 @@ ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  .conceptAssertSupport(session, names(conns))
   op <- match.arg(op, c("==", "!=", "in", "not_in"))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(var) || length(var) != 1L) {
@@ -202,6 +205,7 @@ ds.omop.select <- function(x = NULL, cols,
                            newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  .conceptAssertSupport(session, names(conns))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(cols) || length(cols) == 0L) {
     stop("cols must be a non-empty character vector of column names.",
@@ -248,6 +252,7 @@ ds.omop.bind_rows <- function(x = NULL, y,
                               newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  .conceptAssertSupport(session, names(conns))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(y) || length(y) != 1L) {
     stop("y must be the name of a server-side omop.table symbol.",

@@ -224,8 +224,8 @@ test_that("server.version separates old installs from stale profiles and reports
     .dsomop_published_methods = function(...) inv,
     .ds_safe_aggregate = function(...) list(old = list(version = "2.10.2"),
                                             stale = list(version = "2.10.3"),
-                                            new = list(version = "2.10.3")),
-    ds.omop.client.version = function() "2.10.3",
+                                            new = list(version = "2.10.6")),
+    ds.omop.client.version = function() "2.10.6",
     .get_session = function(...) list(conns = list(new = "N"), capabilities = list(new = .caps()), server_versions = .current_versions("new")),
     .package = "dsOMOPClient")
   got <- ds.omop.server.version(list(old = "O", stale = "S", new = "N"))

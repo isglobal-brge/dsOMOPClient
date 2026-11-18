@@ -24,7 +24,8 @@
 
 # Register a fake session so .get_session() resolves and conns is non-NULL.
 .with_fake_session <- function(symbol = "omop", code) {
-  assign(symbol, list(conns = list(srv = "FAKE")),
+  assign(symbol, list(conns = list(srv = "FAKE"), capabilities = list(srv = .caps()),
+                      server_versions = .current_versions("srv")),
          envir = dsOMOPClient:::.dsomop_client_env)
   withr::defer_parent(
     if (exists(symbol, envir = dsOMOPClient:::.dsomop_client_env)) {
@@ -219,7 +220,8 @@ test_that(".ds_encode_scalar round-trips comparison operators (lexer-safe)", {
 
 test_that("manipulation rejects output collisions and rolls back partial assigns", {
   conns <- list(a = "A", b = "B")
-  assign("omop", list(conns = conns),
+  assign("omop", list(conns = conns, capabilities = lapply(conns, function(x) .caps()),
+                      server_versions = .current_versions(names(conns))),
          envir = dsOMOPClient:::.dsomop_client_env)
   on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
           add = TRUE)
@@ -247,4 +249,24 @@ test_that("manipulation rejects output collisions and rolls back partial assigns
   expect_error(ds.omop.select("feat", "x", newobj = "fresh"),
                "rolled back")
   expect_false(any(vapply(symbols, function(x) "fresh" %in% x, logical(1))))
+})
+
+
+test_that("row assignments refuse older concept contracts before writing", {
+  session <- list(conns = list(site = "S"), capabilities = list(site = .caps()),
+                  server_versions = c(site = "2.10.5"))
+  local_mocked_bindings(.get_session = function(...) session, .package = "dsOMOPClient")
+  assigned <- FALSE
+  local_mocked_bindings(datashield.assign.expr = function(...) { assigned <<- TRUE },
+                        .package = "DSI")
+  calls <- list(
+    function() ds.omop.merge("D", "E"),
+    function() ds.omop.filter("D", var = "age", op = "==", value = 50),
+    function() ds.omop.filter("D", expr = omop_where(age >= 50)),
+    function() ds.omop.select("D", "age"),
+    function() ds.omop.bind_rows("D", "E"),
+    function() ds.omop.mutate("D", age_copy = age),
+    function() ds.omop.mutate("D", age_copy = age, newobj = "D"))
+  for (invoke in calls) expect_error(invoke(), "2.10.6 or later on: site")
+  expect_false(assigned)
 })

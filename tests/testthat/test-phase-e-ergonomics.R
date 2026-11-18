@@ -304,6 +304,8 @@ test_that("execute keeps unrelated objects and cleans a partial fresh output", {
   conns <- list(a = "A", b = "B")
   assign(symbol, list(
     res_symbol = "dsO_res", conns = conns,
+    capabilities = lapply(conns, function(x) .caps()),
+    server_versions = .current_versions(names(conns)),
     outputs = "D.model", last_output = "D.model"
   ),
          envir = dsOMOPClient:::.dsomop_client_env)

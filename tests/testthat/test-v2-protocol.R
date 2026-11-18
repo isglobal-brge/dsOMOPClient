@@ -119,8 +119,8 @@ test_that("v1 checks the out mapping before any assignment", {
   r <- omop_recipe(variables = omop_variable_age(name = "age_at_2025", year = 2025),
                    outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")),
     options = list(translate_concepts = FALSE))
-  expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", b = "X.covariates"))),
-               "overlapping reserved component families")
+  expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", b = "X"))),
+               "unique")
   expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", c = "Y"))),
                "out names not among plan outputs")
   expect_identical(state$assigns, c(old = 0L, new = 0L))
@@ -136,7 +136,7 @@ test_that("a language-2 plan is refused before any assignment on any site", {
     expect_identical(sum(state$assigns), 0L, info = paste(names(sites), collapse = "+"))
     # and directly through the executor
     plan <- recipe_to_plan(.v2_recipe_b1())
-    expect_error(ds.omop.plan.execute(plan), "old lacks omopPlanStatusDS")
+    expect_error(ds.omop.plan.execute(plan), "output.concept_labels on: old")
     expect_identical(sum(state$assigns), 0L)
   }
 })
@@ -152,7 +152,7 @@ test_that("DP preparation follows the same rule", {
   expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "output.concept_labels on: old")
   expect_identical(state$assigns, c(old = 0L))
   state <- .legacy_federation(old = "old", new = "new")
-  expect_error(ds.omop.dp.prepare(.v2_recipe_b1()), "old lacks omopPlanStatusDS")
+  expect_error(ds.omop.dp.prepare(.v2_recipe_b1()), "output.concept_labels on: old")
   expect_identical(sum(state$assigns), 0L)
 })
 

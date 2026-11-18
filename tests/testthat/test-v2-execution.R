@@ -52,19 +52,16 @@
        unavailable = character(0))
 }
 
-test_that("an older server requires explicit numeric mode for a v1 recipe", {
+test_that("an older server cannot bypass concept support with untranslated labels", {
   state <- .publication_backend(list(srv1 = .publication_status(c(w = "D_w"))))
   .with_caps(list(srv1 = list()))            # no recipe_language block needed
   log <- .capture_exec()
   expect_error(recipe_execute(.legacy_recipe()), "output.concept_labels")
   numeric_recipe <- .legacy_recipe()
   numeric_recipe$options$translate_concepts <- FALSE
-  expect_identical(recipe_execute(numeric_recipe), c(w = "D_w"))
-  sent <- .decode(log$exec[[3L]])
-  expect_null(sent$version)                     # a v1 plan
-  expect_identical(sent$outputs$w$type, "person_level")
-  expect_identical(as.list(log$exec)$commit_policy, "server")
-  expect_identical(state$calls[[1L]]$method, "omopPlanStatusDS")
+  expect_error(recipe_execute(numeric_recipe), "output.concept_labels")
+  expect_null(log$exec)
+  expect_length(state$calls, 0L)
 })
 
 test_that("a language-2 recipe is refused by an older server, naming the gap", {

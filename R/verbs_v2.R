@@ -341,6 +341,7 @@ ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns 
   req <- .mutate_request(exprs, parent.frame())
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  .conceptAssertSupport(session, names(conns))
   .verb_assert_supported(session, conns, "verb.mutate", "ds.omop.mutate()",
                          "omopMutateDS")
   x <- .resolve_target_symbol(x, session, "x")

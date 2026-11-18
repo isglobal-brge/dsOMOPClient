@@ -26,7 +26,8 @@
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = state$conns, last_output = "D",
       capabilities = lapply(state$conns, function(s) list(recipe_language =
-        list(version = 2L, operations = list("verb.mutate", "verb.filter_expr"))))),
+        list(version = 2L, operations = list("output.concept_labels", "verb.mutate", "verb.filter_expr")))),
+      server_versions = .current_versions(names(state$conns))),
     .dsomop_published_methods = function(conns, ...) .current_published_methods(conns),
     .record_session_owned_symbol = function(session_symbol, symbol) {
       state$records <- c(state$records, symbol)
