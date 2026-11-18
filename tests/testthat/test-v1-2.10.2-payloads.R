@@ -50,7 +50,7 @@ test_that("execute, DP and sticky send the full selected v1 payload on both prot
     conns <- stats::setNames(as.list(sites), sites)
     if (length(old)) {
       expect_error(dsOMOPClient:::.querylibrary_sticky_prepare(spec, conns, "omop"),
-                   "Concept presentation requires output.concept_labels")
+                   "Concept factors require server support for output.concept_labels on: old")
       expect_identical(sum(state$assigns), 0L)
       next
     }

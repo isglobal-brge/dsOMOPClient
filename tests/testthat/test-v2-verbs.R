@@ -250,9 +250,10 @@ test_that("a final site's missing verb capability refuses even the rollback copy
     op <- if (verb == "filter") "verb.filter_expr" else "verb.mutate"
     for (missing_block in c(FALSE, TRUE)) {
       state <- .vb_backend()
+      # A site with no capabilities lacks the 2.10.6 concept support checked
+      # first; one with concept support lacks only the verb operation.
       if (missing_block) state$capabilities$s2 <- list()
-      else state$capabilities$s2$recipe_language$operations <- list()
-      # A site with no capabilities lacks the 2.10.6 concept support checked first.
+      else state$capabilities$s2$recipe_language$operations <- list("output.concept_labels")
       expect_error(requests[[verb]](), if (missing_block) "Concept factors require server support for output.concept_labels on: s2" else
                    paste0("needs the '", op, "' operation, which s2 does not"), fixed = TRUE)
       expect_length(state$calls, 0L)
