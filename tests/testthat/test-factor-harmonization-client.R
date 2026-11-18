@@ -286,6 +286,7 @@ test_that("legacy all-missing concept columns retain an empty factor contract", 
 
 
 test_that("factor transport preserves absent numeric metadata fields", {
+  expect_null(.categoryMetadataPlain(NULL))
   spec <- list(concept_protocol = 1L, columns = list(),
     numbers = list(days = list(input_type = "integer", source = NULL,
       levels = NULL, pipeline = list(list(kind = "transform", method = "identity")))))
