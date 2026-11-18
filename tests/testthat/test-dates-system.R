@@ -160,7 +160,7 @@ test_that("D40 exact custom factors cannot bypass metadata support or rollback",
   DBI::dbExecute(db,"UPDATE visit_occurrence SET visit_start_date=printf('2020-01-%02d',person_id),visit_end_date=printf('2020-01-%02d',person_id)")
   DBI::dbDisconnect(db)
   r<-omop_recipe(variables=list(day=omop_date("first_visit",omop_date_spec(precision="custom",pattern="%Y-%m-%d"))),outputs=omop_output("o",format="wide",grain="person"))
-  expect_error(recipe_execute(r,out=c(o="D_unsafe"),conns=conns),"factor-level disclosure policy|certify complete")
+  expect_error(recipe_execute(r,out=c(o="D_unsafe"),conns=conns),"nfilter.levels.density")
   expect_false("D_unsafe" %in% DSI::datashield.symbols(conns)$site)
   r$variables$day$date_spec<-omop_date_spec(precision="day")
   receipt <- recipe_execute(r,out=c(o="D_exact"),conns=conns)
