@@ -80,7 +80,7 @@ test_that("C49 staged category metadata tampering fails before materialisation",
   expect_error(dsOMOP::omopAsFactorColumnsDS(d,.ds_encode(spec)),"not committed|revoked")
 })
 
-test_that("C52 C61 label merges cannot borrow support or rescue a sparse family", {
+test_that("C52 C61 label merges and grouped families follow the DataSHIELD level rule", {
   ctx<-.clf_setup();.numeric_lexer()
   for(path in ctx$paths) {
     con<-DBI::dbConnect(RSQLite::SQLite(),path)
@@ -90,9 +90,13 @@ test_that("C52 C61 label merges cannot borrow support or rescue a sparse family"
   e<-omop_event("observation",45000120L,name="e")
   v<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id"))
   r<-omop_recipe(variables=list(x=omop_category(v,omop_category_spec(ordered=FALSE))),labels=c(`45000124`="merged",`45000125`="merged"))
-  expect_error(recipe_execute(r,out="RareMerge",symbol="labels",conns=ctx$conns),"disclosure|factor-level")
+  # Since 2.10.6 a rare value needs no per-level minimum: two observed values
+  # pass DataSHIELD's level rule, merged or not, and the factor is shared.
+  recipe_execute(r,out="RareMerge",symbol="labels",conns=ctx$conns)
+  for (f in .clf_frames(ctx,"RareMerge")) expect_true(is.factor(f$x))
   r$variables$x<-omop_category_reduce(omop_category_rows(e,"value_as_concept_id"),omop_reduce("mode"))
-  expect_error(recipe_execute(r,out="RareGrouped",symbol="labels",conns=ctx$conns),"disclosure|factor-level")
+  recipe_execute(r,out="RareGrouped",symbol="labels",conns=ctx$conns)
+  for (f in .clf_frames(ctx,"RareGrouped")) expect_true(is.factor(f$x))
   for(path in ctx$paths) {
     con<-DBI::dbConnect(RSQLite::SQLite(),path)
     DBI::dbExecute(con,"DELETE FROM observation WHERE person_id<>1");DBI::dbDisconnect(con)

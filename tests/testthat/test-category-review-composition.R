@@ -89,14 +89,16 @@ test_that("R5 copies retain missing sentinels and upstream category admission", 
     expect_equal(sum(as.character(f$copy)=="Unknown"),6L)
     expect_identical(attr(f,"omop_concepts")$answer,attr(f,"omop_concepts")$copy)
   }
-  # A copy cannot bypass the reduced input's support gate by selecting only it.
+  # A copy publishes under the same DataSHIELD level rule as its reduced input
+  # (no per-level minimum since 2.10.6).
   for (path in ctx$paths) {
     con <- DBI::dbConnect(RSQLite::SQLite(),path)
     DBI::dbExecute(con,"UPDATE observation SET value_as_concept_id=CASE WHEN person_id=1 THEN 45000123 ELSE 45000124 END WHERE observation_concept_id=45000120")
     DBI::dbDisconnect(con)
   }
   r$outputs$w$columns <- "copy"
-  expect_error(recipe_execute(r,out="UnsafeReducedCopy",symbol="labels",conns=ctx$conns),"unsafe|Unsafe|disclosure|levels|admi")
+  recipe_execute(r,out="ReducedCopy",symbol="labels",conns=ctx$conns)
+  for (f in .clf_frames(ctx,"ReducedCopy")) expect_true(is.factor(f$copy))
 })
 
 test_that("R4 R5 unwrapped selector copies support copy-only expanded projection", {
