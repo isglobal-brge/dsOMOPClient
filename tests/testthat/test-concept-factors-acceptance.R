@@ -129,14 +129,14 @@ test_that("observed density uses output rows including missing values", {
 })
 
 test_that("a shared union larger than any site cap remains assignable", {
-  ctx <- .cf_setup(values = list(c(rep(45000123L, 17L), 45000124L),
-    c(rep(45000125L, 17L), 45000126L), c(rep(45000127L, 17L), 45000128L)))
+  ctx <- .cf_setup(values = list(c(rep(2L, 17L), 10L),
+    c(rep(3L, 17L), 20L), c(rep(4L, 17L), 30L)))
   for (server in ctx$servers) server$option("nfilter.levels.max", "2")
   for (translate in c(TRUE, FALSE)) for (mode in c("memory", "staged")) {
     target <- paste0("Union_", translate, "_", mode)
     recipe_execute(.cf_recipe(translate), out = target, symbol = "labels",
       conns = ctx$conns, output_mode = mode)
-    frames <- .cf_shared(ctx, target, "cause")
+    frames <- .cf_shared(ctx, target, "cause", if (!translate) c("2", "3", "4", "10", "20", "30"))
     expect_length(levels(frames[[1L]]$cause), 6L)
   }
 })
