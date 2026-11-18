@@ -3,6 +3,21 @@
 .cf_setup <- function(env = parent.frame(), values = NULL) {
   ctx <- .clf_setup(env = env)
   .numeric_lexer(env)
+  # DSLite 1.5 applies options only at login, in a shared R process. Real sites
+  # have independent options; restore that behavior around each test endpoint.
+  for (server in ctx$servers) for (method in c("aggregate", "assignExpr")) local({
+    site <- server
+    endpoint <- site[[method]]
+    wrapper <- function(...) {
+      previous <- options()
+      on.exit(options(previous))
+      site$.__enclos_env__$private$.apply.options()
+      endpoint(...)
+    }
+    unlockBinding(method, site)
+    site[[method]] <- wrapper
+    lockBinding(method, site)
+  })
   if (is.null(values)) values <- list(
     c(rep(45000123L, 16L), 45000124L, 45000125L),
     c(rep(45000123L, 15L), 45000124L, 45000125L, 45000127L),
@@ -35,7 +50,7 @@
   frames <- .clf_frames(ctx, symbol)
   reference <- levels(frames[[1L]][[column]])
   for (frame in frames) {
-    expect_s3_class(frame[[column]], "factor", info = paste(symbol, column))
+    expect_s3_class(frame[[column]], "factor")
     expect_false(is.numeric(frame[[column]]), info = paste(symbol, column))
     expect_identical(levels(frame[[column]]), reference)
     if (!is.null(expected)) expect_identical(levels(frame[[column]]), expected)
@@ -207,6 +222,8 @@ test_that("binary categories report their declared domain without discovery", {
     omop_output("baseline", type = "baseline", rows = "p", columns = "cause"),
     omop_output("features", type = "features", rows = "p", columns = "cause"),
     omop_output("long", format = "long", rows = "p", sources = list(event), columns = "cause"),
+    omop_output("event_log", format = "long", rows = "p", sources = list(event), columns = "cause",
+      options = list(event_log = TRUE)),
     omop_output("intervals", format = "intervals", rows = "p", columns = "category",
       options = list(sources = list(event))),
     omop_output("membership", format = "membership", rows = "p", columns = character()),
@@ -253,7 +270,7 @@ test_that("every output layout preserves concept factors in memory and staged pu
         observed <- union(observed, parts[[1L]])
       }
     }
-    expect_true(all(c("wide", "baseline", "features", "long", "intervals", "panel", "sparse", "temporal",
+    expect_true(all(c("wide", "baseline", "features", "long", "event_log", "intervals", "panel", "sparse", "temporal",
       "survival", "competing_risk", "counting_process", "recurrent_events", "multi_state", "joined") %in% observed))
   }
 })
