@@ -165,3 +165,13 @@ test_that("an event restricted by a concept set declares its resolved set automa
   expect_length(.cvl_shared(ctx, "Long", "concept_id"), length(.cvl_causes) + 1L)
   .cvl_reports_identical(ctx, "Long")
 })
+
+test_that("a hierarchy rollup over a vocabulary concept set needs no discovery", {
+  ctx <- .cvl_setup()
+  spec <- omop_category_spec(rollup = omop_category_rollup("ancestors",
+    ancestors = paste0("concept:", .cvl_root), vocabulary = "Fixture",
+    domain = omop_concept_set(.cvl_root, descendants = TRUE)))
+  recipe_execute(.cvl_wide(.cvl_event, spec), out = c(study = "Rollup"), symbol = "cvl", conns = ctx$conns)
+  expect_length(.cvl_shared(ctx, "Rollup", "cause_of_death_first_value"), 1L)
+  .cvl_reports_identical(ctx, "Rollup")
+})
