@@ -152,6 +152,7 @@ test_that("recipe_preview_schema reports fixed longitudinal output types", {
   expect_equal(attr(intervals, "join_key"), "cohort_row_id")
   expect_equal(intervals[intervals$column == "subject_id", "r_type"],
                "character")
+  expect_equal(intervals[intervals$column == "concept_id", "r_type"], "factor")
   expect_true(all(intervals[
     intervals$column %in% c("start_days_from_index", "end_days_from_index"),
     "r_type"
@@ -174,6 +175,7 @@ test_that("recipe_preview_schema types temporal linkage after release", {
   expect_equal(rtype("personRef.rowId"), "integer")
   expect_equal(rtype("timeRef.startDay"), "integer")
   expect_equal(rtype("covariateRef.analysisId"), "integer")
+  expect_equal(rtype("covariateRef.conceptId"), "factor")
   expect_equal(rtype("temporalCovariates.covariateValue"), "numeric")
 })
 

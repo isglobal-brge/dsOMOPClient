@@ -278,4 +278,3 @@
   setNames(lapply(ids, function(id) list(id = id, name = NULL,
     vocabulary = NULL, version = NULL, origin = "fallback", label = id)), ids)
 }
-
