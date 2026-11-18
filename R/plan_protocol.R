@@ -238,8 +238,7 @@
          paste(missing, collapse = ", "), ".", call. = FALSE)
   }
 
-  if (isTRUE(harmonize_factors) &&
-        isTRUE(plan$options$factor_concepts %||% TRUE)) {
+  if (isTRUE(harmonize_factors)) {
     .harmonizeConceptFactors(owned, conns)
   }
   .record_session_outputs(symbol, owned)

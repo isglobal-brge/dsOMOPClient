@@ -84,7 +84,6 @@
       producer<-producer[!vapply(producer,is.null,logical(1))]
       producer_order<-if(identical(c$kind,"category"))unlist(c$category$producer_order,use.names=FALSE) else if(is.null(c$kind) || identical(c$kind,"date"))character() else lev;producer_ordered<-is.ordered(frame[[n]])
       if(is.null(c$kind)) {
-        if(isFALSE(ctx$ir$options$translate_concepts)) .categoryReject("Enable translate_concepts for concept presentation.")
         public_inputs<-c(if(!length(s$recode$map))unlist(s$levels,use.names=FALSE),names(s$recode$map))
         extra<-setdiff(public_inputs,lev)
         if(length(extra)) {

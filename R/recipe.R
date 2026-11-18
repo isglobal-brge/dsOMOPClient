@@ -5076,13 +5076,13 @@ recipe_to_plan <- function(recipe, version = 2L) {
 #' \code{\link{ds.omop.plan.options}}.
 #'
 #' @param recipe An \code{omop_recipe} object.
-#' @param translate_concepts Logical; if \code{TRUE}, concept ID columns are
-#'   translated to human-readable concept names in output tables.
+#' @param translate_concepts Logical; chooses concept factor labels:
+#'   vocabulary names when \code{TRUE}, decimal ID strings when \code{FALSE}.
+#'   Concept columns always have shared factor levels across retained servers.
 #' @param block_sensitive Logical; if \code{TRUE}, sensitive columns
 #'   (e.g. exact dates, free-text notes) are excluded from outputs.
-#' @param factor_concepts Logical; if \code{TRUE}, after a memory-mode
-#'   execution every \code{_concept_id} column is converted to a factor whose
-#'   levels are harmonized across all connected servers.
+#' @param factor_concepts Logical; \code{TRUE} remains accepted. Since 2.10.6,
+#'   concept IDs are always categories and \code{FALSE} is rejected.
 #' @return The modified \code{omop_recipe} with updated options.
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}},
 #'   \code{\link{ds.omop.plan.options}}
@@ -5091,6 +5091,8 @@ recipe_set_options <- function(recipe,
                                translate_concepts = NULL,
                                block_sensitive = NULL,
                                factor_concepts = NULL) {
+  if (isFALSE(factor_concepts))
+    stop("factor_concepts = FALSE is no longer supported: concept IDs are always categories since 2.10.6.", call. = FALSE)
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   if (is.null(recipe$options)) recipe$options <- list()
@@ -7848,6 +7850,12 @@ recipe_preview_schema <- function(recipe) {
 
   make_row <- function(output, column, source, v = NULL,
                        type = NULL, format = NULL, r_type = NULL) {
+    source_column <- if (is.null(v)) column else v$column %||% v$value_source %||% ""
+    value_format <- format %||% v$format %||% "raw"
+    if (length(source_column) == 1L && !is.na(source_column) &&
+        grepl("(^conceptId$|(^|_)concept_id$)", source_column) &&
+        value_format %in% c("raw", "first_value", "last_value", "nth_value", "closest_value", "mode"))
+      r_type <- "factor"
     data.frame(
       output = output,
       column = column,
@@ -8008,7 +8016,7 @@ recipe_preview_schema <- function(recipe) {
     } else if (out$type == "intervals") {
       column_types <- c(
         row_id = "integer", cohort_row_id = "integer", subject_id = "integer",
-        interval_type = "character", concept_id = "integer",
+        interval_type = "character", concept_id = "factor",
         start_days_from_index = "integer", end_days_from_index = "integer"
       )
       for (column in names(column_types)) {
@@ -8028,7 +8036,7 @@ recipe_preview_schema <- function(recipe) {
           covariateValue = "numeric"),
         covariateRef = c(
           covariateId = "numeric", covariateName = "character",
-          analysisId = "integer", conceptId = "integer"),
+          analysisId = "integer", conceptId = "factor"),
         timeRef = c(
           timeId = "integer", startDay = "integer", endDay = "integer"),
         personRef = c(rowId = "integer", person_id = "character")

@@ -807,6 +807,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
       stop("Could not prove analysis assignment commit on: ",
            paste(missing, collapse = ", "), ".", call. = FALSE)
     }
+    .harmonizeConceptFactors(c(analysis = newobj), conns)
     .record_session_outputs(symbol, newobj)
     per_site <- stats::setNames(as.list(rep(TRUE, length(conns))), names(conns))
     result <- dsomop_result(

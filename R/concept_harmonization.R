@@ -1,18 +1,38 @@
+# Observed-level discovery uses exactly DataSHIELD's asFactorDS1 rule at each
+# site. A stricter rule protects nothing: ds.asFactor releases the same levels,
+# and means of public per-concept 0/1 flags already give exact counts. A looser
+# rule would expose levels DataSHIELD refuses. Shared assignment has no union cap.
+.conceptRefuseUnsafe <- function(per_server) {
+  sites <- names(per_server) %||% as.character(seq_along(per_server))
+  refused <- character()
+  for (i in seq_along(per_server)) {
+    report <- per_server[[i]]
+    for (column in report$unsafe %||% character()) {
+      rules <- as.character(unlist(report$unsafe_rules[[column]], use.names = FALSE))
+      if (!length(rules)) rules <- c("nfilter.levels.max", "nfilter.levels.density")
+      refused <- c(refused, paste0("column '", column, "' on site '", sites[[i]],
+        "' (", paste(unique(rules), collapse = " / "), ")"))
+    }
+  }
+  if (length(refused)) stop("Concept factor publication refused: ",
+    paste(refused, collapse = "; "),
+    ". Declare the levels, group them with omop_category_recode() / omop_category_rollup(), or narrow the events with concepts =.",
+    call. = FALSE)
+  invisible(NULL)
+}
+
 # Uses only omopFactorLevelsDS metadata from the retained sites of a component.
 .conceptUnionReports <- function(per_server) {
   if (any(vapply(per_server, function(x) !identical(as.integer(x$concept_protocol), 1L), logical(1)))) {
     stop("Incomplete concept presentation protocol across retained sites.", call. = FALSE)
   }
-  if (any(vapply(per_server, function(x) length(x$unsafe) > 0L, logical(1)))) {
-    stop("Concept reconciliation refused by the existing factor-level disclosure policy.", call. = FALSE)
-  }
+  .conceptRefuseUnsafe(per_server)
   numbers <- per_server[[1L]]$numbers %||% list()
   for(site in per_server) .numberValidateShared(numbers,site$numbers)
   columns <- names(per_server[[1L]]$concepts)
   if (any(!vapply(per_server, function(x) setequal(names(x$concepts), columns), logical(1)))) {
     stop("Incompatible concept-column schemas across retained sites.", call. = FALSE)
   }
-  cap <- min(vapply(per_server, function(x) x$nfilter_levels_max, 0))
   explanation <- character()
   result <- setNames(lapply(columns, function(col) {
     records <- unlist(lapply(per_server, function(x) x$concepts[[col]]), recursive = FALSE)
@@ -25,9 +45,6 @@
       if (any(vapply(calendars, is.null, logical(1))) || length(unique(vapply(calendars, .jcsCanonical, ""))) != 1L) .dateReject("Calendar/policy mismatch across retained sites.")
       resolved <- .dateResolveRecords(records, calendars[[1L]])
     } else resolved <- .conceptResolve(records)
-    if (length(resolved$ids) > cap || length(resolved$levels) > cap) {
-      stop("Shared concept union exceeds the retained sites' factor-level cap.", call. = FALSE)
-    }
     for (decision in resolved$decisions) {
       candidates <- sort(unique(vapply(Filter(function(x) identical(x$id,decision$id) && !is.null(x$name), records),
         function(x) x$name, "")), method="radix")

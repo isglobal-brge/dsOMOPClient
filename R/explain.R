@@ -147,8 +147,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     # B1: the route of ordinary memory execution, including its default
     # factor harmonisation. A plan publishing nothing calls no factor method.
     if (is.null(refusal)) {
-      harmonizes <- !isFALSE(plan$options$translate_concepts) &&
-        !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+      harmonizes <- !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
       route <- tryCatch(.plan_protocol_route(conns, harmonizes = harmonizes),
                         error = function(e) e)
       if (inherits(route, "error")) {

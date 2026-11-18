@@ -102,7 +102,7 @@
   }
   concept_kind <- .categoryDeclaredConcept(variable)
   concept <- isTRUE(concept_kind) || semantic=="concept"
-  if(concept && isFALSE(plan$options$translate_concepts))type <- "integer"
+  if(concept)type <- inherited$r_type %||% "factor"
   fn <- variable$reducer$fn %||% d$reducer$fn %||% ""
   generated_numeric <- is.null(variable) && type %in% c("integer","double") && !semantic %in% c("key","concept","date") &&
     !key %in% .numberStructuralColumns(output_node$format %||% "wide") &&
@@ -123,7 +123,7 @@
     flag <- .categoryFlag(variable,flag_column)
     if(was_flag&&!flag) {semantic<-"numeric";type<-"double"}
     if(flag) {semantic<-"flag";type<-spec$binary$as %||% "integer"}
-    else if(concept) {semantic<-"concept";type<-if(isFALSE(plan$options$translate_concepts))"integer" else inherited$r_type %||% "factor"}
+    else if(concept) {semantic<-"concept";type<-inherited$r_type %||% "factor"}
     else if(representation %in% c("bins","category")) {semantic<-representation;type<-"ordered_factor"}
     else if(fn %in% c("count","n_distinct","sum","mean","min","max","median","first_value","last_value","nth_value","closest_value","mode") && is.null(inherited) || (d$kind %||% "") %in% c("number_rows","number_derive","number_change","number_count","number_daily")) {semantic<-"numeric";type<-if(fn %in% c("count","n_distinct")||identical(d$kind,"number_count"))"integer" else "double"}
     if (numeric && !flag && !representation %in% c("bins","category")) {
