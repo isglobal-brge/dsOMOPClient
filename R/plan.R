@@ -2029,7 +2029,9 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     if (length(out)) .ds_encode(as.list(out)) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
-    } else "server")
+    } else "server",
+    # This client reconciles every published concept factor (2.10.6).
+    concept_protocol = 1)
   if (!is.null(scope_args)) {
     # Splice the closed named scope arguments. Cohorts remain literal `scope`;
     # tables are bare `scope_table_<n>` symbols, never nested list()/c() calls.

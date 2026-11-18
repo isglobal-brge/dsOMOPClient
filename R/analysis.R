@@ -199,6 +199,8 @@ utils::globalVariables(".data")
   if (!is.null(date_handling)) {
     args <- c(args, list(date_handling = date_handling))
   }
+  # This client reconciles every assigned concept factor (2.10.6).
+  if (identical(fn, "omopAnalysisRunAssignDS")) args <- c(args, list(concept_protocol = 1))
   as.call(args)
 }
 

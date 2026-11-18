@@ -180,7 +180,9 @@
     # The 2.10.2 .ds_arg decoder also accepts a named JSON object. Encode
     # singleton maps as objects so deparse never introduces a nested c().
     session$res_symbol, .ds_encode(plan), .ds_encode(as.list(out)),
-    output_mode)
+    output_mode,
+    # This client reconciles every published concept factor (2.10.6).
+    concept_protocol = 1)
   if (!is.null(scope_args)) {
     exec_args <- c(exec_args, scope_args, list(combine = combine))
   }
