@@ -20,14 +20,24 @@
   under this rule, and means of published per-concept 0/1 flags already give
   exact counts. A looser rule would expose levels DataSHIELD refuses.
   Count/table `nfilter.tab`, subset, DP and sensitive-column rules are unchanged.
-- Declared levels need no discovery: explicit category levels, complete recodes,
-  binary flags, IDs in label maps and complete public hierarchy domains do not
-  reveal site occurrence. Local vocabulary expansions and kept unmapped values
-  remain observed. Complete recodes can group rare source concepts before
-  publication. Refusals name the column, site and rule without counts, explain
-  how to declare/group levels or narrow events, and revoke the publication.
+- Declared levels need no discovery and have no level limit: explicit category
+  levels, complete recodes, binary flags, IDs in label maps, complete public
+  hierarchy domains and concept sets resolved on the public vocabulary do not
+  reveal site occurrence. New `omop_concept_levels()` expands an
+  `omop_concept_set()` on the servers' vocabulary tables into declared levels for
+  `omop_category_spec(levels = )`. Events restricted by a concept set declare it
+  for their concept column automatically. Kept unmapped values remain observed.
+  Complete recodes can group rare source concepts before publication.
+  Refusals name the column, site and rule without counts, explain how to
+  declare/group levels or narrow events, mention that the server administrator
+  can raise `nfilter.levels.max` / `nfilter.levels.density`, and revoke the
+  publication.
   Legacy untagged outputs also refuse unsafe reconciliation instead of retaining
   numeric concept columns. Shared level assignment has no level-count rule.
+- Exploration with many categories: with dsOMOP 2.10.6 servers,
+  `ds.omop.value.counts()`, `ds.omop.crosstab()` and concept drilldowns return
+  the values with enough persons even when a column has more than
+  `nfilter.levels.max` distinct values; rare values stay hidden.
 
 # dsOMOPClient 2.10.5 (2026-11-15)
 
