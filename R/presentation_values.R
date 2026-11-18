@@ -111,7 +111,10 @@
     if(!is.null(s$rollup) && s$rollup$kind!="none") {
       if(!.categoryConceptProducer(list(producer=producer))) .categoryReject("Hierarchy rollup requires concept identities.")
       rollup <- get(".categoryRollupMap",mode="function")(ctx$handle,s$rollup)
-      targets <- unique(unlist(rollup$mapping,use.names=FALSE))
+      # A public target domain includes unused hierarchy categories as well.
+      public_targets <- unique(c(unlist(s$levels,use.names=FALSE),
+        unlist(s$rollup$ancestors,use.names=FALSE),unlist(s$rollup$priority,use.names=FALSE)))
+      targets <- union(unique(unlist(rollup$mapping,use.names=FALSE)),public_targets)
       target_records <- if(!length(targets))list() else if(isFALSE(ctx$ir$options$translate_concepts)) .conceptIdRecords(sub("^concept:","",targets)) else get(".conceptVocabulary",mode="function")(ctx$handle,sub("^concept:","",targets))
       names(target_records) <- targets
       map <- .conceptMapOverlay(.conceptMap(ctx$ir$options$labels,"recipe",wire=TRUE),.conceptMap(node$labels,"variable",wire=TRUE))

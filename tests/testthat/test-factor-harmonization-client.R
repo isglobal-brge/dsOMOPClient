@@ -283,3 +283,12 @@ test_that("legacy all-missing concept columns retain an empty factor contract", 
   expect_identical(.unionConceptLevels(list(a = report, b = report)),
                    list(cause_concept_id = character()))
 })
+
+
+test_that("factor transport preserves absent numeric metadata fields", {
+  spec <- list(concept_protocol = 1L, columns = list(),
+    numbers = list(days = list(input_type = "integer", source = NULL,
+      levels = NULL, pipeline = list(list(kind = "transform", method = "identity")))))
+  decoded <- .decode_ds(.ds_encode(spec))
+  expect_identical(decoded$numbers, spec$numbers)
+})

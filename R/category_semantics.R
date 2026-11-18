@@ -231,6 +231,7 @@
 
 # Release metadata has nullable fields and arrays; plans still reject R NA.
 .categoryMetadataPlain <- function(x) {
+  if(is.null(x))return(NULL)
   if(is.list(x))return(lapply(x,.categoryMetadataPlain))
   if(is.atomic(x)&&!is.null(names(x)))return(lapply(as.list(x),.categoryMetadataPlain))
   if(is.atomic(x)&&length(x)!=1L)return(lapply(seq_along(x),function(i).categoryMetadataPlain(x[[i]])))
@@ -265,7 +266,7 @@
     at <- match(d$value, vapply(d$values,function(x)x$name,""))
     return(.categoryDeclaredConcept(d$values[[at]]$variable))
   }
-  if ((d$kind %||% "") %in% c("race","ethnicity","category_rows") || grepl("(^|_)concept_id$",v$reducer$value %||% "") || grepl("_concept_id$",v$raw$column %||% "")) return(TRUE)
+  if ((d$kind %||% "") %in% c("race","ethnicity","category_rows") || grepl("(^|_)concept_id$",v$reducer$value %||% "") || grepl("(^|_)concept_id$",v$raw$column %||% "")) return(TRUE)
   if ((d$kind %||% "") %in% c(.DATE_KINDS,.NUMBER_KINDS,"category_indicators","died") || !is.null(v$date_spec) || nzchar(fn)) return(FALSE)
   NA
 }

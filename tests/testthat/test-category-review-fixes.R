@@ -85,7 +85,11 @@ test_that("R2 native untranslated concepts have shared factor contracts", {
   expect_false(is.na(i)); expect_false(is.na(j))
   expect_identical(books$prospective$r_type[i],"factor")
   expect_identical(books$prospective$r_type[i],books$published$r_type[j])
-  for (field in c("levels","ordered","reference","contrasts")) expect_null(books$prospective[[field]][[i]])
+  expect_null(books$prospective$levels[[i]])
+  expect_false(books$prospective$ordered[[i]])
+  expect_true(is.na(books$prospective$reference[[i]]))
+  expect_identical(books$prospective$contrasts[[i]]$kind, "treatment")
+  expect_identical(unlist(books$published$levels[[j]]$labels), "8507")
 })
 
 test_that("R3 hierarchy defaults are inactive for flags and numeric/date categories", {
