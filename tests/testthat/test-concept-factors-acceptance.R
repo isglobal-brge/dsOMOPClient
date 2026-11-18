@@ -130,13 +130,14 @@ test_that("observed density uses output rows including missing values", {
 
 test_that("a shared union larger than any site cap remains assignable", {
   ctx <- .cf_setup(values = list(c(rep(2L, 17L), 10L),
-    c(rep(3L, 17L), 20L), c(rep(4L, 17L), 30L)))
+    c(rep(3L, 17L), 20L), c(rep(1000000000L, 17L), 2147483647L)))
   for (server in ctx$servers) server$option("nfilter.levels.max", "2")
   for (translate in c(TRUE, FALSE)) for (mode in c("memory", "staged")) {
     target <- paste0("Union_", translate, "_", mode)
     recipe_execute(.cf_recipe(translate), out = target, symbol = "labels",
       conns = ctx$conns, output_mode = mode)
-    frames <- .cf_shared(ctx, target, "cause", if (!translate) c("2", "3", "4", "10", "20", "30"))
+    frames <- .cf_shared(ctx, target, "cause", if (!translate)
+      c("2", "3", "10", "20", "1000000000", "2147483647"))
     expect_length(levels(frames[[1L]]$cause), 6L)
   }
 })
@@ -291,6 +292,50 @@ test_that("every output layout preserves concept factors in memory and staged pu
     }
     expect_true(all(c("wide", "baseline", "features", "long", "event_log", "intervals", "panel", "sparse", "temporal",
       "survival", "competing_risk", "counting_process", "recurrent_events", "multi_state", "joined") %in% observed))
+  }
+})
+
+test_that("legacy dictionaries preserve declared and observed IDs and vocabulary names", {
+  ctx <- .cf_setup()
+  for (path in ctx$paths) {
+    db <- DBI::dbConnect(RSQLite::SQLite(), path)
+    DBI::dbExecute(db, "UPDATE observation SET observation_type_concept_id = 44818518")
+    DBI::dbExecute(db, "DELETE FROM concept WHERE concept_id = 44818518")
+    DBI::dbExecute(db, paste0("INSERT INTO concept SELECT 44818518, 'Registry type', ",
+      "domain_id, vocabulary_id, concept_class_id, standard_concept, '44818518', ",
+      "valid_start_date, valid_end_date, invalid_reason FROM concept WHERE concept_id = 45000120"))
+    DBI::dbDisconnect(db)
+  }
+  for (server in ctx$servers) {
+    server$option("nfilter.levels.max", "1")
+    server$option("nfilter.levels.density", "1")
+  }
+  plan <- ds.omop.plan()
+  plan$cohort <- list(type = "cohort_table", cohort_definition_id = 1L)
+  plan$outputs <- list(events = list(type = "event_level", table = "observation",
+    columns = c(alias = "observation_concept_id", "observation_type_concept_id"),
+    concept_set = 45000120L, representation = list(format = "long"),
+    filters = list(concept_set = list(ids = 45000120L))),
+    dictionary = list(type = "concept_dictionary", source_outputs = "events"))
+  ids <- c("44818518", "45000120")
+  labels <- c("Registry type", "Education level")
+  for (translate in c(TRUE, FALSE)) for (mode in c("memory", "staged")) {
+    plan$options$translate_concepts <- translate
+    targets <- setNames(paste0("Dictionary_", names(plan$outputs), "_", translate, "_", mode),
+      names(plan$outputs))
+    ds.omop.plan.execute(plan, out = targets, symbol = "labels", conns = ctx$conns, output_mode = mode)
+    frames <- .cf_shared(ctx, targets[["dictionary"]], "concept_id", if (translate) labels else ids)
+    for (frame in frames) {
+      expect_identical(as.character(frame$concept_id), if (translate) labels else ids)
+      expect_identical(as.character(frame$concept_name), labels)
+      expect_true(all(frame$used_in_outputs == "events"))
+    }
+    reports <- DSI::datashield.aggregate(ctx$conns,
+      call("omopFactorLevelsDS", as.symbol(targets[["dictionary"]])))
+    for (report in reports) {
+      expect_setequal(report$levels$concept_id, ids)
+      expect_length(report$unsafe, 0L)
+    }
   }
 })
 
