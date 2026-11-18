@@ -96,6 +96,7 @@ test_that("concept factors admit rare levels with identical translated and ID-la
       expect_identical(columns$r_type[columns$name == "cause"], "factor")
     }
     expect_match(paste(recipe_explain(recipe)$text, collapse = "\n"), "factor")
+    expect_output(print(recipe), "factor")
   }
 })
 
@@ -152,7 +153,7 @@ test_that("complete recodes admit rare sources and report no unmatched observed 
     reports <- DSI::datashield.aggregate(ctx$conns, call("omopFactorLevelsDS", as.symbol(target)))
     for (report in reports) {
       expect_length(report$unsafe, 0L)
-      expect_false(grepl("45000127", jsonlite::toJSON(report, auto_unbox = TRUE), fixed = TRUE))
+      expect_false(grepl("45000127", paste(capture.output(dput(report)), collapse = "\n"), fixed = TRUE))
       expect_identical(report$levels$cause, reports[[1L]]$levels$cause)
     }
   }
@@ -293,6 +294,35 @@ test_that("legacy untagged reports refuse instead of leaving concept IDs numeric
   expect_true("cause_concept_id" %in% reports$site2$unsafe)
   expect_null(reports$site2$levels$cause_concept_id)
   expect_error(dsOMOPClient:::.unionConceptLevels(reports), "cause_concept_id")
+  ctx$servers$site2$option("nfilter.levels.max", "40")
+  reports <- DSI::datashield.aggregate(ctx$conns, call("omopFactorLevelsDS", as.symbol("Untagged")))
+  spec <- dsOMOPClient:::.unionConceptLevels(reports)
+  DSI::datashield.assign.expr(ctx$conns, "Untagged", call("omopAsFactorColumnsDS",
+    as.symbol("Untagged"), dsOMOPClient:::.ds_encode(spec)))
+  .cf_shared(ctx, "Untagged", "cause_concept_id", c("45000123", "45000124", "45000125", "45000127"))
+})
+
+test_that("catalog loaders publish shared concept factors and revoke refused assignments", {
+  ctx <- .cf_setup()
+  for (path in ctx$paths) {
+    db <- DBI::dbConnect(RSQLite::SQLite(), path)
+    DBI::dbExecute(db, paste0("UPDATE observation SET value_as_concept_id = ",
+      "(SELECT cause_concept_id FROM death WHERE death.person_id = observation.person_id) ",
+      "WHERE observation_id <= 18"))
+    DBI::dbDisconnect(db)
+  }
+  result <- ds.omop.analysis.run("dsomop:observation.load", symbol = "labels",
+    conns = ctx$conns, date_handling = "remove")
+  target <- result$meta$assign_symbol
+  frames <- .clf_frames(ctx, target)
+  columns <- grep("(^|_)concept_id$", names(frames[[1L]]), value = TRUE)
+  expect_true("value_as_concept_id" %in% columns)
+  for (column in columns) .cf_shared(ctx, target, column)
+  before <- lapply(DSI::datashield.symbols(ctx$conns), sort)
+  ctx$servers$site2$option("nfilter.levels.max", "2")
+  expect_error(ds.omop.analysis.run("dsomop:observation.load", symbol = "labels",
+    conns = ctx$conns, date_handling = "remove"), "nfilter[.]levels[.]max")
+  expect_identical(lapply(DSI::datashield.symbols(ctx$conns), sort), before)
 })
 
 test_that("factor_concepts FALSE is rejected for both label policies", {
