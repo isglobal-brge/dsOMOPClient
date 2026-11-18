@@ -104,6 +104,19 @@ test_that("observed density uses output rows including missing values", {
   }
 })
 
+test_that("a shared union larger than any site cap remains assignable", {
+  ctx <- .cf_setup(values = list(c(rep(45000123L, 17L), 45000124L),
+    c(rep(45000125L, 17L), 45000126L), c(rep(45000127L, 17L), 45000128L)))
+  for (server in ctx$servers) server$option("nfilter.levels.max", "2")
+  for (translate in c(TRUE, FALSE)) for (mode in c("memory", "staged")) {
+    target <- paste0("Union_", translate, "_", mode)
+    recipe_execute(.cf_recipe(translate), out = target, symbol = "labels",
+      conns = ctx$conns, output_mode = mode)
+    frames <- .cf_shared(ctx, target, "cause")
+    expect_length(levels(frames[[1L]]$cause), 6L)
+  }
+})
+
 test_that("complete recodes admit rare sources and report no unmatched observed identities", {
   ctx <- .cf_setup()
   for (server in ctx$servers) {
@@ -163,6 +176,26 @@ test_that("partial declarations and unmatched keep still discover observed categ
   spec <- omop_category_spec(recode = omop_category_recode(
     c(`concept:45000123` = "category:a"), levels = "category:a", unmatched = "keep"))
   .cf_refusal(ctx, .cf_recipe(spec = spec), "UnmatchedKeep", "nfilter.levels.max")
+})
+
+test_that("binary categories report their declared domain without discovery", {
+  ctx <- .cf_setup()
+  for (server in ctx$servers) {
+    server$option("nfilter.levels.max", "1")
+    server$option("nfilter.levels.density", "0.01")
+  }
+  recipe <- omop_recipe(variables = list(flag = omop_category(
+    omop_variable(event = omop_event("death"), reducer = omop_reduce("binary")),
+    omop_category_spec(binary = omop_category_binary("factor")))))
+  recipe_execute(recipe, out = "DeclaredFlag", symbol = "labels", conns = ctx$conns)
+  .cf_shared(ctx, "DeclaredFlag", "flag", c("no", "yes"))
+  reports <- DSI::datashield.aggregate(ctx$conns,
+    call("omopFactorLevelsDS", as.symbol("DeclaredFlag")))
+  for (report in reports) {
+    expect_length(report$unsafe, 0L)
+    expect_identical(report$levels$flag, reports[[1L]]$levels$flag)
+    expect_length(report$levels$flag, 2L)
+  }
 })
 
 .cf_format_recipe <- function() {
