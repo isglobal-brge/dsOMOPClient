@@ -20,12 +20,10 @@ A named list mapping each harmonizable column to its shared,
 \description{
 Pure reduction at the heart of the coordination layer: given each server's
 \code{omopFactorLevelsDS} report, it computes, per concept-id column, the
-union of safe levels in one deterministic order. A column flagged unsafe on
-\emph{any} server is dropped entirely (left raw everywhere), and a union
-exceeding the smallest reported server cap is dropped (no server would
-accept it). Numeric-looking ids sort numerically so the shared coding is
-intuitive; other labels use a locale-independent radix sort so every client
-derives the identical ordering.
+union of admitted levels in one deterministic order. A column flagged unsafe
+on any server refuses publication. Shared assignment has no level-count cap;
+discovery was already checked at each site. Numeric-looking IDs sort
+numerically; other labels use a locale-independent radix sort.
 }
 \details{
 Kept side-effect-free (no DSI calls) so the union semantics are unit

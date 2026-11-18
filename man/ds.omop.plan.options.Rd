@@ -14,20 +14,16 @@ ds.omop.plan.options(
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
 
-\item{translate_concepts}{Logical; if \code{TRUE}, concept ID columns
-are automatically translated to human-readable concept names in
-output tables.}
+\item{translate_concepts}{Logical; chooses concept factor labels:
+vocabulary names when \code{TRUE}, decimal ID strings when \code{FALSE}.
+Concept columns always have shared factor levels across retained servers.}
 
 \item{block_sensitive}{Logical; if \code{TRUE}, sensitive columns
 (e.g. exact dates, free-text notes) are excluded from outputs.}
 
-\item{factor_concepts}{Logical; if \code{TRUE} (default), after a
-memory-mode execution every \code{_concept_id} column is converted
-into a factor whose levels are harmonized across all connected
-servers, so pooled \code{ds.glm}/\code{ds.glmSLMA}/\code{ds.table}
-see an identical level coding. Columns whose distinct values exceed
-the server disclosure cap are left raw. Set \code{FALSE} to keep the
-raw integer ids (or translated character names) unchanged.}
+\item{factor_concepts}{Logical; \code{TRUE} remains accepted. Since 2.10.6,
+concept IDs are always categories and \code{FALSE} is rejected. Discovery
+uses DataSHIELD's factor-level rule; a refusal prevents publication.}
 }
 \value{
 The modified \code{omop_plan} with updated options.

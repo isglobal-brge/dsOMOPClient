@@ -37,8 +37,8 @@ or wrong), and \code{"INFO"} (advisory). Rules:
     fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
     but the base population has neither a cohort nor a date filter.}
-  \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
-    \code{factor_concepts = TRUE}, or a categorical format on a
+  \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column,
+    or a categorical format on a
     high-cardinality domain.}
   \item{window_inverted (WARNING)}{a variable \code{time_window} with
     \code{start > end}.}

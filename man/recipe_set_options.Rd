@@ -14,15 +14,15 @@ recipe_set_options(
 \arguments{
 \item{recipe}{An \code{omop_recipe} object.}
 
-\item{translate_concepts}{Logical; if \code{TRUE}, concept ID columns are
-translated to human-readable concept names in output tables.}
+\item{translate_concepts}{Logical; chooses concept factor labels:
+vocabulary names when \code{TRUE}, decimal ID strings when \code{FALSE}.
+Concept columns always have shared factor levels across retained servers.}
 
 \item{block_sensitive}{Logical; if \code{TRUE}, sensitive columns
 (e.g. exact dates, free-text notes) are excluded from outputs.}
 
-\item{factor_concepts}{Logical; if \code{TRUE}, after a memory-mode
-execution every \code{_concept_id} column is converted to a factor whose
-levels are harmonized across all connected servers.}
+\item{factor_concepts}{Logical; \code{TRUE} remains accepted. Since 2.10.6,
+concept IDs are always categories and \code{FALSE} is rejected.}
 }
 \value{
 The modified \code{omop_recipe} with updated options.

@@ -90,9 +90,10 @@ dictionary \code{<name>.transitionRef}.
 When \code{output_mode = "staged"}, outputs are written to server-local
 Parquet files (CSV fallback when Arrow is unavailable) and
 assigned as \code{FlowerDatasetDescriptor} objects instead of final
-data.frames. Long event and interval outputs preserve numeric OMOP concept
-IDs and stream in bounded chunks to Parquet row groups in one file; labels
-can be supplied as a separate concept-reference output. Outputs that still
+data.frames. Long event and interval outputs stream in bounded chunks to
+Parquet row groups in one file. Concept columns use shared factor levels
+with vocabulary labels or decimal ID labels, according to
+\code{translate_concepts}. Outputs that still
 require an R-side reshape or
 derivation are materialized before staging. Descriptors are
 server paths readable under the server OS identity; other service accounts
