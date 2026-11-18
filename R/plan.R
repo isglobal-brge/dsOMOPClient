@@ -2091,8 +2091,13 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     if (any(codes != "insufficient_support") ||
         (on_small_site == "error" && any(refused)) ||
         (on_small_site == "skip" && any(partial))) {
+      hint <- if (any(grepl("(concept_level_rule)", rejected, fixed = TRUE))) {
+        paste0(" Concept-derived columns fail a server's factor-level rule ",
+               "(nfilter.levels.max / nfilter.levels.density): declare the concepts with ",
+               "a concept set, group them, or ask that server's administrator to raise the limits.")
+      } else ""
       stop("Plan publication refused: ", paste(rejected, collapse = "; "),
-           ".", call. = FALSE)
+           ".", hint, call. = FALSE)
     }
     inventories <- lapply(statuses, function(x) {
       if (x$status == "refused") NULL else x$published
