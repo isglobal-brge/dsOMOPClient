@@ -450,9 +450,12 @@ test_that("multi-server execute strictly harmonizes an unbound plan", {
     .package = "dsOMOPClient"
   )
   testthat::local_mocked_bindings(
-    datashield.aggregate = function(conns, expr, ...) {
-      stats::setNames(rep(list(.publication_status(c(events = "D"))), length(conns)),
-                      names(conns))
+    datashield.aggregate = function(conns, expr, success = NULL, ...) {
+      report <- if (identical(as.character(expr[[1L]]), "omopFactorLevelsDS"))
+        list(levels = list(), unsafe = character(), nfilter_levels_max = 40) else
+        .publication_status(c(events = "D"))
+      for (site in names(conns)) if (is.function(success)) success(site, report)
+      stats::setNames(rep(list(report), length(conns)), names(conns))
     },
     datashield.symbols = function(conns, ...) state[names(conns)],
     datashield.rm = function(conns, target, ...) {

@@ -71,3 +71,16 @@ test_that("C53 codebook units describe declared pipelines without exposing sourc
   expect_identical(columns$unit[match(c("raw","converted","flag"),columns$name)],c("unit:8713","coordinate:test","1"))
   expect_identical(columns$r_type[match(c("raw","converted","flag"),columns$name)],c("double","double","integer"))
 })
+
+
+test_that("concept reducer codebooks keep factor types with ID labels", {
+  for (translate in c(TRUE, FALSE)) {
+    recipe <- omop_recipe(variables = list(cause = omop_variable("cause",
+      event = omop_event("death"),
+      reducer = omop_reduce("first_value", value = "cause_concept_id"))),
+      options = list(translate_concepts = translate))
+    columns <- recipe_codebook(recipe)[[1L]]$columns
+    expect_identical(columns$r_type[columns$name == "cause"], "factor")
+    expect_identical(columns$semantic_type[columns$name == "cause"], "concept")
+  }
+})

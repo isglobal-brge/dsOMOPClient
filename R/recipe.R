@@ -8294,8 +8294,8 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
 #'   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
 #'     but the base population has neither a cohort nor a date filter.}
-#'   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
-#'     \code{factor_concepts = TRUE}, or a categorical format on a
+#'   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column,
+#'     or a categorical format on a
 #'     high-cardinality domain.}
 #'   \item{window_inverted (WARNING)}{a variable \code{time_window} with
 #'     \code{start > end}.}
@@ -8408,8 +8408,6 @@ recipe_lint <- function(recipe) {
     }
   }
 
-  factor_concepts <- isTRUE((recipe$options %||% list())$factor_concepts)
-
   # Per-variable checks.
   for (vnm in names(vars)) {
     v <- vars[[vnm]]
@@ -8475,20 +8473,19 @@ recipe_lint <- function(recipe) {
           paste0("variables$", vnm))
     }
 
-    # WARNING highcard_factor: raw _concept_id column with factor_concepts=TRUE,
-    # or a categorical format on a high-cardinality domain.
+    # All concept columns use DataSHIELD's observed factor-level release rule.
     raw_concept_col <- !is.null(v$column) && grepl("_concept_id$", v$column)
-    if (raw_concept_col && factor_concepts) {
+    if (raw_concept_col) {
       add("WARNING", "highcard_factor",
           paste0("Variable '", vnm, "' is a raw _concept_id column with ",
-                 "factor_concepts=TRUE (>40 levels / 0.33 density risk)."),
+                 "observed levels subject to nfilter.levels.max and nfilter.levels.density."),
           paste0("variables$", vnm))
     } else if (identical(v$type, "categorical") &&
                (v$table %||% "") %in% .lint_highcard_tables) {
       add("WARNING", "highcard_factor",
           paste0("Variable '", vnm, "' is a categorical format on ",
                  "high-cardinality domain '", v$table,
-                 "' (>40 levels / 0.33 density risk)."),
+                 "'; observed levels are subject to nfilter.levels.max and nfilter.levels.density."),
           paste0("variables$", vnm))
     }
 

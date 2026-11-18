@@ -90,3 +90,13 @@ test_that('A27 explain uses only a matching successful-publication receipt', {
     expect_error(omop_recipe(labels=setNames(label,'45000123')), 'nonempty UTF-8')
   }
 })
+
+
+test_that("tagged reports do not cap the shared union after site admission", {
+  report <- function(ids) list(concept_protocol = 1L,
+    levels = list(cause = ids), unsafe = character(), nfilter_levels_max = 2,
+    concepts = list(cause = lapply(ids, function(id) list(id = id, origin = "fallback"))),
+    keys = c("person_id", "cause"), generated = list())
+  spec <- .conceptUnionReports(list(a = report(c("2", "10")), b = report(c("10", "30"))))
+  expect_identical(spec$columns$cause$levels, c("2", "10", "30"))
+})

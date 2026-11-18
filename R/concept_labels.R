@@ -271,3 +271,11 @@
   }
   invisible(TRUE)
 }
+
+# Translation selects labels only. Identity and the factor release contract do
+# not depend on whether a vocabulary name is requested.
+.conceptIdRecords <- function(ids) {
+  setNames(lapply(ids, function(id) list(id = id, name = NULL,
+    vocabulary = NULL, version = NULL, origin = "fallback", label = id)), ids)
+}
+

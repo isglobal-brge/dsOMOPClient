@@ -2725,8 +2725,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     if (.retry && length(assign_errors) && all(grepl("Concept presentation evidence changed", assign_errors, fixed = TRUE))) {
       return(.harmonizeOneSymbol(sym, conns, .retry = FALSE))
     }
+    detail <- if (length(assign_errors)) paste(paste(names(assign_errors),
+      vapply(assign_errors, .ds_error_core, ""), sep = ": "), collapse = "; ") else
+      if (!is.null(assign_condition)) conditionMessage(assign_condition) else ""
     stop("Concept-factor recoding failed or was incomplete on: ",
-         paste(failed, collapse = ", "), ".", call. = FALSE)
+         paste(failed, collapse = ", "), ". ", detail, call. = FALSE)
   }
   lines<-attr(spec,"concept_explain") %||% character()
   if(!is.null(spec$schema))attr(lines,"codebook")<-list(schema=spec$schema,categories=spec$columns)
