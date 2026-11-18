@@ -10,6 +10,8 @@
   later on every retained server: older untranslated and loader contracts
   cannot prove complete concept-column coverage. Aggregate analyses and
   explain-only inspection remain available on supported older servers.
+  Republish source tables retained with raw concept columns before using
+  standalone row operations.
 - Observed level discovery follows dsBase 6.3.5 `asFactorDS1`: the site's
   distinct non-declared levels must fit `nfilter.levels.max` and
   `nfilter.levels.density` times its output rows, including missing values.
