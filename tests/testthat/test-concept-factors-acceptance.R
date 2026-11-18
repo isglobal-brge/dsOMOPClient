@@ -313,7 +313,7 @@ test_that("legacy dictionaries preserve declared and observed IDs and vocabulary
   plan <- ds.omop.plan()
   plan$cohort <- list(type = "cohort_table", cohort_definition_id = 1L)
   plan$outputs <- list(events = list(type = "event_level", table = "observation",
-    columns = c(alias = "observation_concept_id", "observation_type_concept_id"),
+    columns = c("observation_concept_id", "observation_type_concept_id"),
     concept_set = 45000120L, representation = list(format = "long"),
     filters = list(concept_set = list(ids = 45000120L))),
     dictionary = list(type = "concept_dictionary", source_outputs = "events"))
