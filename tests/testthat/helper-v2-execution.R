@@ -29,7 +29,7 @@
   conns <- stats::setNames(as.list(names(caps)), names(caps))
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = conns, res_symbol = "resource",
-                                      capabilities = caps),
+                                      capabilities = caps, server_versions = .current_versions(names(caps))),
     ds.omop.compare = function(symbol = "omop", conns = NULL, tables = NULL) {
       list(servers = names(conns), common_tables = tables, common_columns = list(),
            common_column_types = list(), column_errors = character(0),

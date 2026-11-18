@@ -21,6 +21,28 @@
   invisible(NULL)
 }
 
+# Assignment needs concept identity support even when labels are decimal IDs.
+# Older suffix-only reports cannot prove coverage of aliased concept columns;
+# the 2.10.6 minimum also covers untranslated and catalog-loader identities.
+.conceptAssertSupport <- function(session, servers) {
+  language <- .v2_server_language(session, servers)
+  missing <- servers[!vapply(language, function(x)
+    "output.concept_labels" %in% x$operations, logical(1))]
+  if (length(missing)) stop("Concept factors require server support for output.concept_labels on: ",
+    paste(missing, collapse = ", "), ". Upgrade the server and publish its methods.", call. = FALSE)
+  versions <- session$server_versions %||% character()
+  unsupported <- servers[!vapply(servers, function(site) {
+    version <- if (site %in% names(versions)) versions[[site]] else NULL
+    is.character(version) && length(version) == 1L && !is.na(version) &&
+      grepl("^[0-9]+([.][0-9]+)+$", version) &&
+      tryCatch(utils::compareVersion(version, "2.10.6") >= 0L, error = function(e) FALSE)
+  }, logical(1))]
+  if (length(unsupported)) stop("Concept factor publication requires dsOMOP 2.10.6 or later on: ",
+    paste(unsupported, collapse = ", "),
+    ". Upgrade the server: concept IDs are always categories since 2.10.6.", call. = FALSE)
+  invisible(NULL)
+}
+
 # Uses only omopFactorLevelsDS metadata from the retained sites of a component.
 .conceptUnionReports <- function(per_server) {
   if (any(vapply(per_server, function(x) !identical(as.integer(x$concept_protocol), 1L), logical(1)))) {

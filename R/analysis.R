@@ -757,6 +757,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   }
 
   if (is_assign) {
+    .conceptAssertSupport(session, names(conns))
     # Assign-mode loader: reserve a fresh symbol, assign on every node, and
     # commit only after post-execution inventory proves complete federation
     # coverage. Any partial assignment is removed everywhere.

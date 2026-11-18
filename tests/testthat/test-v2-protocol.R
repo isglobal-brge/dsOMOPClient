@@ -1,9 +1,8 @@
 # WS-8 (review B1; design 4.4, 7.3, A-14): before anything is assigned, every
 # participating site is checked for the publication protocol. A language-2
-# plan needs it on every site; a v1 plan sent to a federation with a dsOMOP
-# 2.10.2 site runs as the 2.10.2 legacy call on every site. The 2.10.2 sites
-# here publish the real 2.10.2 method inventory and enforce its argument
-# contract (helper-legacy-servers.R).
+# plan needs it on every site. Since 2.10.6, v1 publication also requires
+# concept identity support; older servers are refused before assignment.
+# The old-site fixture retains the actual 2.10.2 argument contract.
 
 .legacy_recipe_b1 <- function() omop_recipe(
   variables = omop_variable_age(name = "age_at_2025", year = 2025),
@@ -32,7 +31,7 @@
   invisible(wire)
 }
 
-test_that("v1 singleton, multiple and subset mappings survive strict current and legacy transport", {
+test_that("v1 singleton, multiple and subset mappings survive strict current transport", {
   single <- .legacy_recipe_b1()
   multiple <- omop_recipe(
     variables = omop_variable_age(name = "age_at_2025", year = 2025),
@@ -42,8 +41,7 @@ test_that("v1 singleton, multiple and subset mappings survive strict current and
     list(recipe = single, out = c(ages = "D_single")),
     list(recipe = multiple, out = c(a = "D_first", b = "D_second")),
     list(recipe = multiple, out = c(b = "D_subset")))
-  for (sites in list(list(new = "current"), list(old = "old"),
-                    list(old = "old", new = "current"))) {
+  for (sites in list(list(new = "current"))) {
     for (dp in c(FALSE, TRUE)) for (case in cases) {
       state <- do.call(.legacy_federation, sites)
       result <- suppressWarnings(if (dp) {
@@ -100,44 +98,24 @@ test_that("the fixture reproduces the 2.10.2 contract: commit_policy is refused"
   expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% m$aggregate))
 })
 
-test_that("a single 2.10.2 site runs a v1 plan as the 2.10.2 legacy call", {
-  state <- .legacy_federation(old = "old")
-  r <- .legacy_recipe_b1()
-  expect_warning(res <- recipe_execute(r),
-                 "old predates the publication protocol.*legacy call.*do not apply")
-  expect_identical(res, c(ages = "D_ages"))
-  expect_identical(state$assigns, c(old = 1L))
-  sent <- state$sent$old
-  expect_identical(as.character(sent[[1L]]), "omopPlanExecuteDS")
-  expect_null(as.list(sent)$commit_policy)
-  # the same v1 payload, byte for byte
-  expect_identical(sent[[3L]], dsOMOPClient:::.ds_encode(recipe_to_plan(r, version = 1)))
-  transported <- parse(text = paste(deparse(sent), collapse = "\n"))[[1L]]
-  expect_false(any(vapply(as.list(transported)[-1L], is.call, logical(1))))
-  expect_identical(.decode_ds(transported[[4L]]), list(ages = "D_ages"))
-  expect_identical(transported[[2L]], sent[[2L]])
-  expect_identical(transported[[5L]], "memory")
-  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
-  expect_true("D_ages" %in% state$symbols$old)
+test_that("a v1 plan requires concept identity support even for untranslated labels", {
+  for (translate in c(FALSE, TRUE)) {
+    state <- .legacy_federation(old = "old")
+    r <- recipe_set_options(.legacy_recipe_b1(), translate_concepts = translate)
+    expect_error(recipe_execute(r), "Concept factors require server support.*output.concept_labels.*old")
+    expect_identical(state$assigns, c(old = 0L))
+    expect_length(state$symbols$old, 0L)
+  }
 })
 
-test_that("a mixed federation sends the legacy call to every site, with one warning", {
+test_that("a mixed federation refuses missing concept identity support before assignment", {
   state <- .legacy_federation(old = "old", new = "new")
-  warnings <- character(0)
-  res <- withCallingHandlers(recipe_execute(.legacy_recipe_b1()), warning = function(w) {
-    warnings <<- c(warnings, conditionMessage(w))
-    invokeRestart("muffleWarning")
-  })
-  expect_identical(res, c(ages = "D_ages"))
-  expect_length(warnings, 1L)
-  expect_match(warnings, "^dsOMOP on old predates")   # only the old site is named
-  expect_identical(state$assigns, c(old = 1L, new = 1L))
-  for (s in c("old", "new")) expect_null(as.list(state$sent[[s]])$commit_policy)
-  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
+  expect_error(recipe_execute(.legacy_recipe_b1()), "output.concept_labels on: old")
+  expect_identical(state$assigns, c(old = 0L, new = 0L))
 })
 
-test_that("the legacy route checks the out mapping as 2.10.2 did, before any assignment", {
-  state <- .legacy_federation(old = "old", new = "new")
+test_that("v1 checks the out mapping before any assignment", {
+  state <- .legacy_federation(new = c("old", "new"))
   r <- omop_recipe(variables = omop_variable_age(name = "age_at_2025", year = 2025),
                    outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")),
     options = list(translate_concepts = FALSE))
@@ -163,23 +141,16 @@ test_that("a language-2 plan is refused before any assignment on any site", {
   }
 })
 
-test_that("a v1 skip request still uses the coordinator's legacy route everywhere", {
+test_that("a v1 skip request cannot bypass mandatory concept identity support", {
   state <- .legacy_federation(old = "old", new = "new")
-  expect_warning(out <- recipe_execute(.legacy_recipe_b1(), on_small_site = "skip"),
-                 "publication status, on_small_site.*do not apply")
-  expect_identical(out, c(ages = "D_ages"))
-  expect_identical(state$assigns, c(old = 1L, new = 1L))
-  for (s in c("old", "new")) expect_null(as.list(state$sent[[s]])$commit_policy)
-  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
+  expect_error(recipe_execute(.legacy_recipe_b1(), on_small_site = "skip"), "output.concept_labels on: old")
+  expect_identical(state$assigns, c(old = 0L, new = 0L))
 })
 
 test_that("DP preparation follows the same rule", {
   state <- .legacy_federation(old = "old")
-  expect_warning(dp <- ds.omop.dp.prepare(.legacy_recipe_b1()), "legacy call")
-  expect_identical(dp, c(ages = "D_ages"))
-  expect_identical(state$assigns, c(old = 1L))
-  expect_identical(as.character(state$sent$old[[1L]]), "omopDpPlanExecuteDS")
-  expect_null(as.list(state$sent$old)$commit_policy)
+  expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "output.concept_labels on: old")
+  expect_identical(state$assigns, c(old = 0L))
   state <- .legacy_federation(old = "old", new = "new")
   expect_error(ds.omop.dp.prepare(.v2_recipe_b1()), "old lacks omopPlanStatusDS")
   expect_identical(sum(state$assigns), 0L)
@@ -206,8 +177,8 @@ test_that("explain reports the same execution decision", {
   ex <- recipe_explain(.v2_recipe_b1(), conns = list(old = "old", new = "new"))
   expect_match(ex$refusal, "old lacks omopPlanStatusDS")
   ex1 <- recipe_explain(.legacy_recipe_b1(), conns = list(old = "old", new = "new"))
-  expect_null(ex1$refusal)
-  expect_match(paste(ex1$text, collapse = "\n"), "Execution would run the legacy call")
+  expect_match(ex1$refusal, "output.concept_labels on: old")
+  expect_match(paste(ex1$text, collapse = "\n"), "Concept factors require server support")
   expect_identical(sum(state$assigns), 0L)
 })
 
@@ -247,17 +218,10 @@ test_that("DP preflight requires the common factor reconciliation methods", {
   expect_identical(state$assigns, c(first = 0L, last = 0L))
 })
 
-test_that("legacy fallback names every old site exactly once", {
+test_that("the concept support refusal names every unsupported site", {
   state <- .legacy_federation(old = c("old_a", "old_b"), new = "new")
-  warnings <- character(0)
-  withCallingHandlers(recipe_execute(.legacy_recipe_b1()), warning = function(w) {
-    warnings <<- c(warnings, conditionMessage(w))
-    invokeRestart("muffleWarning")
-  })
-  expect_length(warnings, 1L)
-  expect_match(warnings, "^dsOMOP on old_a, old_b predates")
-  expect_identical(state$assigns, c(old_a = 1L, old_b = 1L, new = 1L))
-  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
+  expect_error(recipe_execute(.legacy_recipe_b1()), "output.concept_labels on: old_a, old_b")
+  expect_identical(state$assigns, c(old_a = 0L, old_b = 0L, new = 0L))
 })
 
 test_that("empty publication roots need no unused factor methods", {
@@ -270,4 +234,19 @@ test_that("empty publication roots need no unused factor methods", {
   expect_identical(state$assigns, c(a = 1L))
   expect_false("omopFactorLevelsDS" %in% .called(state))
   expect_true("omopPlanStatusDS" %in% .called(state))
+})
+
+
+test_that("both recipe languages refuse 2.10.5 before any publication", {
+  state <- .legacy_federation(new = "site")
+  session <- dsOMOPClient:::.get_session()
+  session$server_versions <- c(site = "2.10.5")
+  local_mocked_bindings(.get_session = function(...) session, .package = "dsOMOPClient")
+  for (plan in list(recipe_to_plan(.legacy_recipe_b1(), version = 1),
+                    recipe_to_plan(.v2_recipe_b1()))) {
+    expect_error(ds.omop.plan.execute(plan), "2.10.6 or later on: site")
+    expect_identical(state$assigns, c(site = 0L))
+  }
+  ex <- recipe_explain(.legacy_recipe_b1(), conns = list(site = "site"))
+  expect_match(ex$refusal, "2.10.6 or later on: site")
 })

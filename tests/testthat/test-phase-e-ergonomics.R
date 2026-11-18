@@ -32,7 +32,8 @@
 # Register a fake session (with res_symbol + conns) so .get_session resolves.
 .ergo_with_session <- function(symbol = "omop",
                                extra = list()) {
-  base <- list(res_symbol = "dsO_res", conns = list(srv = "FAKE"))
+  base <- list(res_symbol = "dsO_res", conns = list(srv = "FAKE"),
+               capabilities = list(srv = .caps()), server_versions = .current_versions("srv"))
   assign(symbol, modifyList(base, extra),
          envir = dsOMOPClient:::.dsomop_client_env)
   withr::defer_parent(
@@ -378,7 +379,9 @@ test_that("execute uses fresh server names when requested destinations are occup
 test_that("execute rejects a missing composite component after server success", {
   symbol <- "atomic_components"
   conns <- list(a = "A", b = "B")
-  assign(symbol, list(res_symbol = "dsO_res", conns = conns),
+  assign(symbol, list(res_symbol = "dsO_res", conns = conns,
+         capabilities = setNames(lapply(conns, function(x) .caps()), names(conns)),
+         server_versions = .current_versions(names(conns))),
          envir = dsOMOPClient:::.dsomop_client_env)
   on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
           add = TRUE)
@@ -433,7 +436,9 @@ test_that("execute rejects a missing composite component after server success", 
 test_that("multi-server execute strictly harmonizes an unbound plan", {
   symbol <- "automatic_schema_harmonization"
   conns <- list(a = "A", b = "B")
-  assign(symbol, list(res_symbol = "dsO_res", conns = conns),
+  assign(symbol, list(res_symbol = "dsO_res", conns = conns,
+         capabilities = setNames(lapply(conns, function(x) .caps()), names(conns)),
+         server_versions = .current_versions(names(conns))),
          envir = dsOMOPClient:::.dsomop_client_env)
   on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
           add = TRUE)

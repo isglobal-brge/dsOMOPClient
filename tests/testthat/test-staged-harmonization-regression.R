@@ -11,7 +11,8 @@ test_that("staged execution retains translation and revalidates its binding", {
   testthat::local_mocked_bindings(
     .get_session = function(...) {
       list(conns = conns, res_symbol = "dsO_res",
-           capabilities = list(site_a = .caps(), site_b = .caps()))
+           capabilities = list(site_a = .caps(), site_b = .caps()),
+           server_versions = .current_versions(names(conns)))
     },
     .prepare_plan_for_federation = function(plan, ...) {
       captured <<- plan

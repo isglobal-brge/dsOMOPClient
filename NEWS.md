@@ -6,6 +6,10 @@
   `translate_concepts = FALSE` now chooses decimal ID labels in numeric ID
   order: compare labels such as `"4306655"`, not numbers.
   `factor_concepts = TRUE` remains accepted; `factor_concepts = FALSE` is gone.
+  Publishing plan outputs and catalog assignments requires dsOMOP 2.10.6 or
+  later on every retained server: older untranslated and loader contracts
+  cannot prove complete concept-column coverage. Aggregate analyses and
+  explain-only inspection remain available on supported older servers.
 - Observed level discovery follows dsBase 6.3.5 `asFactorDS1`: the site's
   distinct non-declared levels must fit `nfilter.levels.max` and
   `nfilter.levels.density` times its output rows, including missing values.

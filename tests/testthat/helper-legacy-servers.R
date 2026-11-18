@@ -53,10 +53,12 @@
 
 # Every site publishes the current method inventory (the publication
 # protocol): the default for tests that mock the transport themselves.
+.current_versions <- function(sites) stats::setNames(rep("2.10.6", length(sites)), sites)
+
 .current_published_methods <- function(conns, ...) {
   current <- dsOMOPClient:::.DSOMOP_SERVER_METHODS
   stats::setNames(lapply(names(conns), function(s) {
-    list(version = "2.10.3", aggregate = c(current$aggregate, current$optional),
+    list(version = "2.10.6", aggregate = c(current$aggregate, current$optional),
          assign = current$assign)
   }), names(conns))
 }
@@ -88,13 +90,14 @@
     }
     data.frame(server = s, name = nm, type = type, class = "function",
                value = paste0("dsOMOP::", nm), package = "dsOMOP",
-               version = if (s %in% old) m2102$version else "2.10.3",
+               version = if (s %in% old) m2102$version else "2.10.6",
                stringsAsFactors = FALSE)
   }
   log <- function(...) state$calls[[length(state$calls) + 1L]] <- list(...)
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = conns, res_symbol = "resource",
-                                      capabilities = caps, server_names = sites),
+                                      capabilities = caps, server_names = sites,
+      server_versions = stats::setNames(ifelse(sites %in% old, "2.10.2", "2.10.6"), sites)),
     .prepare_plan_for_federation = function(plan, ...) plan,
     .session_harmonization_for_connections = function(...) NULL,
     .record_session_outputs = function(...) invisible(NULL),

@@ -226,7 +226,7 @@ test_that("server.version separates old installs from stale profiles and reports
                                             stale = list(version = "2.10.3"),
                                             new = list(version = "2.10.3")),
     ds.omop.client.version = function() "2.10.3",
-    .get_session = function(...) list(conns = list(new = "N"), capabilities = list(new = .caps())),
+    .get_session = function(...) list(conns = list(new = "N"), capabilities = list(new = .caps()), server_versions = .current_versions("new")),
     .package = "dsOMOPClient")
   got <- ds.omop.server.version(list(old = "O", stale = "S", new = "N"))
   expect_identical(got$ready, c(FALSE, FALSE, TRUE))

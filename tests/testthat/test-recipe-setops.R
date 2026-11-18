@@ -230,7 +230,9 @@ test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
 # A fake session so .get_session() resolves and conns is non-NULL.
 .with_fake_session <- function(symbol = "omop") {
   assign(symbol, structure(list(conns = list(srv = "FAKE"),
-                                res_symbol = "dsO_fake"),
+                                res_symbol = "dsO_fake",
+                                capabilities = list(srv = .caps()),
+                                server_versions = .current_versions("srv")),
                            class = "omop_session"),
          envir = dsOMOPClient:::.dsomop_client_env)
   withr::defer_parent(

@@ -27,7 +27,8 @@
   # protocol); helper-legacy-servers.R covers dsOMOP 2.10.2 sites.
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = conns, res_symbol = "resource",
-      capabilities = setNames(lapply(sites, function(s) .caps()), sites)),
+      capabilities = setNames(lapply(sites, function(s) .caps()), sites),
+      server_versions = .current_versions(sites)),
     .prepare_plan_for_federation = function(plan, ...) plan,
     .session_harmonization_for_connections = function(...) NULL,
     .record_session_outputs = function(...) invisible(NULL),

@@ -12,7 +12,7 @@
   # test-v2-protocol.R covers dsOMOP 2.10.2 sites.
   .mock_current_methods(env = parent.frame())
   assign(symbol, structure(list(conns = conns, res_symbol = "dsO_fake", capabilities = caps,
-                                server_names = names(caps)),
+                                server_names = names(caps), server_versions = .current_versions(names(caps))),
                            class = "omop_session"),
          envir = dsOMOPClient:::.dsomop_client_env)
   withr::defer_parent(

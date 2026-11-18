@@ -148,8 +148,10 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     # factor harmonisation. A plan publishing nothing calls no factor method.
     if (is.null(refusal)) {
       harmonizes <- !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
-      route <- tryCatch(.plan_protocol_route(conns, harmonizes = harmonizes),
-                        error = function(e) e)
+      route <- tryCatch({
+        if (harmonizes) .conceptAssertSupport(session, names(conns))
+        .plan_protocol_route(conns, harmonizes = harmonizes)
+      }, error = function(e) e)
       if (inherits(route, "error")) {
         refusal <- conditionMessage(route)
       } else if (!route$protocol) {

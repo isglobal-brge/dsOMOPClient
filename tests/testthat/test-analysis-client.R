@@ -535,8 +535,9 @@ test_that("ds.omop.analysis.run(plot=TRUE) on an entry with no recipe keeps the 
   )
   list(
     conns = conns, res_symbol = "dsO.fake", outputs = outputs,
+    server_versions = .current_versions(names(conns)),
     capabilities = stats::setNames(
-      rep(list(list(disclosure = disclosure)), length(conns)), names(conns)
+      rep(list(modifyList(.caps(), list(disclosure = disclosure))), length(conns)), names(conns)
     )
   )
 }
@@ -864,4 +865,21 @@ test_that("ds.omop.meta.effect_estimate strict fails closed if a site suppressed
     expect_null(res$pooled)
     expect_true(any(grepl("Strict pooling failed", res$meta$warnings)))
   })
+})
+
+
+test_that("catalog assignments require complete concept support from 2.10.6", {
+  conns <- list(site = "S")
+  session <- .acat_test_session(conns)
+  session$server_versions <- c(site = "2.10.5")
+  local_mocked_bindings(.get_session = function(...) session, .package = "dsOMOPClient")
+  assigned <- FALSE
+  local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      list(site = list(name = "dsomop:loader", mode = "assign"))
+    },
+    datashield.assign.expr = function(...) { assigned <<- TRUE },
+    .package = "DSI")
+  expect_error(ds.omop.analysis.run("dsomop:loader"), "2.10.6 or later on: site")
+  expect_false(assigned)
 })

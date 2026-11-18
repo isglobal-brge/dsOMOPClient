@@ -1910,15 +1910,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     }, logical(1))
     if (!all(capable)) stop("Imported definitions require vocabulary.ohdsi_import_validity; upgrade the paired server before execution.", call. = FALSE)
   }
-  # B1: which protocol every participating site supports, before anything is
-  # assigned. The publication protocol needs it on every site; otherwise a v2
-  # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
+  # Check complete concept identity support before any assignment, then
+  # negotiate the publication transport with every participating site.
   harmonizes <- !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
-  if (harmonizes && !v2 && !isFALSE(plan$options$translate_concepts)) {
-    language <- .v2_server_language(session, names(conns))
-    missing <- names(conns)[!vapply(language, function(x) "output.concept_labels" %in% x$operations, logical(1))]
-    if (length(missing)) stop("Concept presentation requires output.concept_labels on: ", paste(missing, collapse = ", "), call. = FALSE)
-  }
+  if (harmonizes) .conceptAssertSupport(session, names(conns))
   route <- .plan_protocol_route(conns, server_method, harmonizes)
   if (!route$protocol) {
     if (v2) {

@@ -47,7 +47,8 @@ test_that("DP status validates and prints exclusivity with legacy compatibility"
 test_that("memory execution never requests DP status and keeps factors", {
   conns <- list(a = "A", b = "B")
   session <- list(res_symbol = "resource", conns = conns,
-                  capabilities = list(a = .caps(), b = .caps()))
+                  capabilities = list(a = .caps(), b = .caps()),
+                  server_versions = .current_versions(names(conns)))
   prepared <- NULL
   harmonized <- FALSE
   assigned <- character(0)

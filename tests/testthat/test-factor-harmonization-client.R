@@ -293,3 +293,18 @@ test_that("factor transport preserves absent numeric metadata fields", {
   decoded <- .decode_ds(.ds_encode(spec))
   expect_identical(decoded$numbers, spec$numbers)
 })
+
+
+test_that("publication needs a supported server version and concept identities", {
+  session <- list(capabilities = list(site = .caps()), server_versions = c(site = "2.10.6"))
+  expect_silent(.conceptAssertSupport(session, "site"))
+  session$server_versions <- c(site = "2.11.0")
+  expect_silent(.conceptAssertSupport(session, "site"))
+  for (version in list(NULL, NA_character_, "unknown", "2.10.5")) {
+    session$server_versions <- if (is.null(version)) character() else c(site = version)
+    expect_error(.conceptAssertSupport(session, "site"), "2.10.6 or later on: site.*always categories")
+  }
+  session <- list(capabilities = list(site = .caps(ops = character())),
+                  server_versions = c(site = "2.10.6"))
+  expect_error(.conceptAssertSupport(session, "site"), "Concept factors require server support.*site")
+})
