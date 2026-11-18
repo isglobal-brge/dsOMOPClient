@@ -39,6 +39,9 @@
   the codes with enough persons even when a concept column has more than
   `nfilter.levels.max` distinct codes; rare codes stay hidden, and date columns
   keep their level gate.
+- A refused publication whose reason is `concept_level_rule` explains the
+  remedies: declare the concepts with a concept set, group them, or ask that
+  server's administrator to raise the limits.
 - Plan executions and catalog assignments declare `concept_protocol = 1`: this
   client reconciles every published concept factor. dsOMOP 2.10.6 servers
   refuse untranslated legacy plans and concept-bearing catalog assignments from
