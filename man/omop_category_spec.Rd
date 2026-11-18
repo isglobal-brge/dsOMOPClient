@@ -60,7 +60,10 @@ omop_category_missing(
 omop_category_binary(as = "integer", labels = c("no", "yes"))
 }
 \arguments{
-\item{levels}{Complete declared category keys, including unused categories.}
+\item{levels}{Complete declared category keys, including unused categories.
+For a concept column, \code{\link{omop_concept_levels}()} builds them from
+the public vocabulary; declared levels need no discovery, so no
+factor-level limit applies to them.}
 
 \item{order}{An order declaration.}
 

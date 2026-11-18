@@ -5,6 +5,9 @@
 #' defaults. Nested declarations are replaced atomically. Values remain on
 #' the server and existing metadata and publication policies still apply.
 #' @param levels Complete declared category keys, including unused categories.
+#'   For a concept column, \code{\link{omop_concept_levels}()} builds them from
+#'   the public vocabulary; declared levels need no discovery, so no
+#'   factor-level limit applies to them.
 #' @param order An order declaration.
 #' @param ordered Whether the resulting factor is ordered.
 #' @param reference Treatment reference key; independent of display order.
