@@ -47,7 +47,8 @@
       max_levels_of_separation = c(0L, rep(1L, length(.cvl_causes)), rep(0L, length(.cvl_causes)))), append = TRUE)
     DBI::dbDisconnect(conn)
     resource <- resourcer::newResource(name = "cvl", url = paste0("omop+dbi:sqlite://", db), format = "omop.dbi.db")
-    config <- DSLite::defaultDSConfiguration(include = "dsOMOP")
+    # dsBase too when installed, for the tables and summaries of the copies.
+    config <- DSLite::defaultDSConfiguration(include = c(if (requireNamespace("dsBase", quietly = TRUE)) "dsBase", "dsOMOP"))
     config$Options[["nfilter.tab"]] <- "3"; config$Options[["nfilter.subset"]] <- "3"
     config$Options[["nfilter.levels.max"]] <- levels_max; config$Options[["nfilter.levels.density"]] <- "0.33"
     # DSLite sessions set options for the whole R process: always set it.

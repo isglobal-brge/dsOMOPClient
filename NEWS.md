@@ -1,3 +1,23 @@
+# dsOMOPClient 2.10.9 (development)
+
+- `ds.omop.table()` returns `ds.table()`'s object: per-site and combined counts
+  and proportions, the validity message and, with `report.chisq.tests`, the
+  tests, with the exact published labels and the declared categories that no
+  site has. New arguments `by` (two-way tables), `useNA`,
+  `report.chisq.tests` and `small = "missing"`. The pooled counts it returned
+  before are `$output.list$TABLES.COMBINED_all.sources_counts`; printing shows
+  the combined and per-site tables.
+- `ds.omop.drop_small_categories()`: a copy where categories held by fewer than
+  `nfilter.tab` people at a site are missing (with secondary suppression), then
+  without levels no site uses, so `ds.summary()` and `ds.table()` work on it.
+  Use it for descriptive tables; group rare categories for models.
+- Published factor labels work in every dsBase function on Opal by default
+  (for example `Acute_myocardial_infarction`, `Neumonia`): spaces, accents and
+  punctuation that Opal's parser or `ds.table()` reject are replaced, the same
+  at every site, when every server runs dsOMOP 2.10.9. The codebook keeps the
+  exact names (`names`); `options(dsomop.label_style = "names")` keeps exact
+  names in the published labels.
+
 # dsOMOPClient 2.10.8 (2026-11-19)
 
 - With dsOMOP 2.10.8 servers, automatic vocabulary lists are adaptive: each
