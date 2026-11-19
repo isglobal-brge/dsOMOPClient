@@ -39,7 +39,7 @@ is a coded meaning, such as a diagnosis. Its vocabulary supplies a name.
 
 
 ``` r
-tables <- ds.omop.tables(conns = conns)$site
+tables <- ds.omop.tables(datasources = conns)$site
 tables[tables$table_name %in% c("person", "visit_occurrence",
   "condition_occurrence", "drug_exposure", "measurement", "observation", "death"),
   c("table_name", "has_person_id")]
@@ -85,20 +85,23 @@ object behind it. Later, a recipe will create a private analysis table such as
 
 
 ``` r
-ds.omop.table.stats("person", conns = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $rows
 #> [1] 2690
-#>
+#> 
 #> $persons
 #> [1] 2690
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 `2690` is the lower end of a five-person band: 2690–2694 people. This endpoint
@@ -124,20 +127,23 @@ contribute more than one visit?
 
 
 ``` r
-ds.omop.table.stats("visit_occurrence", conns = conns)
+ds.omop.table.stats("visit_occurrence", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $rows
 #> [1] 1035
-#>
+#> 
 #> $persons
 #> [1] 890
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 There are 1,035–1,039 visit rows from 890–894 people. Even allowing for banding,
@@ -156,14 +162,15 @@ that nobody died?
 <!-- expected-refusal:start -->
 
 ``` r
-ds.omop.table.stats("death", conns = conns)
+ds.omop.table.stats("death", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> Not pooled: No complete disclosure-safe pooled table statistics were available.
+#> 
 #> $site
 #> list()
 ```

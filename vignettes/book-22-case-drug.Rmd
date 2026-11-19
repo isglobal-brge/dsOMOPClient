@@ -51,7 +51,7 @@ conns <- ds.omop.login("https://localhost:8443", user = "administrator",
 
 
 ``` r
-classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, conns = conns)$pooled
+classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, datasources = conns)$pooled
 classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 ```
 
@@ -64,7 +64,7 @@ classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 
 ``` r
 class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
-children <- ds.omop.concept.descendants(class_id, conns = conns)$pooled
+children <- ds.omop.concept.descendants(class_id, datasources = conns)$pooled
 children[c("concept_id", "concept_name")]
 ```
 
@@ -75,14 +75,14 @@ children[c("concept_id", "concept_name")]
 |     950001|Questionnaire study medicine |
 
 ``` r
-ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled
+ds.omop.concept.prevalence("drug_exposure", type = "both", datasources = conns)$pooled
 ```
 
 
 
-| concept_id| n_persons|concept_name                 |
-|----------:|---------:|:----------------------------|
-|     950001|        35|Questionnaire study medicine |
+| concept_id|concept_name                 | n_persons| n_records|
+|----------:|:----------------------------|---------:|---------:|
+|     950001|Questionnaire study medicine |        35|        80|
 
 ``` r
 class_set <- omop_concept_set(class_id, descendants = TRUE)
@@ -114,8 +114,8 @@ persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days"
 study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
   baseline = list(covered = covered, persistence = persistence,
     discontinued = omop_number_flag(persistence, "lt", 365)))
-recipe_execute(study, out = c(baseline = "D_supply"), conns = conns)
-ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns)
+recipe_execute(study, out = c(baseline = "D_supply"), datasources = conns)
+ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", datasources = conns)
 dsBaseClient::ds.summary("D_use$pdc", datasources = conns)
 ```
 
@@ -123,12 +123,12 @@ dsBaseClient::ds.summary("D_use$pdc", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 36
-#>
+#> 
 #> $site$`quantiles & mean`
-#>        5%       10%       25%       50%       75%       90%       95%      Mean
+#>        5%       10%       25%       50%       75%       90%       95%      Mean 
 #> 0.1643836 0.1643836 0.1643836 0.3287671 1.0000000 1.0000000 1.0000000 0.4977169
 ```
 
@@ -145,7 +145,7 @@ dsBaseClient::ds.table("D_use$covered",
 
 ```
 #> D_use$covered
-#>  60 120 365  NA
+#>  60 120 365  NA 
 #>  12  12  12   0
 ```
 
@@ -168,7 +168,7 @@ dsBaseClient::ds.table("D_use$persistence",
 
 ```
 #> D_use$persistence
-#>  30 120 365  NA
+#>  30 120 365  NA 
 #>  12  12  12   0
 ```
 
@@ -192,7 +192,7 @@ dsBaseClient::ds.table("D_use$discontinued",
 
 ```
 #> D_use$discontinued
-#>  0  1 NA
+#>  0  1 NA 
 #> 12 24  0
 ```
 
@@ -209,15 +209,15 @@ GiBleed has no ATC hierarchy, but [chapter 20](book-20-case-gibleed.html#find-th
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.gibleed", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.gibleed", datasources = conns)
 ```
 
 
 
 
 ``` r
-hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", conns = conns)$pooled
+hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", datasources = conns)$pooled
 hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -243,7 +243,7 @@ feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
   outputs = "baseline", require = list(followup = 364), baseline = list(
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
-recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns)
+recipe_execute(feasibility, out = c(baseline = "D_feasibility"), datasources = conns)
 dsBaseClient::ds.summary("D_feasibility$covered", datasources = conns)
 ```
 
@@ -251,12 +251,12 @@ dsBaseClient::ds.summary("D_feasibility$covered", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "integer"
-#>
+#> 
 #> $site$length
 #> [1] 1745
-#>
+#> 
 #> $site$`quantiles & mean`
-#>   5%  10%  25%  50%  75%  90%  95% Mean
+#>   5%  10%  25%  50%  75%  90%  95% Mean 
 #>    1    1    1    1    1    1    1    1
 ```
 

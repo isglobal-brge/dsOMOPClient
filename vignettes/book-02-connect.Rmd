@@ -55,20 +55,23 @@ Under `site`, `omop` is the private handle that `ds.omop.login()` created. Later
 
 
 ``` r
-ds.omop.table.stats("person", symbol = "omop", conns = conns)
+ds.omop.table.stats("person", symbol = "omop", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $rows
 #> [1] 2690
-#>
+#> 
 #> $persons
 #> [1] 2690
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 The request goes to GiBleed through `omop`: its person count is in the
@@ -83,22 +86,25 @@ Release the attached resource, then attach another one through the same login:
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $rows
 #> [1] 25
-#>
+#> 
 #> $persons
 #> [1] 25
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 The person band is now 25–29, containing Synthea27Nj's 28 people. The handle is
@@ -107,22 +113,25 @@ the two populations.
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.gibleed", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.gibleed", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $rows
 #> [1] 2690
-#>
+#> 
 #> $persons
 #> [1] 2690
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 The 2,690–2,694 band confirms that GiBleed is attached again. Choosing the
@@ -137,7 +146,7 @@ names and count people through each. Does attaching `labs` combine them?
 
 
 ``` r
-ds.omop.connect(resource = "omop.synthea", symbol = "labs", conns = conns)
+ds.omop.connect(resource = "omop.synthea", symbol = "labs", datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
@@ -150,35 +159,41 @@ DSI::datashield.symbols(conns)
 
 
 ``` r
-ds.omop.table.stats("person", stats = "persons", symbol = "omop", conns = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "omop", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $persons
 #> [1] 2690
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 ``` r
-ds.omop.table.stats("person", stats = "persons", symbol = "labs", conns = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "labs", datasources = conns)
 ```
 
 ```
 #> <dsomop_result>
 #> Servers: site
-#> Scope: per_site
-#>
+#> Type: both (per-server and pooled results)
+#> 
 #> $site
 #> $persons
 #> [1] 25
+#> 
+#> 
+#> $pooled: the same as $site (one server)
 ```
 
 ``` r
-ds.omop.disconnect(symbol = "labs", conns = conns)
+ds.omop.disconnect(symbol = "labs", datasources = conns)
 ```
 
 `omop` gives 2690 and `labs` gives 25. Each is a separate protected count; the
@@ -196,12 +211,11 @@ name or the handle name?
 <!-- expected-refusal:start -->
 
 ``` r
-ds.omop.table.stats("person", symbol = "missing_handle", conns = conns)
+ds.omop.table.stats("person", symbol = "missing_handle", datasources = conns)
 ```
 
 ```
-#> Error:
-#> ! No OMOP session 'missing_handle'. Call ds.omop.connect() first.
+#> Error: No OMOP session 'missing_handle'. Call ds.omop.connect() first.
 ```
 <!-- expected-refusal:end -->
 
@@ -215,7 +229,7 @@ you intend to query.
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 ```
 

@@ -97,14 +97,14 @@ before. Age is completed age at the first visit.
 
 
 ``` r
-wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns)
+wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_wide", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_wide in site`
 #> [1] 28  6
-#>
+#> 
 #> $`dimensions of D_fmt_wide in combined studies`
 #> [1] 28  6
 ```
@@ -122,14 +122,14 @@ long <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns)
+recipe_execute(long, out = c(long = "D_fmt_long"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_long", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_long in site`
 #> [1] 1735    9
-#>
+#> 
 #> $`dimensions of D_fmt_long in combined studies`
 #> [1] 1735    9
 ```
@@ -145,7 +145,7 @@ dsBaseClient::ds.table("D_fmt_long$concept_id",
 
 ```
 #> D_fmt_long$concept_id
-#>  Inpatient Visit Outpatient Visit
+#>  Inpatient_Visit Outpatient_Visit 
 #>               13             1722
 ```
 
@@ -162,14 +162,14 @@ Use the features preset when a downstream analysis expects a feature table. Nati
 features <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("features", rows = "visitors", type = "features"))
-recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns)
+recipe_execute(features, out = c(features = "D_fmt_features"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_features", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_features in site`
 #> [1] 28  6
-#>
+#> 
 #> $`dimensions of D_fmt_features in combined studies`
 #> [1] 28  6
 ```
@@ -190,14 +190,14 @@ baseline_variables <- list(
 baseline <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = baseline_variables,
   outputs = omop_output("baseline", rows = "visitors", type = "baseline"))
-recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns)
+recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_baseline", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_baseline in site`
 #> [1] 28  6
-#>
+#> 
 #> $`dimensions of D_fmt_baseline in combined studies`
 #> [1] 28  6
 ```
@@ -218,14 +218,14 @@ panel <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns)
+recipe_execute(panel, out = c(panel = "D_fmt_panel"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_panel", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_panel in site`
 #> [1] 84  8
-#>
+#> 
 #> $`dimensions of D_fmt_panel in combined studies`
 #> [1] 84  8
 ```
@@ -243,12 +243,12 @@ dsBaseClient::ds.summary("D_fmt_panel$visits_outpatient_visit_count",
 #> $site
 #> $site$class
 #> [1] "integer"
-#>
+#> 
 #> $site$length
 #> [1] 84
-#>
+#> 
 #> $site$`quantiles & mean`
-#>        5%       10%       25%       50%       75%       90%       95%      Mean
+#>        5%       10%       25%       50%       75%       90%       95%      Mean 
 #> 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 1.0000000 1.0000000 0.1904762
 ```
 
@@ -268,16 +268,16 @@ temporal <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
-temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns)
+temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
 ```
 #> $site
-#> [1] "D_fmt_baseline"              "D_fmt_features"
-#> [3] "D_fmt_long"                  "D_fmt_panel"
+#> [1] "D_fmt_baseline"              "D_fmt_features"             
+#> [3] "D_fmt_long"                  "D_fmt_panel"                
 #> [5] "D_fmt_temporal"              "D_fmt_temporal.covariateRef"
-#> [7] "D_fmt_temporal.timeRef"      "D_fmt_wide"
+#> [7] "D_fmt_temporal.timeRef"      "D_fmt_wide"                 
 #> [9] "omop"
 ```
 
@@ -288,7 +288,7 @@ dsBaseClient::ds.dim("D_fmt_temporal", datasources = conns)
 ```
 #> $`dimensions of D_fmt_temporal in site`
 #> [1] 36  6
-#>
+#> 
 #> $`dimensions of D_fmt_temporal in combined studies`
 #> [1] 36  6
 ```
@@ -309,14 +309,14 @@ survival <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns)
+recipe_execute(survival, out = c(survival = "D_fmt_survival"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_survival", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_survival in site`
 #> [1] 28  8
-#>
+#> 
 #> $`dimensions of D_fmt_survival in combined studies`
 #> [1] 28  8
 ```
@@ -332,7 +332,7 @@ survival_result$output.list$TABLES.COMBINED_all.sources_counts
 
 ```
 #> D_fmt_survival$event
-#>  0  1
+#>  0  1 
 #> 21  7
 ```
 
@@ -348,12 +348,12 @@ dsBaseClient::ds.summary("D_fmt_survival$follow_up_days", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "integer"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>        5%       10%       25%       50%       75%       90%       95%      Mean
+#>        5%       10%       25%       50%       75%       90%       95%      Mean 
 #>   993.350  1913.500  3821.250  7462.000 14257.500 18489.000 21647.200  9291.571
 ```
 
@@ -372,14 +372,14 @@ intervals <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("intervals", rows = "visitors", format = "intervals",
   options = list(sources = list(spans), window = omop_window(0, NULL))))
-recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns)
+recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_intervals", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_intervals in site`
 #> [1] 1735    7
-#>
+#> 
 #> $`dimensions of D_fmt_intervals in combined studies`
 #> [1] 1735    7
 ```
@@ -397,18 +397,18 @@ sparse <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
-sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns)
+sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
 ```
 #> $site
-#>  [1] "D_fmt_baseline"              "D_fmt_features"
-#>  [3] "D_fmt_intervals"             "D_fmt_long"
-#>  [5] "D_fmt_panel"                 "D_fmt_sparse"
-#>  [7] "D_fmt_sparse.covariateRef"   "D_fmt_survival"
+#>  [1] "D_fmt_baseline"              "D_fmt_features"             
+#>  [3] "D_fmt_intervals"             "D_fmt_long"                 
+#>  [5] "D_fmt_panel"                 "D_fmt_sparse"               
+#>  [7] "D_fmt_sparse.covariateRef"   "D_fmt_survival"             
 #>  [9] "D_fmt_temporal"              "D_fmt_temporal.covariateRef"
-#> [11] "D_fmt_temporal.timeRef"      "D_fmt_wide"
+#> [11] "D_fmt_temporal.timeRef"      "D_fmt_wide"                 
 #> [13] "omop"
 ```
 
@@ -419,7 +419,7 @@ dsBaseClient::ds.dim("D_fmt_sparse", datasources = conns)
 ```
 #> $`dimensions of D_fmt_sparse in site`
 #> [1] 70  5
-#>
+#> 
 #> $`dimensions of D_fmt_sparse in combined studies`
 #> [1] 70  5
 ```
@@ -437,14 +437,14 @@ Use membership to keep entry/end dates and keys for every episode independently 
 membership <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("membership", rows = "visitors", format = "membership"))
-recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns)
+recipe_execute(membership, out = c(membership = "D_fmt_membership"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_membership", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_membership in site`
 #> [1] 28  6
-#>
+#> 
 #> $`dimensions of D_fmt_membership in combined studies`
 #> [1] 28  6
 ```
@@ -463,14 +463,14 @@ dictionary <- omop_recipe(events = list(visits), populations = list(visitors),
   counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
     options = list(source_outputs = "counts"))), publish = "dictionary")
-recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns)
+recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_dictionary", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_dictionary in site`
 #> [1] 2 6
-#>
+#> 
 #> $`dimensions of D_fmt_dictionary in combined studies`
 #> [1] 2 6
 ```
@@ -500,14 +500,14 @@ intermediate steps and do not each need a separately published symbol.
 
 
 ``` r
-joined_result <- recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns)
+joined_result <- recipe_execute(joined, out = c(joined = "D_fmt_joined"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_joined", datasources = conns)
 ```
 
 ```
 #> $`dimensions of D_fmt_joined in site`
 #> [1] 28  5
-#>
+#> 
 #> $`dimensions of D_fmt_joined in combined studies`
 #> [1] 28  5
 ```
@@ -582,12 +582,12 @@ dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "integer"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>        5%       10%       25%       50%       75%       90%       95%      Mean
+#>        5%       10%       25%       50%       75%       90%       95%      Mean 
 #>  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429
 ```
 
@@ -612,12 +612,12 @@ dsBaseClient::ds.summary("D_fmt_wide$hemoglobin", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679
 ```
 

@@ -139,7 +139,7 @@ This differs from R's `all(logical(0))`, which is TRUE.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns)
+recipe_execute(reducers, out = c(people = "D_reducers"), datasources = conns)
 ```
 
 The columns are now in `D_reducers` on the server. Request one approved
@@ -154,12 +154,12 @@ dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 ```
 
@@ -184,12 +184,12 @@ dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 12.34000 12.74000 13.60000 15.00000 16.25000 16.83000 17.03000 14.89286
 ```
 
@@ -205,12 +205,12 @@ dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "integer"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 ```
 
@@ -240,7 +240,7 @@ ever_result$output.list$TABLES.COMBINED_all.sources_counts
 
 ```
 #> D_reducers$ever
-#>  1
+#>  1 
 #> 28
 ```
 
@@ -255,7 +255,7 @@ any_result$output.list$TABLES.COMBINED_all.sources_counts
 
 ```
 #> D_reducers$any_high
-#>  0  1 NA
+#>  0  1 NA 
 #>  9 19  0
 ```
 
@@ -271,7 +271,7 @@ all_result$output.list$TABLES.COMBINED_all.sources_counts
 
 ```
 #> D_reducers$all_high
-#>  0  1 NA
+#>  0  1 NA 
 #> 24  4  0
 ```
 
@@ -289,12 +289,12 @@ dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679
 ```
 
@@ -307,7 +307,7 @@ rows instead would give more weight to people measured more often.
 ``` r
 recent <- omop_recipe(variables = list(last = omop_variable(event = measure,
   reducer = omop_reduce("last_value", window = lookback))))
-recipe_execute(recent, out = "D_recent", conns = conns)
+recipe_execute(recent, out = "D_recent", datasources = conns)
 recent_mean <- dsBaseClient::ds.mean("D_recent$last", type = "combine", datasources = conns)
 recent_missing <- dsBaseClient::ds.numNA("D_recent$last", datasources = conns)
 data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
@@ -336,7 +336,7 @@ means closest within a chosen tolerance; it need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns)
+recipe_execute(at_index, out = c(baseline = "D_at_index"), datasources = conns)
 ```
 
 The tolerance excludes later measurements. The shortcut uses `closest_value`;
@@ -351,12 +351,12 @@ dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 ```
 
@@ -375,7 +375,7 @@ names for the input and target units:
 
 
 ``` r
-units <- ds.omop.concept.lookup(c(8713L, 8636L), conns = conns)
+units <- ds.omop.concept.lookup(c(8713L, 8636L), datasources = conns)
 units$pooled[c("concept_id", "concept_name")]
 ```
 
@@ -404,7 +404,7 @@ ranges. Use the same target and conversion map across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(converted, out = c(people = "D_converted"), conns = conns)
+recipe_execute(converted, out = c(people = "D_converted"), datasources = conns)
 ```
 
 
@@ -416,12 +416,12 @@ dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 129.0500 131.4667 137.8500 143.2500 153.3542 157.0000 159.2375 144.6679
 ```
 
@@ -442,7 +442,7 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns)
+recipe_execute(binned, out = c(output = "D_lab_bins"), datasources = conns)
 ```
 
 The band is an ordered factor directly on the server. Its order matters for
@@ -456,7 +456,7 @@ bins_result$output.list$TABLES.COMBINED_all.sources_counts
 
 ```
 #> D_lab_bins$band
-#>       below 14 14 to below 15    15 or above             NA
+#>       below_14 14_to_below_15    15_or_above             NA 
 #>              9              9             10              0
 ```
 
@@ -474,7 +474,7 @@ dsBaseClient::ds.table("D_lab_bins$high",
 
 ```
 #> D_lab_bins$high
-#>  0  1
+#>  0  1 
 #> 18 10
 ```
 
@@ -498,7 +498,7 @@ with the measurement-day summary above.
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns)
+recipe_execute(row_count, out = c(people = "D_row_count"), datasources = conns)
 dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
 ```
 
@@ -506,12 +506,12 @@ dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "integer"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>       5%      10%      25%      50%      75%      90%      95%     Mean 
 #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 ```
 
@@ -531,7 +531,7 @@ for people with at least two readings. Is this the same quantity as a slope?
 
 ``` r
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns)
+recipe_execute(change_recipe, out = c(output = "D_event_change"), datasources = conns)
 dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
 ```
 
@@ -539,12 +539,12 @@ dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
 #> $site
 #> $site$class
 #> [1] "numeric"
-#>
+#> 
 #> $site$length
 #> [1] 28
-#>
+#> 
 #> $site$`quantiles & mean`
-#>     5%    10%    25%    50%    75%    90%    95%   Mean
+#>     5%    10%    25%    50%    75%    90%    95%   Mean 
 #> -2.940 -2.580 -1.400  1.600  2.400  3.200  3.760  1.016
 ```
 
