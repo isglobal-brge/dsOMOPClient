@@ -1,6 +1,6 @@
 # Changelog
 
-## dsOMOPClient 2.10.8
+## dsOMOPClient 2.10.9
 
 Use matching dsOMOP and dsOMOPClient packages for the study examples in
 this book. Publish the installed server methods and options in the
@@ -16,6 +16,19 @@ the servers declare a public list that holds them, climbing the
 vocabulary’s hierarchy only as far as needed; dates by month or week
 declare every period of their observed years. Before a pooled model,
 `ds.omop.drop_empty_levels()` drops levels that no site uses.
+
+Tables work as in dsBase: `ds.omop.table()` returns `ds.table()`’s
+object, per site and combined, also for two-way tables (`by =`).
+Published labels keep only letters, digits, `.`, `_`, `-` and `+`, so
+that every dsBase function can carry them on Opal; the codebook keeps
+the exact names. Categories held by fewer than `nfilter.tab` people at a
+site can be made missing for descriptive tables
+(`ds.omop.drop_small_categories()`, `recipe_execute(small_categories =
+"missing")`, `ds.omop.table(small = "missing")`); see [What stays
+private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.html#tables-when-some-categories-have-very-few-people).
+Calls follow dsBaseClient’s conventions: `datasources =` for the
+connections, and `type = "split"`, `"combine"` or `"both"` for per-site
+and pooled results.
 
 The package also provides numeric units, rounding, bins, thresholds,
 transformations, change over time and clinical formulas. Categories
