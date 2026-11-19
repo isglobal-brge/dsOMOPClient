@@ -39,7 +39,7 @@ test_that("a vocabulary list longer than the server option stays refused and say
   }, error = identity)
   expect_s3_class(error, "error")
   message <- conditionMessage(error)
-  for (part in c("site1", "dsomop.auto_declared_levels_max", "longer than the server declares automatically",
+  for (part in c("site1", "dsomop.auto_declared_levels_max", "is longer than the server declares automatically",
                  "omop_concept_levels()", "omop_category_rollup()", "administrator"))
     expect_match(message, part, fixed = TRUE)
   expect_false(grepl("site2|site3", message))
@@ -98,4 +98,32 @@ test_that("year factors over more years than the rule admits declare their decad
   recipe_execute(recipe, out = c(study = "Years"), symbol = "cvl", conns = ctx$conns)
   levels <- .cvl_shared(ctx, "Years", "died")
   expect_identical(levels, as.character(1930:2029))
+})
+
+test_that("intermediate presentations keep their levels: category reducers are unchanged", {
+  # One site: each person's first answer is one of 5; later rows hold 60 rare
+  # answers. The reducer's stream is not a publication.
+  levels_with <- function(auto) {
+    ctx <- .cvl_setup(deaths = list(rep(910001:910008, each = 5L)), auto_max = auto)
+    for (path in ctx$paths) {
+      con <- DBI::dbConnect(RSQLite::SQLite(), path)
+      DBI::dbExecute(con, "DELETE FROM observation")
+      rows <- expand.grid(position = 1:3, person_id = 1:40)
+      rows$observation_id <- seq_len(nrow(rows)); rows$observation_concept_id <- 0L
+      rows$observation_date <- as.character(as.Date("2020-01-01") + rows$position)
+      rows$observation_type_concept_id <- 0L
+      rows$value_as_concept_id <- ifelse(rows$position == 1L, 910001L + (rows$person_id %% 5L), NA)
+      rows$value_as_concept_id[rows$position > 1L] <- rep_len(910101:910160, 80)
+      rows$position <- NULL
+      DBI::dbWriteTable(con, "observation", rows, append = TRUE); DBI::dbDisconnect(con)
+    }
+    recipe <- omop_recipe(variables = list(x = omop_category_reduce(
+        omop_category_rows(omop_event("observation"), "value_as_concept_id"), omop_reduce("first_value"))),
+      outputs = omop_output(name = "study", type = "wide"), options = list(translate_concepts = FALSE))
+    recipe_execute(recipe, out = c(study = "R"), symbol = "cvl", conns = ctx$conns)
+    levels(.cvl_frames(ctx, "R")[[1L]]$x)
+  }
+  off <- levels_with("0")
+  expect_length(off, 5L)
+  expect_identical(levels_with("1000"), off)
 })

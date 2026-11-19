@@ -25,8 +25,8 @@
              if (long) "dsomop.auto_declared_levels_max")
   if (length(refused)) stop("Concept factor publication refused: ",
     paste(refused, collapse = "; "), ". ",
-    if (long) paste0("The public vocabulary list that holds these values is longer than the server declares ",
-      "automatically (dsomop.auto_declared_levels_max). ") else "",
+    if (long) paste0("The public list that holds these values (vocabulary concepts or calendar periods) is longer ",
+      "than the server declares automatically (dsomop.auto_declared_levels_max). ") else "",
     "Declare the levels (omop_category_spec(levels = ), for example from omop_concept_levels()), ",
     "group them with omop_category_recode() / omop_category_rollup(), or narrow the events with concepts =",
     if (length(admin)) paste0("; otherwise the server's administrator can raise ", paste(admin, collapse = " or ")) else "",
@@ -80,9 +80,11 @@
       if (any(vapply(calendars, is.null, logical(1))) || length(unique(vapply(calendars, .jcsCanonical, ""))) != 1L) .dateReject("Calendar/policy mismatch across retained sites.")
       resolved <- .dateResolveRecords(records, calendars[[1L]])
     } else resolved <- .conceptResolve(records)
+    # Vocabulary names by identity, gathered once for every decision.
+    named <- Filter(function(x) !is.null(x$name), records)
+    names_by_id <- split(vapply(named, function(x) x$name, ""), vapply(named, function(x) x$id, ""))
     for (decision in resolved$decisions) {
-      candidates <- sort(unique(vapply(Filter(function(x) identical(x$id,decision$id) && !is.null(x$name), records),
-        function(x) x$name, "")), method="radix")
+      candidates <- sort(unique(names_by_id[[decision$id]] %||% character()), method="radix")
       explanation <<- c(explanation, paste0(col, ": ", decision$id, " -> ", decision$label,
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))

@@ -110,6 +110,9 @@ test_that("concept factors admit rare levels with identical translated and ID-la
 
 test_that("observed max and density refusals name the rule and revoke all sites", {
   ctx <- .cf_setup()
+  # These refusals are the rule itself: site2's automatic vocabulary list is off
+  # (test-concept-levels-auto.R covers what it declares).
+  ctx$servers$site2$option("dsomop.auto_declared_levels_max", "0")
   for (rule in c("nfilter.levels.max", "nfilter.levels.density")) {
     ctx$servers$site2$option("nfilter.levels.max", if (rule == "nfilter.levels.max") "3" else "40")
     ctx$servers$site2$option("nfilter.levels.density", if (rule == "nfilter.levels.density") "0.1" else "0.33")

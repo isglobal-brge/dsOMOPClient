@@ -87,6 +87,11 @@ ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_mo
     kept[[col]] <- as.list(keep)
     summary$kept[[i]] <- length(keep)
     summary$status[[i]] <- "dropped levels empty at every site"
+    reference <- unlist(reports[[1L]]$reference[[col]], use.names = FALSE)
+    if (length(reference) && !is.na(reference[[1L]]) && !reference[[1L]] %in% keep) {
+      summary$status[[i]] <- paste0(summary$status[[i]], "; the reference '", reference[[1L]],
+                                    "' was one of them, so the first kept category is the reference")
+    }
   }
   .assign_expr_atomic(conns, newobj,
     expr = call("omopAsFactorColumnsDS", as.name(x),

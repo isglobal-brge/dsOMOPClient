@@ -12,8 +12,13 @@
   only the levels that hold a value at some site, identical everywhere, so a
   pooled `ds.glm()` has no all-zero design column. Each site reports its levels
   in use under DataSHIELD's level rule; a column that fails it somewhere keeps
-  all its levels, with a message to group it first. Needs dsOMOP 2.10.7.
+  all its levels, with a message to group it first. It works on reconciled
+  outputs (a `recipe_execute()` result), and says so when a declared reference
+  category was empty everywhere and the first kept category becomes the
+  reference. Needs dsOMOP 2.10.7.
 - REAL/NUMERIC birth columns give ages and dates with dsOMOP 2.10.7 servers.
+- Faster reconciliation of long level lists: resolving the shared levels and
+  their naming decisions is linear in the number of levels (it was quadratic).
 
 # dsOMOPClient 2.10.6 (2026-11-18)
 

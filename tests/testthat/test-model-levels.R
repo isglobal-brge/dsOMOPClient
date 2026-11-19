@@ -17,7 +17,10 @@ test_that("levels empty at every site are dropped identically, values unchanged"
   summary <- ds.omop.drop_empty_levels("D", newobj = "D_model", symbol = "cvl", conns = ctx$conns)
   row <- summary[summary$column == "cause_of_death_first_value", ]
   expect_identical(c(row$levels, row$kept), c(69L, 38L))
-  expect_identical(row$status, "dropped levels empty at every site")
+  expect_match(row$status, "^dropped levels empty at every site")
+  # The declared reference (the root concept, first in ID order) is held by
+  # nobody: the summary says the first kept category becomes the reference.
+  expect_match(row$status, "the reference '910000' was one of them", fixed = TRUE)
   kept <- .cvl_shared(ctx, "D_model", "cause_of_death_first_value")
   expect_setequal(kept, as.character(c(910001:910008, 910101:910130)))
   original <- .cvl_frames(ctx, "D")
