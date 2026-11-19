@@ -10,41 +10,47 @@ ds.omop.domain.coverage(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{table_name}, \code{row_count},
-  \code{person_count}), \code{$pooled} (combined coverage when pooled),
-  and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a data
+  frame with \code{table_name} and \code{n_persons} (banded).
+  \code{$pooled} sums \code{n_persons} per table; a table absent on a
+  server is not treated as zero.
 }
 \description{
-Provides a high-level overview of data coverage across all OMOP CDM
-domain tables. For each clinical domain (conditions, drugs, procedures,
-measurements, etc.), returns row counts, person counts, and date ranges.
-This is useful for quickly assessing which data domains are populated
-and to what extent, without needing to query each table individually.
+Provides a high-level overview of data coverage across the OMOP CDM
+clinical tables: for each table with persons, the banded number of
+distinct persons. Tables below the disclosure threshold are omitted.
 }
 \examples{
 \dontrun{
-coverage <- ds.omop.domain.coverage(scope = "pooled")
+coverage <- ds.omop.domain.coverage()
 coverage$pooled
 }
 }

@@ -1809,7 +1809,7 @@ test_that("recipe_preview_stats forwards explicit connections", {
   seen <- NULL
   testthat::local_mocked_bindings(
     ds.omop.table.stats = function(table, stats, scope = "per_site",
-                                   symbol = "omop", conns = NULL) {
+                                   symbol = "omop", conns = NULL, ...) {
       seen <<- list(table = table, stats = stats, scope = scope,
                     symbol = symbol, conns = conns)
       list(server = data.frame(table = table, row_count = 10))

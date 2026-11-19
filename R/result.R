@@ -18,7 +18,8 @@
 
 # Normalise the dsBaseClient-style result-view vocabulary used by aggregate
 # wrappers. Keep this internal so every public surface accepts exactly the same
-# aliases without duplicating validation.
+# aliases without duplicating validation. "pooled" means "both", as the legacy
+# scope = "pooled" always kept the per-site results too.
 .normalize_result_type <- function(type) {
   if (!is.character(type) || length(type) != 1L || is.na(type) ||
       !nzchar(trimws(type))) {
@@ -28,55 +29,50 @@
   aliases <- c(
     split = "split", splits = "split", s = "split", per_site = "split",
     combine = "combine", combined = "combine", c = "combine",
-    pooled = "combine", both = "both", b = "both"
+    both = "both", b = "both", pooled = "both"
   )
   resolved <- unname(aliases[value])
   if (length(resolved) != 1L || is.na(resolved)) {
     stop("type must be one of 'split', 'combine', or 'both' ",
-         "(aliases: splits/s/per_site, combined/c/pooled, b).",
+         "(aliases: splits/s/per_site, combined/c, b/pooled).",
          call. = FALSE)
   }
   resolved
 }
 
-# Resolve a new result view while retaining the established meanings of legacy
+# Resolve a result view while retaining the established meanings of legacy
 # `scope` and `pool`. Historically `scope = "pooled"` and `pool = TRUE` kept
-# both the site results and the pooled result, hence they map to `both`.
+# both the site results and the pooled result, hence they map to `both`. A
+# `type` that was not supplied (or NULL) takes the legacy argument when one was
+# given, otherwise the wrapper's default. `fn` names the caller for the one-time
+# alias message.
 .resolve_result_type <- function(type = NULL, scope = NULL, pool = NULL,
                                  scope_missing = TRUE, pool_missing = TRUE,
-                                 default_type = "split") {
-  resolved <- if (is.null(type)) {
-    if (!isTRUE(scope_missing)) {
-      if (identical(scope, "pooled")) "both" else "split"
-    } else if (!isTRUE(pool_missing)) {
-      if (isTRUE(pool)) "both" else "split"
-    } else {
-      .normalize_result_type(default_type)
-    }
-  } else {
-    .normalize_result_type(type)
+                                 default_type = "split",
+                                 type_missing = is.null(type), fn = NULL) {
+  legacy <- NULL
+  if (!isTRUE(scope_missing)) {
+    legacy <- if (identical(scope, "pooled") || identical(scope, "both")) {
+      "both"
+    } else "split"
+    if (!is.null(fn)) .alias_note(fn, "scope", "type")
+  } else if (!isTRUE(pool_missing)) {
+    legacy <- if (isTRUE(pool)) "both" else "split"
+    if (!is.null(fn)) .alias_note(fn, "pool", "type")
   }
-
-  if (!is.null(type) && !isTRUE(scope_missing)) {
-    compatible <- if (identical(scope, "pooled")) {
+  if (isTRUE(type_missing) || is.null(type)) {
+    return(legacy %||% .normalize_result_type(default_type))
+  }
+  resolved <- .normalize_result_type(type)
+  if (!is.null(legacy)) {
+    compatible <- if (identical(legacy, "both")) {
       resolved %in% c("combine", "both")
     } else {
       identical(resolved, "split")
     }
     if (!compatible) {
-      stop("type and legacy scope request conflicting result views.",
-           call. = FALSE)
-    }
-  }
-  if (!is.null(type) && !isTRUE(pool_missing)) {
-    compatible <- if (isTRUE(pool)) {
-      resolved %in% c("combine", "both")
-    } else {
-      identical(resolved, "split")
-    }
-    if (!compatible) {
-      stop("type and legacy pool request conflicting result views.",
-           call. = FALSE)
+      stop("type and legacy ", if (!isTRUE(scope_missing)) "scope" else "pool",
+           " request conflicting result views.", call. = FALSE)
     }
   }
   resolved
@@ -89,30 +85,42 @@
 # Apply a result view only after dsomop_result() has captured server names and
 # aggregate errors. This deliberately removes a view; it never derives or
 # materialises individual-level data on the client.
-.result_type_view <- function(result, type, combine_reason = NULL) {
+#
+# One rule when pooling is impossible: with a `combine_reason` (an executed
+# call, not a dry run) and no pooled value, "both" keeps the per-site results
+# with meta$pooling_reason, and "combine" stops with that reason. `pooling`
+# (method and estimand) is recorded on every pooled result.
+.result_type_view <- function(result, type, combine_reason = NULL,
+                              pooling = NULL) {
   if (!inherits(result, "dsomop_result")) {
     stop("result must be a dsomop_result object.", call. = FALSE)
   }
   type <- .normalize_result_type(type)
-  if (.result_type_wants_combine(type) && is.null(result[["pooled"]]) &&
+  meta <- .subset2(result, "meta")
+  if (.result_type_wants_combine(type) && is.null(.subset2(result, "pooled")) &&
       !is.null(combine_reason) && length(combine_reason) > 0L) {
     reason <- as.character(combine_reason[[1L]])
-    result[["meta"]]$warnings <- unique(c(
-      result[["meta"]]$warnings %||% character(0), reason
-    ))
-    result[["meta"]]$pooling_reason <- reason
+    detail <- setdiff(meta$warnings %||% character(0), reason)
+    detail <- detail[!grepl("^Server errors: ", detail)]
+    full <- if (length(detail) > 0L) {
+      paste0(reason, " (", paste(detail, collapse = " "), ")")
+    } else reason
+    if (identical(type, "combine")) stop(full, call. = FALSE)
+    meta$warnings <- unique(c(meta$warnings %||% character(0), reason))
+    meta$pooling_reason <- full
+  }
+  if (.result_type_wants_combine(type) && !is.null(.subset2(result, "pooled")) &&
+      !is.null(pooling)) {
+    meta$pooling <- pooling
   }
   if (identical(type, "split")) {
     result["pooled"] <- list(NULL)
   } else if (identical(type, "combine")) {
     result[["per_site"]] <- list()
   }
-  result[["meta"]]$type <- type
-  result[["meta"]]$scope <- if (identical(type, "split")) {
-    "per_site"
-  } else {
-    "pooled"
-  }
+  meta$type <- type
+  meta$scope <- if (identical(type, "split")) "per_site" else "pooled"
+  result[["meta"]] <- meta
   result
 }
 
@@ -135,7 +143,10 @@
 #'   \code{"both"}),
 #'   \code{pooling_policy} (character; \code{"strict"} or
 #'   \code{"pooled_only_ok"}),
-#'   \code{warnings} (character vector of pooling warnings).
+#'   \code{warnings} (character vector of pooling warnings). Further
+#'   elements, such as \code{pooling} (method and estimand of the pooled
+#'   result) and \code{pooling_reason} (why no pooled result was formed),
+#'   are kept as given.
 #' @return A \code{dsomop_result} object (a list with class
 #'   \code{c("dsomop_result", "list")}).
 #' @keywords internal
@@ -172,6 +183,12 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
                                 error_warnings))
     )
   )
+  # Keep any further metadata (pooling, pooling_reason, protection, ...).
+  known <- c("call_code", "timestamp", "servers", "scope", "type",
+             "pooling_policy", "warnings")
+  for (field in setdiff(names(meta), known)) {
+    if (!is.null(meta[[field]])) obj$meta[[field]] <- meta[[field]]
+  }
   class(obj) <- c("dsomop_result", "list")
   obj
 }
@@ -203,12 +220,34 @@ print.dsomop_result <- function(x, ...) {
   } else {
     "<none>"
   }, "\n", sep = "")
-  cat("Scope: ", meta$scope %||% "per_site", "\n\n", sep = "")
+  type <- meta$type %||% if (identical(meta$scope, "pooled")) "both" else
+    "split"
+  cat("Type: ", type, " (", switch(type,
+    split = "per-server results",
+    combine = "pooled result",
+    both = "per-server and pooled results",
+    type), ")\n", sep = "")
+  if (is.list(meta$pooling) && !is.null(pooled)) {
+    cat("Pooling: ", meta$pooling$method,
+        if (!is.null(meta$pooling$estimand)) paste0(" (", meta$pooling$estimand, ")"),
+        "\n", sep = "")
+  }
+  if (!is.null(meta$pooling_reason) && is.null(pooled)) {
+    cat("Not pooled: ", meta$pooling_reason, "\n", sep = "")
+  }
+  cat("\n")
 
-  for (nm in names(ps)) {
-    cat("$", nm, "\n", sep = "")
-    print(ps[[nm]], ...)
+  # A per-site object with its own print method (e.g. DP status) prints itself.
+  ps_class <- setdiff(oldClass(ps), "list")
+  if (length(ps_class) > 0L && length(ps) > 0L) {
+    print(ps, ...)
     cat("\n")
+  } else {
+    for (nm in names(ps)) {
+      cat("$", nm, "\n", sep = "")
+      print(ps[[nm]], ...)
+      cat("\n")
+    }
   }
   if (!is.null(pooled)) {
     cat("$pooled\n")
@@ -303,38 +342,51 @@ print.dsomop_result <- function(x, ...) {
   .subset2(x, name)
 }
 
+#' @rdname cash-.dsomop_result
+#' @param i Element name or position, as for \code{[[}.
+#' @param exact Passed to \code{[[}.
+#' @export
+`[[.dsomop_result` <- function(x, i, exact = TRUE) {
+  if (is.character(i) && length(i) == 1L &&
+      !i %in% c("per_site", "pooled", "meta")) {
+    ps <- .subset2(x, "per_site")
+    if (i %in% names(ps)) return(.subset2(ps, i))
+  }
+  .subset2(x, i, exact = exact)
+}
+
 #' Convert dsomop_result to data.frame
 #'
-#' Extracts a single data frame from a \code{dsomop_result} object. If a
-#' pooled result is available and is a data frame, it is returned. Otherwise,
-#' the first server's result is used only for a per-site result. A pooled-scope
-#' result whose pooled value is \code{NULL} returns an empty
-#' \code{data.frame()} so a failed strict federation cannot silently degrade to
-#' one server. Returns an empty \code{data.frame()} if no valid data frame is
-#' found.
+#' Extracts one data frame from a \code{dsomop_result} object. A split result
+#' (\code{type = "split"}) stacks the per-server data frames into one frame
+#' with a leading \code{server} column, so no site is dropped silently.
+#' A \code{"combine"} or \code{"both"} result returns its pooled data frame;
+#' when no pooled value could be formed, it returns an empty
+#' \code{data.frame()} so a failed strict federation never degrades to a
+#' partial view (use \code{type = "split"} or \code{$per_site} for the
+#' per-server results).
 #'
 #' @param x A \code{dsomop_result} object.
 #' @param ... Additional arguments (ignored).
-#' @return A data frame: the pooled result, the first server's result for
-#'   per-site scope, or an empty data frame as fallback.
+#' @return A data frame: the pooled result, the stacked per-server results
+#'   with a \code{server} column for split results, or an empty data frame.
 #' @examples
 #' \dontrun{
-#' res <- ds.omop.achilles.results(analysis_ids = 1, scope = "pooled")
+#' res <- ds.omop.achilles.results(analysis_ids = 1, type = "both")
 #' df <- as.data.frame(res)
 #' head(df)
 #' }
 #' @export
 as.data.frame.dsomop_result <- function(x, ...) {
-  if (!is.null(x$pooled) && is.data.frame(x$pooled)) {
-    return(x$pooled)
+  pooled <- .subset2(x, "pooled")
+  if (!is.null(pooled) && is.data.frame(pooled)) {
+    return(pooled)
   }
-  if (identical(x$meta$scope, "pooled")) return(data.frame())
-  ps <- x$per_site
-  if (length(ps) > 0) {
-    first <- ps[[1]]
-    if (is.data.frame(first)) return(first)
-  }
-  data.frame()
+  meta <- .subset2(x, "meta")
+  type <- meta$type %||% if (identical(meta$scope, "pooled")) "both" else
+    "split"
+  if (!identical(type, "split")) return(data.frame())
+  .stack_per_site(.subset2(x, "per_site"))
 }
 
 #' Get the R code that produced a result

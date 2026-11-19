@@ -237,7 +237,8 @@ test_that("the appended language-2 arguments include approved label, date, numbe
                    c("rows", "grain", "columns", "format", "sources", "collapse", "number_columns", "category_columns"))
   expect_identical(appended(omop_recipe, 10L),
                    c("concept_sets", "events", "intervals", "coverage", "publish", "labels", "column_names", "date_spec", "number_spec", "category_spec"))
-  expect_identical(appended(recipe_execute, 1L), "on_small_site")
+  expect_identical(appended(recipe_execute, 3L),
+                   c("on_small_site", "scope_combine", "datasources"))
   expect_identical(names(formals(recipe_to_plan)), c("recipe", "version"))
   expect_identical(formals(recipe_to_plan)$version, 2L)
   expect_null(formals(omop_output)$type)
@@ -300,9 +301,11 @@ test_that("the complete set of recipe editing functions is exported (design 2.10
                    c("index", "select", "require", "baseline", "outcomes", "follow_up", "outputs",
                      "name", "coverage"))
   expect_identical(names(formals(omop_new_users)), c("drug", "washout_days", "select", "by"))
-  expect_identical(names(formals(ds.omop.mutate)), c("x", "...", "newobj", "symbol", "conns"))
+  expect_identical(names(formals(ds.omop.mutate)),
+                   c("x", "...", "newobj", "symbol", "conns", "datasources"))
   expect_identical(names(formals(ds.omop.filter)),
-                   c("x", "var", "op", "value", "newobj", "symbol", "conns", "expr"))
+                   c("x", "var", "op", "value", "newobj", "symbol", "conns", "expr",
+                     "datasources"))
   expect_identical(names(formals(omop_ever)),
                    c("table", "concepts", "before", "after", "window", "..."))
   expect_identical(names(formals(omop_value_at_index)), c("table", "concepts", "tolerance", "unit"))

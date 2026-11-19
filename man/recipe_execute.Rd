@@ -13,7 +13,9 @@ recipe_execute(
   cohort = NULL,
   tables = NULL,
   combine = "union",
-  on_small_site = c("error", "skip")
+  on_small_site = c("error", "skip"),
+  scope_combine = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -26,7 +28,8 @@ output specifications.}
 \item{symbol}{Character; OMOP session symbol on the server (default
 \code{"omop"}).}
 
-\item{conns}{DSI connections or \code{NULL} (uses active connections).}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{output_mode}{Character; \code{"memory"} (default) or \code{"staged"}.
 Passed through to \code{\link{ds.omop.plan.execute}}.}
@@ -42,13 +45,20 @@ and intersected into every population (see \code{\link{omop_recipe}}).}
 add to the execution-time scope (their distinct persons). May be combined
 with \code{cohort}.}
 
-\item{combine}{Character; how to fold the scope sources together:
-\code{"union"} (the default) or \code{"intersect"}.}
+\item{combine}{Deprecated alias of \code{scope_combine}.}
 
 \item{on_small_site}{Character; \code{"error"} (default) or \code{"skip"},
 passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
 person support is skippable: skip keeps successful sites and returns
 \code{NULL} for sites whose publication fails final person support.}
+
+\item{scope_combine}{Character; how to fold the scope sources together:
+\code{"union"} (the default) or \code{"intersect"}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly, the output symbol mapping (a named character vector)
@@ -75,7 +85,7 @@ recipe_execute(recipe, output_mode = "staged")
 recipe_execute(recipe, out = c(features_wide = "D_features"))
 # Scope every population to a cohort intersected with a workspace table:
 recipe_execute(recipe, cohort = my_cohort, tables = "inclusion_set",
-               combine = "intersect")
+               scope_combine = "intersect")
 }
 }
 \seealso{

@@ -326,7 +326,12 @@
 #' @param newobj Name of the symbol to create (default: a fresh name);
 #'   \code{newobj = x} replaces \code{x}.
 #' @param symbol Session symbol (default \code{"omop"}).
-#' @param conns DSI connections (default: the session's).
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly, the name of the server-side symbol.
 #' @examples
 #' \dontrun{
@@ -336,11 +341,12 @@
 #' }
 #' @seealso \code{\link{ds.omop.filter}}, \code{\link{ds.omop.select}}
 #' @export
-ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns = NULL) {
+ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.mutate")
   exprs <- as.list(substitute(list(...)))[-1L]
   req <- .mutate_request(exprs, parent.frame())
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   .conceptAssertSupport(session, names(conns))
   .verb_assert_supported(session, conns, "verb.mutate", "ds.omop.mutate()",
                          "omopMutateDS")

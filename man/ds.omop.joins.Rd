@@ -4,12 +4,18 @@
 \alias{ds.omop.joins}
 \title{Get the join relationship graph}
 \usage{
-ds.omop.joins(symbol = "omop", conns = NULL)
+ds.omop.joins(symbol = "omop", conns = NULL, datasources = NULL)
 }
 \arguments{
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A named list (one element per server) of data frames with

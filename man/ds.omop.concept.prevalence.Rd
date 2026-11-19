@@ -19,7 +19,8 @@ ds.omop.concept.prevalence(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -52,26 +53,36 @@ clinical tables rather than only \code{table} (default: \code{FALSE}).}
 \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 Takes precedence over \code{cohort_table}.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
-\item{pooling_policy}{Character; \code{"strict"} (default) requires all
-servers to succeed, \code{"pooled_only_ok"} allows partial results.}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{concept_id}, \code{concept_name},
-  \code{count_value}, etc.), \code{$pooled} (combined data frame when
-  scope is \code{"pooled"}, otherwise NULL), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a data
+  frame with \code{concept_id}, \code{concept_name}, \code{n_persons} and
+  \code{n_records} (banded), plus \code{source_table} for a global
+  ranking. \code{$pooled} sums \code{n_persons} and \code{n_records} per
+  concept (and source table) over the servers, ranks by \code{metric}
+  and keeps the first \code{top_n}; a concept must be released by every
+  server.
 }
 \description{
 Retrieves the most frequent concepts in the specified OMOP CDM table,

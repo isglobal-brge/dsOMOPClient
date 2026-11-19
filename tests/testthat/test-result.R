@@ -86,12 +86,16 @@ test_that("as.data.frame.dsomop_result returns pooled when available", {
   expect_equal(df$n_records, 500)
 })
 
-test_that("as.data.frame.dsomop_result returns first server when no pooled", {
+test_that("as.data.frame.dsomop_result stacks a split result by server", {
   r <- dsomop_result(
-    per_site = list(a = data.frame(x = 1:3), b = data.frame(x = 4:6))
+    per_site = list(a = data.frame(x = 1:3), b = data.frame(x = 4:6,
+                                                            y = "z"))
   )
   df <- as.data.frame(r)
-  expect_equal(df$x, 1:3)
+  expect_identical(names(df), c("server", "x", "y"))
+  expect_equal(df$x, 1:6)
+  expect_identical(df$server, rep(c("a", "b"), each = 3L))
+  expect_true(all(is.na(df$y[1:3])))
 })
 
 test_that("as.data.frame never falls back after strict pooled failure", {

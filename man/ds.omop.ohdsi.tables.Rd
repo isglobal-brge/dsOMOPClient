@@ -4,18 +4,31 @@
 \alias{ds.omop.ohdsi.tables}
 \title{List discovered OHDSI result tables}
 \usage{
-ds.omop.ohdsi.tables(symbol = "omop", conns = NULL, type = NULL)
+ds.omop.ohdsi.tables(
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 }
 \arguments{
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL}, uses active session.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. The historical default is \code{"both"}.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object. Pooled is the union of catalogs.
+A \code{dsomop_result}. \code{$pooled} stacks the servers'
+  catalogs with a \code{.server} column; it is \code{NULL} (with
+  \code{meta$pooling_reason}) when a server is unavailable.
 }
 \description{
 Returns a catalog of all OHDSI result tables found across connected servers,

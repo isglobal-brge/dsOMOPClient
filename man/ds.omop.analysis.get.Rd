@@ -4,7 +4,13 @@
 \alias{ds.omop.analysis.get}
 \title{Get unified analysis catalog entry metadata}
 \usage{
-ds.omop.analysis.get(name, symbol = "omop", conns = NULL, type = "both")
+ds.omop.analysis.get(
+  name,
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 }
 \arguments{
 \item{name}{Character; the entry id (e.g. \code{"dsomop:achilles.401"}) or a
@@ -14,15 +20,20 @@ id suffix; an ambiguous shorthand errors with the candidates).}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{type}{Result view: \code{"both"} (default), \code{"split"}, or
-\code{"combine"}; dsBaseClient-style aliases are accepted. A split view
-can inspect nodes whose metadata differ; combined views require equality.}
+\code{"combine"}; dsBaseClient-style aliases are accepted. A pooled
+view requires equal metadata. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
+A \code{dsomop_result} object. The pooled
   element is a named list with the entry's \code{name}, \code{description},
   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
   \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
@@ -34,8 +45,11 @@ A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
 Returns full metadata for a single catalog entry: its parameter specs,
 compute kind, disclosure spec, and scoping capabilities. Use it to discover
 an entry's parameters and to check whether it accepts cohort/table scoping
-before running it. Execution requires identical metadata from every server;
-a mixed-version or partially unavailable federation fails closed.
+before running it. The pooled view is the metadata every server returned
+identically; otherwise \code{$pooled} is \code{NULL} with
+\code{meta$pooling_reason}. Execution requires identical metadata from
+every server; a mixed-version or partially unavailable federation fails
+closed in \code{\link{ds.omop.analysis.run}}.
 }
 \examples{
 \dontrun{

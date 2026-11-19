@@ -4,7 +4,13 @@
 \alias{recipe_preview}
 \title{Preview a recipe on the server}
 \usage{
-recipe_preview(recipe, symbol = "omop", conns = NULL)
+recipe_preview(
+  recipe,
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 }
 \arguments{
 \item{recipe}{An \code{omop_recipe} object.}
@@ -12,10 +18,22 @@ recipe_preview(recipe, symbol = "omop", conns = NULL)
 \item{symbol}{Character; OMOP session symbol on the server (default
 \code{"omop"}).}
 
-\item{conns}{DSI connections or \code{NULL} (uses active connections).}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}; see
+\code{\link{ds.omop.plan.preview}}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A named list of server-side plan preview results.
+A \code{dsomop_result} from \code{\link{ds.omop.plan.preview}}: its
+  \code{$per_site} is the named list of server-side preview results returned
+  by earlier versions, and \code{res$<server>} still reaches one server's
+  result.
 }
 \description{
 Compiles a recipe to a plan and calls \code{\link{ds.omop.plan.preview}}.

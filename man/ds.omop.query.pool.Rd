@@ -10,7 +10,8 @@ ds.omop.query.pool(
   sensitive_fields = NULL,
   pool_strategy = "sum",
   policy = "strict",
-  symbol = "omop"
+  symbol = "omop",
+  pooling_policy = NULL
 )
 }
 \arguments{
@@ -24,12 +25,15 @@ analysis identity carried by \code{results}.}
 
 \item{pool_strategy}{Deprecated and unsupported; must remain \code{"sum"}.}
 
-\item{policy}{Character; suppression propagation policy. \code{"strict"}
-(the default) sets the pooled value to NA if any server suppressed the
-cell. \code{"pooled_only_ok"} sums only the non-suppressed values.}
+\item{policy}{Deprecated alias of \code{pooling_policy}.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
+
+\item{pooling_policy}{Character; suppression propagation policy.
+\code{"strict"} (the default) sets the pooled value to NA if any server
+suppressed the cell. \code{"pooled_only_ok"} sums only the
+non-suppressed values. See \link{dsomop_conventions}.}
 }
 \value{
 A data frame with contractually pooled results, or \code{NULL} when

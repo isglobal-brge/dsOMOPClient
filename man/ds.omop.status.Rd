@@ -4,14 +4,19 @@
 \alias{ds.omop.status}
 \title{Get OMOP session status}
 \usage{
-ds.omop.status(symbol = "omop")
+ds.omop.status(symbol = "omop", datasources = NULL)
 }
 \arguments{
 \item{symbol}{Character; session symbol (default: "omop").}
+
+\item{datasources}{DataSHIELD connections to ping. \code{NULL} (the
+default) uses the session's connections. See \link{dsomop_conventions}.}
 }
 \value{
 Named list with symbol, servers, capabilities, ping results,
-  and errors.
+  and errors. \code{ping} has one entry per server: that server's ping
+  answer, or \code{list(error = <message>)} for a server that did not
+  answer.
 }
 \description{
 Pings each connected server and returns the current session status

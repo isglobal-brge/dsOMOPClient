@@ -102,11 +102,17 @@
 #' (CohortDiagnostics, CohortIncidence, Characterization, and others) are present.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL}, uses active session.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. Status is site-specific, so a combined view has no value
-#'   and records that reason.
-#' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}.
+#'   Status is site-specific: \code{"both"} returns \code{pooled = NULL} with
+#'   \code{meta$pooling_reason}, and \code{"combine"} stops before contacting
+#'   the servers. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result} object (per-server view).
 #' @examples
 #' \dontrun{
 #' status <- ds.omop.ohdsi.status()
@@ -114,13 +120,18 @@
 #' }
 #' @export
 ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL,
-                                 type = NULL) {
+                                 type = "split",
+                                 datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.ohdsi.status")
   result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- paste0("OHDSI result-table availability is site-specific and ",
+                   "cannot be combined.")
+  .combine_unavailable(result_type, reason)
   code <- .build_code("ds.omop.ohdsi.status", symbol = symbol,
-                      type = if (is.null(type)) NULL else result_type)
+                      type = result_type)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -128,9 +139,8 @@ ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL,
   )
 
   .result_type_view(dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site")), result_type,
-    "OHDSI result-table availability is site-specific and cannot be combined.")
+    per_site = raw, pooled = NULL, meta = list(call_code = code)),
+    result_type, reason)
 }
 
 #' List discovered OHDSI result tables
@@ -139,10 +149,17 @@ ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL,
 #' including tool identification and row counts.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL}, uses active session.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. The historical default is \code{"both"}.
-#' @return A \code{dsomop_result} object. Pooled is the union of catalogs.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. \code{$pooled} stacks the servers'
+#'   catalogs with a \code{.server} column; it is \code{NULL} (with
+#'   \code{meta$pooling_reason}) when a server is unavailable.
 #' @examples
 #' \dontrun{
 #' tables <- ds.omop.ohdsi.tables()
@@ -150,13 +167,15 @@ ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL,
 #' }
 #' @export
 ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL,
-                                 type = NULL) {
+                                 type = "both",
+                                 datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.ohdsi.tables")
   result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.ohdsi.tables", symbol = symbol,
-                      type = if (is.null(type)) NULL else result_type)
+                      type = result_type)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -195,9 +214,10 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL,
 
   .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled", warnings = warnings)),
+    meta = list(call_code = code, warnings = warnings)),
     result_type,
-    "No complete federated OHDSI table catalog was available.")
+    "No complete federated OHDSI table catalog was available.",
+    pooling = .pooling_meta("table_union"))
 }
 
 #' Query an OHDSI result table
@@ -209,7 +229,11 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL,
 #' that contract; they never route through a same-named live analysis or a
 #' column-name pooling heuristic. Reviewed equality filters are applied
 #' server-side; selection, ordering, and the row limit are applied only after
-#' contractual pooling.
+#' contractual pooling. With \code{type = "both"}, a result that cannot be
+#' combined (no consistent contract, an incomplete federation, a capped
+#' table) still returns the per-server frames, with \code{pooled = NULL} and
+#' \code{meta$pooling_reason}; \code{type = "combine"} stops with the
+#' reason.
 #'
 #' @param table_name Character; which result table to query.
 #' @param columns Character vector; columns to select (NULL = all safe columns).
@@ -217,21 +241,27 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL,
 #' @param order_by Character; ORDER BY column.
 #' @param limit Integer; max rows (capped at 5000 server-side).
 #' @param tool_id Character; optional tool identifier.
-#' @param scope Character; \code{"per_site"} or \code{"pooled"}.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"}.
+#'   \code{"pooled_only_ok"}. See \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL}, uses active session.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"split"} (default), \code{"both"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} object.
 #' @examples
 #' \dontrun{
 #' # Cohort diagnostics results per site
 #' cd <- ds.omop.ohdsi.results("index_event_breakdown")
 #'
-#' # Cohort counts pooled across servers
-#' cc <- ds.omop.ohdsi.results("cohort_count", scope = "pooled")
+#' # Cohort counts per server and pooled across servers
+#' cc <- ds.omop.ohdsi.results("cohort_count", type = "both")
 #' }
 #' @export
 ds.omop.ohdsi.results <- function(table_name, columns = NULL,
@@ -240,24 +270,29 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
                                     scope = c("per_site", "pooled"),
                                     pooling_policy = "strict",
                                     symbol = "omop", conns = NULL,
-                                    type = NULL) {
+                                    type = "split",
+                                    datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.ohdsi.results")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
-  pooling_policy <- match.arg(pooling_policy,
-                              c("strict", "pooled_only_ok"))
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "split",
+    fn = "ds.omop.ohdsi.results"
   )
 
   code <- .build_code("ds.omop.ohdsi.results",
-    table_name = table_name,
-    scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    table_name = table_name, columns = columns, filters = filters,
+    order_by = order_by,
+    limit = if (!identical(as.integer(limit), 5000L)) limit,
+    tool_id = tool_id, pooling_policy = .code_policy(pooling_policy),
+    type = result_type, symbol = symbol)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
-  if (.result_type_wants_combine(result_type)) {
+  combined <- if (.result_type_wants_combine(result_type)) tryCatch({
     contract_raw <- .ds_safe_aggregate(
       conns,
       expr = call("omopOhdsiResultContractDS", session$res_symbol,
@@ -325,14 +360,19 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
     }
     result <- dsomop_result(
       per_site = raw, pooled = pool_out$result,
-      meta = list(call_code = code, scope = "pooled", type = result_type,
+      meta = list(call_code = code, type = result_type,
                   servers = names(raw), pooling_policy = pooling_policy,
                   warnings = pool_out$warnings)
     )
+    reason <- if (identical(contract_meta$pooling_contract$strategy,
+                            "not_poolable")) {
+      contract_meta$pooling_contract$reason
+    } else if (is.null(pool_out$result)) {
+      "No complete disclosure-safe pooled OHDSI result was available."
+    }
     result <- .result_type_view(
-      result, result_type,
-      if (identical(contract_meta$pooling_contract$strategy,
-                    "not_poolable")) contract_meta$pooling_contract$reason
+      result, result_type, reason,
+      pooling = .pooling_meta_for_contract(contract_meta$pooling_contract)
     )
     result <- .ohdsi_shape_result(
       result, columns = columns, filters = NULL,
@@ -341,7 +381,11 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
     result[["meta"]]$tool_id <- contract_meta$tool_id
     result[["meta"]]$table_name <- contract_meta$table_name
     result[["meta"]]$contract_version <- as.integer(version)
-    return(result)
+    result
+  }, error = identity)
+  if (!is.null(combined) && !inherits(combined, "error")) return(combined)
+  if (inherits(combined, "error") && identical(result_type, "combine")) {
+    stop(conditionMessage(combined), call. = FALSE)
   }
 
   # Opal reparses aggregate expressions and interprets a multi-element
@@ -384,10 +428,21 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
     }
   }
 
-  .result_type_view(dsomop_result(
+  result <- .result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy)), result_type)
+    meta = list(call_code = code, pooling_policy = pooling_policy)), "split")
+  if (inherits(combined, "error")) {
+    # "both": pooling was impossible, so the per-server frames are returned
+    # with the reason (the same frames a split view returns).
+    reason <- conditionMessage(combined)
+    meta <- result[["meta"]]
+    meta$type <- "both"
+    meta$scope <- "pooled"
+    meta$pooling_reason <- reason
+    meta$warnings <- unique(c(meta$warnings, reason))
+    result[["meta"]] <- meta
+  }
+  result
 }
 
 #' Get OHDSI tool summary
@@ -398,11 +453,17 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
 #'   \code{"cohort_diagnostics"}, \code{"cohort_incidence"},
 #'   \code{"characterization"}).
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL}, uses active session.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. Tool summaries are site-specific, so a combined view has
-#'   no value and records that reason.
-#' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}. Tool
+#'   summaries are site-specific: \code{"both"} returns \code{pooled = NULL}
+#'   with \code{meta$pooling_reason}, and \code{"combine"} stops before
+#'   contacting the servers. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result} object (per-server view).
 #' @examples
 #' \dontrun{
 #' cd_summary <- ds.omop.ohdsi.summary("cohort_diagnostics")
@@ -410,14 +471,17 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
 #' }
 #' @export
 ds.omop.ohdsi.summary <- function(tool_id, symbol = "omop", conns = NULL,
-                                  type = NULL) {
+                                  type = "split",
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.ohdsi.summary")
   result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- "OHDSI tool summaries are site-specific and cannot be combined."
+  .combine_unavailable(result_type, reason)
   code <- .build_code("ds.omop.ohdsi.summary",
-    tool_id = tool_id, symbol = symbol,
-    type = if (is.null(type)) NULL else result_type)
+    tool_id = tool_id, symbol = symbol, type = result_type)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -425,7 +489,6 @@ ds.omop.ohdsi.summary <- function(tool_id, symbol = "omop", conns = NULL,
   )
 
   .result_type_view(dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site")), result_type,
-    "OHDSI tool summaries are site-specific and cannot be combined.")
+    per_site = raw, pooled = NULL, meta = list(call_code = code)),
+    result_type, reason)
 }

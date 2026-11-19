@@ -22,7 +22,8 @@ ds.omop.value.histogram(
   xlab = NULL,
   main = NULL,
   col = "#4C72B0",
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -51,21 +52,23 @@ temporal filtering, or NULL (default: NULL).}
 \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 Takes precedence over \code{cohort_table}.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
 \item{plot}{Logical; if \code{TRUE}, draw a federation-wide bar chart of the
-pooled, shared-edge bins (forces \code{scope = "pooled"}) and return the
-result invisibly. Default \code{FALSE}.}
+pooled, shared-edge bins (the default split view becomes \code{"both"})
+and return the result invisibly. Default \code{FALSE}.}
 
 \item{nbins}{Integer; number of display bins used when \code{plot = TRUE}
 (default: 9).}
@@ -73,23 +76,33 @@ result invisibly. Default \code{FALSE}.}
 \item{xlab, main, col}{Axis label, title and bar colour used when
 \code{plot = TRUE}.}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. A pooled plot requires \code{"combine"} or \code{"both"}.
-When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. A pooled plot requires \code{"combine"} or
+\code{"both"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{bin_start}, \code{bin_end},
-  \code{count_value}), \code{$pooled} (combined histogram when pooled),
-  and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a data
+  frame with \code{bin_start}, \code{bin_end} and \code{count} (banded
+  persons; bins below the threshold are left out). \code{$pooled} sums
+  \code{count} per bin on the shared edges, matching bins by
+  \code{bin_start} and \code{bin_end}; a bin missing on a server is not
+  treated as zero. When the shared range cannot be formed, the per-server
+  histograms (on each server's own edges) are still returned and
+  \code{meta$pooling_reason} says why nothing was pooled.
 }
 \description{
 Computes a binned histogram for a numeric column in an OMOP CDM table.
-When scope is \code{"pooled"}, a two-pass algorithm is used: the first
-pass collects p05/p95 ranges from each server to compute shared bin
-edges, and the second pass counts records per bin using those shared
-edges so that results are directly comparable and summable across
-servers. Bins with counts below the disclosure threshold are suppressed.
+For a pooled view (\code{type = "both"} or \code{"combine"}), a two-pass
+algorithm is used: the first pass collects p05/p95 ranges from each server
+to compute shared bin edges, and the second pass counts persons per bin
+using those shared edges so that results are directly comparable and
+summable across servers. Bins with counts below the disclosure threshold
+are left out by the server; pooled bins are matched by their edges.
 }
 \examples{
 \dontrun{

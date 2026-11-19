@@ -4,7 +4,13 @@
 \alias{ds.omop.ohdsi.summary}
 \title{Get OHDSI tool summary}
 \usage{
-ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL, type = NULL)
+ds.omop.ohdsi.summary(
+  tool_id,
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 }
 \arguments{
 \item{tool_id}{Character; which tool to summarize (e.g.,
@@ -13,14 +19,21 @@ ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL, type = NULL)
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL}, uses active session.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. Tool summaries are site-specific, so a combined view has
-no value and records that reason.}
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}. Tool
+summaries are site-specific: \code{"both"} returns \code{pooled = NULL}
+with \code{meta$pooling_reason}, and \code{"combine"} stops before
+contacting the servers. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{scope = "per_site"}.
+A \code{dsomop_result} object (per-server view).
 }
 \description{
 Returns a summary of available result tables for a specific OHDSI tool.

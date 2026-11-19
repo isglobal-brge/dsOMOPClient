@@ -4,14 +4,18 @@
 \alias{ds.omop.disconnect}
 \title{Disconnect an OMOP session}
 \usage{
-ds.omop.disconnect(symbol = "omop", conns = NULL)
+ds.omop.disconnect(symbol = "omop", conns = NULL, datasources = NULL)
 }
 \arguments{
 \item{symbol}{Character; the session symbol to disconnect (default: "omop").}
 
-\item{conns}{DSI connections. \code{NULL} uses the session's stored
-connections. When supplied, it must contain exactly the same named
-connection objects; subsets and replacements are rejected before cleanup.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisible TRUE on success.

@@ -11,32 +11,37 @@ ds.omop.achilles.distribution(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
 \item{analysis_ids}{Integer vector; distribution analysis IDs to retrieve
 (e.g., \code{c(103, 105)} for age and observation length distributions).}
 
-\item{scope}{Character; \code{"per_site"} returns each server's results
-separately, \code{"pooled"} additionally attempts weighted aggregation.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
-\item{pooling_policy}{Character; controls how suppressed (NA) cells are
-handled during pooling. \code{"strict"} (the default) or
-\code{"pooled_only_ok"}.}
+\item{pooling_policy}{Character; \code{"strict"} (the default) or
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, returns a dry-run
 \code{dsomop_result} containing only the reproducible R code without
 contacting the servers.}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result} object. Per-site results contain
@@ -53,10 +58,11 @@ observation period length). Distribution analyses store percentile values
 (min/max) are never returned by the server for disclosure protection.
 }
 \details{
-When \code{scope = "pooled"}, pooling is attempted via weighted
-aggregation; however, percentile values cannot be meaningfully combined
-from pre-computed summaries, so all percentile columns in the pooled
-result are set to \code{NA}. Use per-site data for percentile display.
+Like \code{ds.mean}, the default view is per server. A pooled view
+(\code{type = "both"}) combines the counts, count-weighted averages and
+pooled SDs; percentile values cannot be combined from pre-computed
+summaries, so all percentile columns in the pooled result are \code{NA}.
+Use per-site data for percentile display.
 }
 \examples{
 \dontrun{
@@ -64,7 +70,7 @@ result are set to \code{NA}. Use per-site data for percentile display.
 age_dist <- ds.omop.achilles.distribution(analysis_ids = 103)
 age_dist$per_site[["server_a"]]
 
-# Multiple distribution analyses
-dists <- ds.omop.achilles.distribution(c(103, 105), scope = "per_site")
+# Multiple distribution analyses, pooled as well
+dists <- ds.omop.achilles.distribution(c(103, 105), type = "both")
 }
 }

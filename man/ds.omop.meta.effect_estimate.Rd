@@ -13,7 +13,9 @@ ds.omop.meta.effect_estimate(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  type = "both"
+  type = "both",
+  scope_combine = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -32,19 +34,26 @@ case population.}
 \item{tables}{Optional \code{omop.table} symbol scope (see
 \code{\link{ds.omop.analysis.run}}).}
 
-\item{combine}{Character; \code{"union"} (default) or \code{"intersect"} for
-multi-source scope folding.}
+\item{combine}{Deprecated alias of \code{scope_combine}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
 \code{"pooled_only_ok"}.}
 
 \item{symbol}{Character; the session symbol (default \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or \code{NULL} to use the session
-default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{type}{Result view: \code{"both"} (default), \code{"split"}, or
 \code{"combine"}; see \code{\link{ds.omop.analysis.run}}.}
+
+\item{scope_combine}{Character; \code{"union"} (default) or
+\code{"intersect"} for multi-source scope folding.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result}: \code{per_site} holds each server's gated

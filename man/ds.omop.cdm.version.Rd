@@ -4,23 +4,38 @@
 \alias{ds.omop.cdm.version}
 \title{Get the CDM version reported by each server}
 \usage{
-ds.omop.cdm.version(symbol = "omop", conns = NULL, execute = TRUE)
+ds.omop.cdm.version(
+  symbol = "omop",
+  conns = NULL,
+  execute = TRUE,
+  type = "split",
+  datasources = NULL
+)
 }
 \arguments{
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, returns a dry-run
 \code{dsomop_result} containing only the reproducible R code without
 contacting the servers.}
+
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. The pooled view is the version record every server
+reported identically; when the servers differ it is \code{NULL} with
+\code{meta$pooling_reason}, never a silent merge.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} with \code{scope = "per_site"}. Each server's
-  result is a list with \code{cdm_version}, \code{source}, and
-  \code{vocabulary_version}. \code{pooled} is \code{NULL} by design.
+A \code{dsomop_result}. Each server's result is a list with
+  \code{cdm_version}, \code{source}, and \code{vocabulary_version}.
 }
 \description{
 Returns the CDM version reported by each connected server (preferring

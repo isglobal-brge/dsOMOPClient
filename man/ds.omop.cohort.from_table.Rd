@@ -4,19 +4,35 @@
 \alias{ds.omop.cohort.from_table}
 \title{Build a cohort from the persons in a server-side omop.table symbol}
 \usage{
-ds.omop.cohort.from_table(x, new_name = NULL, symbol = "omop", conns = NULL)
+ds.omop.cohort.from_table(
+  x,
+  new_name = NULL,
+  symbol = "omop",
+  conns = NULL,
+  newobj = NULL,
+  datasources = NULL
+)
 }
 \arguments{
 \item{x}{Character; the name of a server-side \code{omop.table} symbol.}
 
-\item{new_name}{Character; TABLE name for the cohort. If \code{NULL} (the
-default), an auto-generated name is used.}
+\item{new_name}{Deprecated alias of \code{newobj}.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{newobj}{Character; TABLE name for the cohort (of the form
+\code{dsomop_cohort_fromtbl_<suffix>}), as dsBaseClient assigning
+functions call it. If \code{NULL} (the default), an auto-generated name
+is used.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly; a \code{dsomop_cohort_handle} carrying the server-side

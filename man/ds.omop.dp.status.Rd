@@ -4,14 +4,23 @@
 \alias{ds.omop.dp.status}
 \title{Inspect sticky privacy-release services}
 \usage{
-ds.omop.dp.status(datasources = NULL)
+ds.omop.dp.status(datasources = NULL, type = "split")
 }
 \arguments{
-\item{datasources}{Named DataSHIELD connection list. \code{NULL} uses
-\code{DSI::datashield.connections_find()}.}
+\item{datasources}{Named DataSHIELD connection list. \code{NULL} uses the
+connections of the \code{"omop"} session, or
+\code{DSI::datashield.connections_find()} when there is none.}
+
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}. DP
+status is reported per server: \code{"both"} returns
+\code{pooled = NULL} with \code{meta$pooling_reason}, and
+\code{"combine"} stops. See \link{dsomop_conventions}.}
 }
 \value{
-An \code{omop_dp_status} named list of per-server DP status records.
+A \code{dsomop_result}. \code{$per_site} is the
+  \code{omop_dp_status} named list of per-server DP status records
+  returned by earlier versions (with its \code{unpatched} attribute and
+  print method), and \code{res$<server>} still reaches one server's record.
 }
 \description{
 Queries every selected DataSHIELD server. Unlike permissive exploration
@@ -76,5 +85,8 @@ release preflight rejects repeated \code{noise_domain_id} or server-owned
 logical \code{domain} values.
 }
 \examples{
-\dontrun{ds.omop.dp.status()}
+\dontrun{
+status <- ds.omop.dp.status()
+status$per_site
+}
 }

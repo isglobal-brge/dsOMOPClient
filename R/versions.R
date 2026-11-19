@@ -120,7 +120,13 @@ ds.omop.client.version <- function() {
 #' (publish again). \code{ready} concerns the published methods only: whether
 #' a server executes a language-2 plan is its \code{recipe_language} block.
 #'
-#' @param conns DSI connections (default: the DSI default connections).
+#' @param conns Deprecated alias of \code{datasources} (also accepted as the
+#'   first positional argument), kept for backward compatibility (a one-time
+#'   message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param symbol OMOP session symbol whose capability blocks (read by
 #'   \code{\link{ds.omop.connect}}) are reported.
 #' @return A data frame with one row per server: \code{server},
@@ -140,11 +146,16 @@ ds.omop.client.version <- function() {
 #' @examples
 #' \dontrun{
 #' ds.omop.client.version()
-#' ds.omop.server.version(conns)
+#' ds.omop.server.version(datasources = conns)
 #' }
 #' @export
-ds.omop.server.version <- function(conns = NULL, symbol = "omop") {
-  conns <- conns %||% DSI::datashield.connections_default()
+ds.omop.server.version <- function(conns = NULL, symbol = "omop",
+                                   datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.server.version")
+  if (is.null(conns)) {
+    conns <- tryCatch(.resolve_datasources(NULL, symbol = symbol),
+                      error = function(e) NULL)
+  }
   if (is.null(conns) || length(conns) == 0L || is.null(names(conns))) {
     stop("No DataSHIELD connections available.", call. = FALSE)
   }

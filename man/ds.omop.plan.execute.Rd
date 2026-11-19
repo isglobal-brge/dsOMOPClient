@@ -10,7 +10,8 @@ ds.omop.plan.execute(
   symbol = "omop",
   conns = NULL,
   output_mode = "memory",
-  on_small_site = c("error", "skip")
+  on_small_site = c("error", "skip"),
+  datasources = NULL
 )
 }
 \arguments{
@@ -40,8 +41,8 @@ it is sent losslessly and published through the same status protocol.}
 \item{symbol}{Character; name of the OMOP session symbol on the
 server (default \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL}, uses the
-connections stored in the session.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{output_mode}{Character; \code{"memory"} (default, backwards
 compatible) or \code{"staged"} (writes server-local files and returns
@@ -57,6 +58,11 @@ These policies require the publication protocol on every site. If any
 site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
 warning, and \code{on_small_site} does not change that call; a language-2
 plan is refused before assignment.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly, the resolved \code{out} symbol mapping for a complete

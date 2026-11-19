@@ -467,8 +467,8 @@
 .plan_v2_federation <- function(plan, symbol, conns) {
   if (length(conns) < 2L) return(plan)
   manifest <- .plan_v2_manifest(plan)
-  comparison <- ds.omop.compare(symbol = symbol, conns = conns,
-                                tables = names(manifest$tables))
+  comparison <- .quiet_aliases(ds.omop.compare(
+    symbol = symbol, conns = conns, tables = names(manifest$tables)))
   if (length(comparison$column_errors %||% character(0)) > 0L) {
     stop("Cannot establish a common schema contract: schema introspection failed for ",
          paste(names(comparison$column_errors), collapse = ", "), ".", call. = FALSE)
@@ -503,7 +503,7 @@
 #' @keywords internal
 .plan_v2_preview <- function(plan, symbol, conns) {
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   .v2_assert_supported(plan, session, names(conns))
   plan <- .plan_v2_federation(plan, symbol, conns)
   .ds_safe_aggregate(conns, expr = call("omopPlanPreviewDS", session$res_symbol,

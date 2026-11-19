@@ -14,7 +14,8 @@ ds.omop.column.stats(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -33,31 +34,43 @@ disclosure controls to the concept-filtered population.}
 \item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
 \code{cohort_definition_id}, or a server-side cohort table name), or NULL.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames or lists with column-level statistics), \code{$pooled}
-  (combined statistics when pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a list with
+  \code{n_total}, \code{n_missing}, \code{n_distinct} and, for person
+  tables, \code{n_persons} (counts banded; a suppressed value is
+  \code{NA}), plus \code{mean} and \code{sd} for numeric columns.
+  \code{$pooled} sums the counts, weights the mean by the contributing
+  persons and pools the SD; the distinct count is not additive and is not
+  pooled.
 }
 \description{
-Returns detailed statistics for a single column in an OMOP CDM table,
-including data type, non-null count, distinct count, and (for numeric
-columns) min, max, mean, and standard deviation. All counts are
-disclosure-controlled on the server side.
+Returns statistics for a single column in an OMOP CDM table: banded row,
+person and missing counts, the number of distinct values, and (for numeric
+columns) the mean and standard deviation of one value per person. All
+counts are disclosure-controlled on the server side. Like \code{ds.mean},
+the default view is per server.
 }
 \examples{
 \dontrun{

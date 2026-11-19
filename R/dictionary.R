@@ -15,23 +15,39 @@
 #'   to a specific category: \code{"CDM"}, \code{"Vocabulary"}, or
 #'   \code{"Results"}. NULL returns all tables (default: NULL).
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
-#' @return A named list (one element per server) of data frames with
-#'   table metadata columns such as \code{table_name},
-#'   \code{schema_category}, and \code{has_person_id}.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view lists the tables present on every
+#'   server. See \link{dsomop_conventions}.
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. \code{$per_site} is the named list (one
+#'   data frame per server, with \code{table_name}, \code{schema_category},
+#'   \code{has_person_id}, ...) returned by earlier versions, and
+#'   \code{res$<server>} still reaches one server's frame. \code{$pooled}
+#'   holds the rows of the tables present on every server (\code{NULL}, with
+#'   \code{meta$pooling_reason}, when a server did not answer).
 #' @examples
 #' \dontrun{
 #' tables <- ds.omop.tables()
 #' tables$server1
+#' tables$pooled$table_name   # tables present everywhere
 #'
 #' cdm_only <- ds.omop.tables(schema_category = "CDM")
 #' }
 #' @export
 ds.omop.tables <- function(schema_category = NULL,
                            symbol = "omop",
-                           conns = NULL) {
+                           conns = NULL,
+                           type = "both",
+                           datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.tables")
+  result_type <- .resolve_result_type(type, default_type = "both")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   result <- .ds_safe_aggregate(
     conns,
@@ -53,7 +69,40 @@ ds.omop.tables <- function(schema_category = NULL,
     }
   }
 
-  result
+  pooled <- if (.result_type_wants_combine(result_type)) {
+    .dictionary_common_rows(result, "table_name", names(conns))
+  }
+  .result_type_view(dsomop_result(
+    per_site = result, pooled = pooled,
+    meta = list(call_code = .build_code("ds.omop.tables",
+      schema_category = schema_category, type = result_type,
+      symbol = symbol))),
+    result_type,
+    "No complete list of the tables common to every server was available.",
+    pooling = .pooling_meta("common_tables"))
+}
+
+# The rows (from the first server) whose key is present on every requested
+# server; NULL when a server did not answer.
+.dictionary_common_rows <- function(per_site, key, expected_servers) {
+  if (length(attr(per_site, "ds_errors")) > 0L ||
+      !all(expected_servers %in% names(per_site))) {
+    return(NULL)
+  }
+  frames <- per_site[expected_servers]
+  if (length(frames) == 0L ||
+      !all(vapply(frames, function(df) {
+        is.data.frame(df) && key %in% names(df)
+      }, logical(1)))) {
+    return(NULL)
+  }
+  common <- Reduce(intersect, lapply(frames, function(df) {
+    as.character(df[[key]])
+  }))
+  first <- frames[[1L]]
+  out <- first[as.character(first[[key]]) %in% common, , drop = FALSE]
+  rownames(out) <- NULL
+  out
 }
 
 #' List columns in a table
@@ -67,21 +116,51 @@ ds.omop.tables <- function(schema_category = NULL,
 #' @param table Character; the CDM table name to introspect (e.g.,
 #'   \code{"condition_occurrence"}, \code{"person"}).
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
-#' @return A named list (one element per server) of data frames with
-#'   column metadata such as \code{column_name}, \code{data_type},
-#'   \code{is_nullable}, \code{is_concept}, and \code{is_date}.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view lists the columns present on every
+#'   server. See \link{dsomop_conventions}.
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. \code{$per_site} is the named list (one
+#'   data frame per server, with \code{column_name}, \code{data_type},
+#'   \code{is_nullable}, \code{is_concept}, \code{is_date}, ...) returned by
+#'   earlier versions, and \code{res$<server>} still reaches one server's
+#'   frame. \code{$pooled} holds the rows of the columns present on every
+#'   server.
 #' @examples
 #' \dontrun{
 #' cols <- ds.omop.columns("condition_occurrence")
 #' cols$server1
+#' cols$pooled$column_name   # columns present everywhere
 #' }
 #' @export
 ds.omop.columns <- function(table, symbol = "omop",
-                            conns = NULL) {
+                            conns = NULL,
+                            type = "both",
+                            datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.columns")
+  result_type <- .resolve_result_type(type, default_type = "both")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
+  raw <- .dictionary_columns_raw(table, session, conns)
+  pooled <- if (.result_type_wants_combine(result_type)) {
+    .dictionary_common_rows(raw, "column_name", names(conns))
+  }
+  .result_type_view(dsomop_result(
+    per_site = raw, pooled = pooled,
+    meta = list(call_code = .build_code("ds.omop.columns", table = table,
+                                        type = result_type, symbol = symbol))),
+    result_type,
+    "No complete list of the columns common to every server was available.",
+    pooling = .pooling_meta("common_columns"))
+}
+
+.dictionary_columns_raw <- function(table, session, conns) {
   .ds_safe_aggregate(
     conns,
     expr = call("omopListColumnsDS", session$res_symbol, table)
@@ -98,7 +177,12 @@ ds.omop.columns <- function(table, symbol = "omop",
 #' not consume it to invent arbitrary joins automatically.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return A named list (one element per server) of data frames with
 #'   edge metadata such as \code{from_table}, \code{to_table},
 #'   \code{from_column}, and \code{to_column}.
@@ -108,9 +192,10 @@ ds.omop.columns <- function(table, symbol = "omop",
 #' joins$server1
 #' }
 #' @export
-ds.omop.joins <- function(symbol = "omop", conns = NULL) {
+ds.omop.joins <- function(symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.joins")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   .ds_safe_aggregate(
     conns,
@@ -130,7 +215,12 @@ ds.omop.joins <- function(symbol = "omop", conns = NULL) {
 #' tables as the common set.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param tables Optional character vector limiting column introspection to the
 #'   tables relevant to a plan. Table presence is still compared globally.
 #' @return A list with schema components including \code{servers} (the exact
@@ -154,9 +244,10 @@ ds.omop.joins <- function(symbol = "omop", conns = NULL) {
 #' diff$column_diffs
 #' }
 #' @export
-ds.omop.compare <- function(symbol = "omop", conns = NULL, tables = NULL) {
+ds.omop.compare <- function(symbol = "omop", conns = NULL, tables = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.compare")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   caps <- session$capabilities
   if (!is.null(tables)) {
     if (!is.character(tables) || anyNA(tables) || any(!nzchar(tables))) {
@@ -240,8 +331,11 @@ ds.omop.compare <- function(symbol = "omop", conns = NULL, tables = NULL) {
   inspect_tables <- if (is.null(tables)) common else intersect(common, tables)
   for (tbl in inspect_tables) {
     tryCatch({
-      cols_per_server <- ds.omop.columns(
-        tbl, symbol = symbol, conns = conns)
+      cols_per_server <- .quiet_aliases(ds.omop.columns(
+        tbl, symbol = symbol, conns = conns))
+      if (inherits(cols_per_server, "dsomop_result")) {
+        cols_per_server <- cols_per_server$per_site
+      }
       aggregate_errors <- attr(cols_per_server, "ds_errors")
       missing_servers <- setdiff(expected_servers, names(cols_per_server))
       if (length(aggregate_errors) > 0L || length(missing_servers) > 0L) {
@@ -393,7 +487,12 @@ ds.omop.compare <- function(symbol = "omop", conns = NULL, tables = NULL) {
 #' building.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return A named list (one element per server), where each element is
 #'   a list with \code{tables} (character vector of table names),
 #'   \code{cdm_info} (list with CDM version and DBMS details), and
@@ -406,9 +505,10 @@ ds.omop.compare <- function(symbol = "omop", conns = NULL, tables = NULL) {
 #' snap$server1$edges
 #' }
 #' @export
-ds.omop.snapshot <- function(symbol = "omop", conns = NULL) {
+ds.omop.snapshot <- function(symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.snapshot")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   caps <- .ds_safe_aggregate(
     conns,

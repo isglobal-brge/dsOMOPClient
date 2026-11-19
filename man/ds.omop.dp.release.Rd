@@ -10,7 +10,7 @@ ds.omop.dp.release(
   datasources = NULL,
   pool = TRUE,
   format = c("long", "wide", "vector", "raw"),
-  type = NULL
+  type = "both"
 )
 }
 \arguments{
@@ -21,19 +21,24 @@ ds.omop.dp.release(
 an explicit \code{population_id}, the bare symbol \code{x} is used as its
 public compatibility label. This label does not control sticky identity.}
 
-\item{datasources}{Named DataSHIELD connection list. \code{NULL} uses
-\code{DSI::datashield.connections_find()}.}
+\item{datasources}{Named DataSHIELD connection list. \code{NULL} uses the
+connections of the \code{"omop"} session, or
+\code{DSI::datashield.connections_find()} when there is none.}
 
-\item{pool}{Logical; pool the complete set of noisy site releases.}
+\item{pool}{Deprecated alias of \code{type}: \code{TRUE} means
+\code{type = "both"}, \code{FALSE} means \code{type = "split"}.}
 
 \item{format}{Client-only pooled-result format: long data frame, one-row
 wide data frame, named vector, or raw list. Histogram releases support all
 four forms; other statistics retain their typed list. This argument never
 enters the server specification or sticky-release identity.}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, the legacy \code{pool} argument is preserved:
-\code{TRUE} means both views and \code{FALSE} means split only.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. When the releases cannot be pooled (incompatible
+contracts, repeated logical sources, a non-additive statistic),
+\code{"both"} keeps the per-server releases with \code{pooled = NULL}
+and \code{meta$pooling_reason}, and \code{"combine"} stops with the
+reason. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result}. On 2.10.3, \code{meta$privacy} reports

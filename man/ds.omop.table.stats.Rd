@@ -12,50 +12,62 @@ ds.omop.table.stats(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
 \item{table}{Character; the CDM table name (e.g.,
 \code{"condition_occurrence"}, \code{"person"}).}
 
-\item{stats}{Character vector; which statistics to compute. Supported
-values are \code{"rows"} (total row count) and \code{"persons"}
-(distinct person count). Default: \code{c("rows", "persons")}.}
+\item{stats}{Character vector; which statistics to compute:
+\code{"rows"} (total row count), \code{"persons"} (distinct person
+count) and \code{"date_range"} (first and last supported month).
+Default: \code{c("rows", "persons")}.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
-\item{pooling_policy}{Character; \code{"strict"} (default) requires all
-servers to succeed, \code{"pooled_only_ok"} allows partial results.}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}; aliases follow dsBaseClient conventions. When omitted,
-legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{statistic} and \code{value}),
-  \code{$pooled} (combined statistics when pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a list with
+  the banded \code{rows} and \code{persons} counts (a count the server
+  suppressed is absent) and, when requested, \code{date_range}
+  (\code{column}, \code{min_month}, \code{max_month}). \code{$pooled} has
+  the same fields: counts summed over the servers and the date range
+  spanning them.
 }
 \description{
 Returns row counts and person counts for the specified OMOP CDM table.
 Results are disclosure-controlled on the server side (counts below the
-minimum cell threshold are suppressed) and returned per-site with
-optional pooled totals that sum counts across servers.
+minimum cell threshold are suppressed, surviving counts are banded) and
+returned per server and, by default, pooled (summed) across servers, as
+\code{ds.dim} does.
 }
 \examples{
 \dontrun{
 result <- ds.omop.table.stats("condition_occurrence")
 result$per_site$server1
+result$pooled$persons
 
-pooled <- ds.omop.table.stats("drug_exposure", scope = "pooled")
-pooled$pooled
+ds.omop.table.stats("drug_exposure", type = "split")
 }
 }

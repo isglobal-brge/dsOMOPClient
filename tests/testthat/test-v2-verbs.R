@@ -237,7 +237,7 @@ test_that("verb preflight checks only participating sites and the methods it nee
     state$methods$s1$assign <- method
     state$methods$s1$aggregate <- c("omopPlanStatusDS", "omopStagedRevokeDS")
     state$methods$s2 <- .methods_2102()
-    expect_silent(.vb_requests()[[verb]](conns = list(s1 = "s1")))
+    expect_silent(.vb_requests()[[verb]](datasources = list(s1 = "s1")))
     expect_true(length(state$calls) > 0L)
     expect_true(all(vapply(state$calls, function(x) identical(x$sites, "s1"), logical(1))))
     expect_identical(state$values$s2, list(D = "orig"))

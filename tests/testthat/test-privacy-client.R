@@ -354,7 +354,7 @@ test_that("DP status never publishes a partial federation", {
   .with_dp_backend(statuses, list(a = NULL, b = NULL),
     function(datasources, sent) {
       value <- ds.omop.dp.status(datasources)
-      expect_named(value, c("a", "b"))
+      expect_named(value$per_site, c("a", "b"))
       expect_identical(value$a$mechanism,
                        "dsomop-sticky-discrete-laplace-prf-v1")
       expect_identical(value$a$sampler, "hmac-inverse-cdf-52bit-v1")
@@ -366,7 +366,8 @@ test_that("DP status never publishes a partial federation", {
         value$a$privacy_guarantee,
         .DP_PRIVACY_GUARANTEE
       )
-      expect_true(all(vapply(value, `[[`, logical(1L), "sticky_noise")))
+      expect_true(all(vapply(value$per_site, `[[`, logical(1L),
+                             "sticky_noise")))
     })
 
   datasources <- list(a = "A", b = "B")
@@ -822,12 +823,21 @@ test_that("federated DP release rejects incompatible date semantics", {
                       b = .dp_disclosure(timezone = "Etc/GMT-1"))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(
-      ds.omop.dp.release("analysis_table", privacy, datasources),
+      ds.omop.dp.release("analysis_table", privacy, datasources,
+                         type = "combine"),
       "Federated harmonisation failed"
     )
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
                     character(1L))
     expect_false("omopDpReleaseDS" %in% heads)
+  }, disclosures = disclosures)
+
+  # type = "both" keeps the per-site releases, with the reason.
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    both <- ds.omop.dp.release("analysis_table", privacy, datasources)
+    expect_null(both$pooled)
+    expect_named(both$per_site, c("a", "b"))
+    expect_match(both$meta$pooling_reason, "Federated harmonisation failed")
   }, disclosures = disclosures)
 
   .with_dp_backend(statuses, releases, function(datasources, sent) {
@@ -1553,7 +1563,8 @@ test_that("a mixed old/new federation answers per site under each contract (R08)
   releases$old$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(suppressWarnings(ds.omop.dp.release(
-      "analysis_table", omop_privacy("count"), datasources)),
+      "analysis_table", omop_privacy("count"), datasources,
+      type = "combine")),
       "cannot be combined")
     expect_warning(value <- ds.omop.dp.release(
       "analysis_table", omop_privacy("count"), datasources, type = "split"),

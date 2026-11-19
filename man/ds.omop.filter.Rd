@@ -12,7 +12,8 @@ ds.omop.filter(
   newobj = NULL,
   symbol = "omop",
   conns = NULL,
-  expr = NULL
+  expr = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -33,11 +34,16 @@ symbol is used.}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{expr}{(2.10.3) A predicate from \code{\link{omop_where}} (instead of
 \code{var}/\code{op}/\code{value}).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly, the name of the created server-side symbol (\code{newobj}).

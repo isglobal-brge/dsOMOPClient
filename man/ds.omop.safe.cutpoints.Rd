@@ -13,7 +13,8 @@ ds.omop.safe.cutpoints(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -30,27 +31,33 @@ rows before computing bins (default: NULL for all rows).}
 public grid (default: 10). Unsupported or under-populated grids fail
 closed; bins are never merged based on protected counts.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.
-Cutpoints are inherently per-site; pooled scope is accepted but the
-pooled slot will be NULL.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
 \item{symbol}{Character; the session symbol identifying the OMOP
 connection (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}.
+Cutpoints are site-specific: \code{"both"} returns \code{pooled = NULL}
+with \code{meta$pooling_reason}, and \code{"combine"} stops before
+contacting the servers. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result} object with \code{$per_site} (named list
   where each element contains public \code{breaks}, banded \code{counts}, a
   session \code{contract}, and clipping/grid metadata),
-  \code{$pooled} (always NULL for cutpoints), and \code{$meta} (list with
-  \code{call_code} and \code{scope}).
+  \code{$pooled} (always NULL for cutpoints), and \code{$meta}.
 }
 \description{
 Returns a public numeric grid configured by the data controller for an OMOP

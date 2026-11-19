@@ -21,8 +21,11 @@ test_that("table filtering preserves per-server introspection errors", {
   result <- ds.omop.tables(
     schema_category = "CDM", symbol = session_name
   )
-  expect_identical(attr(result, "ds_errors"),
+  expect_identical(attr(result$per_site, "ds_errors"),
                    list(b = "catalog unavailable"))
+  # An incomplete federation has no common-table view.
+  expect_null(result$pooled)
+  expect_match(result$meta$pooling_reason, "common to every server")
 })
 
 test_that("schema snapshots include only complete servers and retain errors", {

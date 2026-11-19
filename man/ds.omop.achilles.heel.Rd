@@ -4,19 +4,27 @@
 \alias{ds.omop.achilles.heel}
 \title{Get Achilles Heel data-quality warnings (per site)}
 \usage{
-ds.omop.achilles.heel(symbol = "omop", conns = NULL)
+ds.omop.achilles.heel(symbol = "omop", conns = NULL, datasources = NULL)
 }
 \arguments{
-\item{symbol}{Character; session symbol (default "omop").}
+\item{symbol}{Character; session symbol (default "omop"). Unused.}
 
-\item{conns}{Optional DataSHIELD connections.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} with per-site heel warning data frames.
+Nothing: the function always stops with an error.
 }
 \description{
 Achilles Heel counts records and does not provide distinct-person support for
 each fired rule. It therefore cannot satisfy dsOMOP's person-level
 contribution contract and is no longer available through DataSHIELD. Run it
-only in a controller-side quality-assurance workflow.
+only in a controller-side quality-assurance workflow. This function always
+stops with that explanation, without contacting any server; it is kept so
+existing code fails with a clear reason.
 }

@@ -4,7 +4,14 @@
 \alias{ds.omop.select}
 \title{Keep a subset of columns of a server-side omop.table data frame}
 \usage{
-ds.omop.select(x = NULL, cols, newobj = NULL, symbol = "omop", conns = NULL)
+ds.omop.select(
+  x = NULL,
+  cols,
+  newobj = NULL,
+  symbol = "omop",
+  conns = NULL,
+  datasources = NULL
+)
 }
 \arguments{
 \item{x}{Character; name of the server-side \code{omop.table} symbol. If
@@ -19,8 +26,13 @@ symbol is used.}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly, the name of the created server-side symbol (\code{newobj}).

@@ -20,7 +20,12 @@
 #' @param concept_set An \code{\link{omop_concept_set}()}; \code{descendants},
 #'   \code{mapped} and \code{exclude} expand as in an event.
 #' @param symbol Character; the OMOP session symbol.
-#' @param conns DSI connections; defaults to the session's connections.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Character vector of \code{"concept:<id>"} keys in concept ID order.
 #' @examples
 #' \dontrun{
@@ -32,7 +37,8 @@
 #' }
 #' @seealso \code{\link{omop_category_spec}}, \code{\link{omop_concept_set}}
 #' @export
-omop_concept_levels <- function(concept_set, symbol = "omop", conns = NULL) {
+omop_concept_levels <- function(concept_set, symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "omop_concept_levels")
   if (!inherits(concept_set, "omop_concept_set")) {
     stop("omop_concept_levels(): concept_set must be an omop_concept_set().", call. = FALSE)
   }
@@ -40,7 +46,7 @@ omop_concept_levels <- function(concept_set, symbol = "omop", conns = NULL) {
     stop("omop_concept_levels(): bind recipe parameters before declaring levels.", call. = FALSE)
   }
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   expand <- function(cs) {
     spec <- list(concepts = as.integer(cs$concepts),
                  include_descendants = isTRUE(cs$descendants),

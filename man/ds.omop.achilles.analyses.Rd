@@ -8,7 +8,8 @@ ds.omop.achilles.analyses(
   domain = NULL,
   symbol = "omop",
   conns = NULL,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
@@ -20,22 +21,29 @@ ds.omop.achilles.analyses(
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. The historical default is \code{"both"}.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{scope = "pooled"}.
-  The pooled result is a data frame listing analysis IDs, names, and
+A \code{dsomop_result}. Each \code{$per_site} entry and the
+  pooled consensus are data frames listing analysis IDs, names, and
   associated domains.
 }
 \description{
 Returns the catalog of Achilles analyses available on the connected servers,
-optionally filtered by clinical domain. Since the catalog is identical
-across servers (it is defined by the Achilles specification), the pooled
-result is taken from the first responding server.
+optionally filtered by clinical domain. The catalog is defined by the
+Achilles specification, so the pooled result is the catalog every server
+returned identically; when the servers' catalogs differ, or a server is
+unavailable, \code{$pooled} is \code{NULL} with
+\code{meta$pooling_reason}.
 }
 \examples{
 \dontrun{

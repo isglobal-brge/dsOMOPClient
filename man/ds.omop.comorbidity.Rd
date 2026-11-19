@@ -17,26 +17,28 @@ ds.omop.comorbidity(
 
 \item{conceptB}{Integer; the second concept ID (column presence axis).}
 
-\item{tableA}{Character; the CDM table holding \code{conceptA} (default:
+\item{tableA}{Character; the CDM table holding both concepts (default:
 \code{"condition_occurrence"}).}
 
-\item{tableB}{Character; the CDM table holding \code{conceptB} (default:
-same as \code{tableA}).}
+\item{tableB}{Character; must equal \code{tableA}. The server cross-tab
+reads one table, so two concepts of different tables are refused with an
+explanation rather than silently counted in \code{tableA}.}
 
 \item{...}{Additional arguments forwarded to \code{\link{ds.omop.crosstab}}
-(e.g., \code{cohort_table}, \code{scope}, \code{pooling_policy},
-\code{symbol}, \code{conns}, \code{execute}).}
+(e.g., \code{cohort}, \code{type}, \code{pooling_policy},
+\code{symbol}, \code{datasources}, \code{execute}).}
 }
 \value{
 A \code{dsomop_result} object (see \code{\link{ds.omop.crosstab}}).
 }
 \description{
 A thin wrapper over \code{\link{ds.omop.crosstab}} that cross-tabulates the
-person-level presence/absence of two concepts as a 2x2 table, using the
-SAME server-side \code{omopCrossTabDS} machinery (primary + iterative
-complementary suppression, no exact margins). Because counting and
-suppression happen server-side, suppressed cells cannot be backed out from
-margins client-side.
+person-level presence/absence of two concepts of one table as a 2x2 table,
+using the SAME server-side \code{omopCrossTabDS} machinery (primary +
+iterative complementary suppression, no exact margins). Because counting
+and suppression happen server-side, suppressed cells cannot be backed out
+from margins client-side. Both axes use the table's domain concept column
+(for example \code{drug_concept_id} for \code{drug_exposure}).
 }
 \section{Comorbidity is descriptive, not inferential}{
 

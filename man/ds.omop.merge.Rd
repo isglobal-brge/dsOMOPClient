@@ -11,7 +11,9 @@ ds.omop.merge(
   type = "inner",
   newobj = NULL,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  join = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -26,7 +28,8 @@ session's most recently produced output symbol is used.}
 (\code{"person_id"} or \code{"subject_id"}); other columns are rejected
 server-side.}
 
-\item{type}{Character; \code{"inner"} (default) or \code{"left"}.}
+\item{type}{Deprecated alias of \code{join} (kept in its position, so
+positional calls keep working).}
 
 \item{newobj}{Character; name of the server-side symbol to create. If
 \code{NULL} (default), a unique name is generated.}
@@ -34,8 +37,17 @@ server-side.}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{join}{Character; the join type, \code{"inner"} (default) or
+\code{"left"}. It replaces \code{type}, which elsewhere in the package
+names the result view.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly, the name of the created server-side symbol (\code{newobj}).
@@ -49,7 +61,7 @@ closed if it falls below the disclosure threshold.
 }
 \examples{
 \dontrun{
-joined <- ds.omop.merge("cohort_a", "cohort_b", type = "left")
+joined <- ds.omop.merge("cohort_a", "cohort_b", join = "left")
 }
 }
 \seealso{

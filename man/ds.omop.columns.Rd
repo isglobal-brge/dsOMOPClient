@@ -4,7 +4,13 @@
 \alias{ds.omop.columns}
 \title{List columns in a table}
 \usage{
-ds.omop.columns(table, symbol = "omop", conns = NULL)
+ds.omop.columns(
+  table,
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 }
 \arguments{
 \item{table}{Character; the CDM table name to introspect (e.g.,
@@ -12,12 +18,25 @@ ds.omop.columns(table, symbol = "omop", conns = NULL)
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. The pooled view lists the columns present on every
+server. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A named list (one element per server) of data frames with
-  column metadata such as \code{column_name}, \code{data_type},
-  \code{is_nullable}, \code{is_concept}, and \code{is_date}.
+A \code{dsomop_result}. \code{$per_site} is the named list (one
+  data frame per server, with \code{column_name}, \code{data_type},
+  \code{is_nullable}, \code{is_concept}, \code{is_date}, ...) returned by
+  earlier versions, and \code{res$<server>} still reaches one server's
+  frame. \code{$pooled} holds the rows of the columns present on every
+  server.
 }
 \description{
 Queries each connected server for the list of columns present in the
@@ -29,5 +48,6 @@ whether it is a concept ID column or a date column.
 \dontrun{
 cols <- ds.omop.columns("condition_occurrence")
 cols$server1
+cols$pooled$column_name   # columns present everywhere
 }
 }

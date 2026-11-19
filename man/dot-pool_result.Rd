@@ -4,7 +4,13 @@
 \alias{.pool_result}
 \title{Dispatch pooling by result type}
 \usage{
-.pool_result(per_site, result_type, policy = "strict", harmonization = NULL)
+.pool_result(
+  per_site,
+  result_type,
+  policy = "strict",
+  harmonization = NULL,
+  options = list()
+)
 }
 \arguments{
 \item{per_site}{Named list of per-server results}
@@ -12,6 +18,11 @@
 \item{result_type}{Character; one of the recognized result types}
 
 \item{policy}{Character; "strict" or "pooled_only_ok"}
+
+\item{harmonization}{Optional negotiated federation contract.}
+
+\item{options}{Named list of request options that shape the pooled view
+(\code{metric} and \code{top_n} for concept prevalence).}
 }
 \value{
 List with $result and $warnings

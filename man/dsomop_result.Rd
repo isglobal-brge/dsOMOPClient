@@ -20,7 +20,10 @@ dsomop_result(per_site, pooled = NULL, meta = list())
 \code{"both"}),
 \code{pooling_policy} (character; \code{"strict"} or
 \code{"pooled_only_ok"}),
-\code{warnings} (character vector of pooling warnings).}
+\code{warnings} (character vector of pooling warnings). Further
+elements, such as \code{pooling} (method and estimand of the pooled
+result) and \code{pooling_reason} (why no pooled result was formed),
+are kept as given.}
 }
 \value{
 A \code{dsomop_result} object (a list with class

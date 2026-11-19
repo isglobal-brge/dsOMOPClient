@@ -152,11 +152,14 @@ test_that("two-pass histogram uses the same verified servers in both passes", {
     "measurement", "value_as_number", bins = 2L,
     scope = "pooled", pooling_policy = "strict", symbol = symbol
   )
+  # Only the pooling fails: the per-site histograms (each server on its own
+  # edges) are still returned, with the reason.
   expect_null(strict$pooled)
-  expect_length(strict$per_site, 0L)
-  expect_false(any(grepl("omopNumericHistogramDS", calls$values)))
+  expect_named(strict$per_site, "a")
+  expect_true("omopNumericHistogramDS:a" %in% calls$values)
   expect_true(any(grepl("incomplete range federation",
                         strict$meta$warnings)))
+  expect_match(strict$meta$pooling_reason, "incomplete range federation")
 
   calls$values <- character(0)
   permissive <- ds.omop.value.histogram(
@@ -180,8 +183,9 @@ test_that("two-pass histogram uses the same verified servers in both passes", {
     "No pooled histogram data"
   )
   expect_identical(plotted$meta$scope, "pooled")
+  expect_identical(plotted$meta$type, "both")
   expect_null(plotted$pooled)
-  expect_false(any(grepl("omopNumericHistogramDS", calls$values)))
+  expect_named(plotted$per_site, "a")
 })
 
 test_that("ds.omop.value.quantiles execute=FALSE returns dsomop_result", {

@@ -15,7 +15,8 @@ ds.omop.ohdsi.results(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -31,17 +32,24 @@ ds.omop.ohdsi.results(
 
 \item{tool_id}{Character; optional tool identifier.}
 
-\item{scope}{Character; \code{"per_site"} or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL}, uses active session.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result} object.
@@ -54,14 +62,18 @@ pooling contract and combine complete disclosure-controlled frames through
 that contract; they never route through a same-named live analysis or a
 column-name pooling heuristic. Reviewed equality filters are applied
 server-side; selection, ordering, and the row limit are applied only after
-contractual pooling.
+contractual pooling. With \code{type = "both"}, a result that cannot be
+combined (no consistent contract, an incomplete federation, a capped
+table) still returns the per-server frames, with \code{pooled = NULL} and
+\code{meta$pooling_reason}; \code{type = "combine"} stops with the
+reason.
 }
 \examples{
 \dontrun{
 # Cohort diagnostics results per site
 cd <- ds.omop.ohdsi.results("index_event_breakdown")
 
-# Cohort counts pooled across servers
-cc <- ds.omop.ohdsi.results("cohort_count", scope = "pooled")
+# Cohort counts per server and pooled across servers
+cc <- ds.omop.ohdsi.results("cohort_count", type = "both")
 }
 }

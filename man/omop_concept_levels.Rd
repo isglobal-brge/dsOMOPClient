@@ -4,7 +4,12 @@
 \alias{omop_concept_levels}
 \title{Declared category levels from the public vocabulary}
 \usage{
-omop_concept_levels(concept_set, symbol = "omop", conns = NULL)
+omop_concept_levels(
+  concept_set,
+  symbol = "omop",
+  conns = NULL,
+  datasources = NULL
+)
 }
 \arguments{
 \item{concept_set}{An \code{\link{omop_concept_set}()}; \code{descendants},
@@ -12,7 +17,13 @@ omop_concept_levels(concept_set, symbol = "omop", conns = NULL)
 
 \item{symbol}{Character; the OMOP session symbol.}
 
-\item{conns}{DSI connections; defaults to the session's connections.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Character vector of \code{"concept:<id>"} keys in concept ID order.
