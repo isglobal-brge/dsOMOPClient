@@ -55,6 +55,12 @@ ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_mo
   reports <- raw[names(conns)]
   # A site reports a column either with its level set or as refused.
   cols <- unique(unlist(lapply(reports, function(r) c(names(r$levels), r$unsafe)), use.names = FALSE))
+  for (site in names(reports)) {
+    if (!setequal(c(names(reports[[site]]$levels), reports[[site]]$unsafe), cols)) {
+      stop("ds.omop.drop_empty_levels(): '", x, "' does not publish the same factor columns at every site; ",
+           "publish it with recipe_execute() first.", call. = FALSE)
+    }
+  }
   shared <- list()
   for (col in cols) {
     sets <- Filter(Negate(is.null), lapply(reports, function(r) r$levels[[col]]))
