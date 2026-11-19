@@ -334,3 +334,31 @@ test_that("as.data.frame of both views never falls back to one server", {
   expect_identical(as.data.frame(r2)$server, c("a", "b"))
   expect_identical(r2[["a"]], data.frame(x = 1))
 })
+
+test_that("OHDSI results keep the per-server frames when they cannot be combined", {
+  sym <- .cons_session(conns = list(site_a = "A", site_b = "B"))
+  contract <- function(tool) list(
+    contract_version = 1L, tool_id = tool, table_name = "cohort_count",
+    pooling_contract = list(version = 1L, strategy = "tabular",
+                            columns = list(key = list(role = "key"),
+                                           n = list(role = "sum"))))
+  frames <- list(site_a = data.frame(key = "x", n = 10),
+                 site_b = data.frame(key = "x", n = 15))
+  testthat::local_mocked_bindings(
+    .ds_safe_aggregate = function(conns, expr) {
+      if (identical(as.character(expr[[1L]]), "omopOhdsiResultContractDS")) {
+        return(list(site_a = contract("cohort_diagnostics"),
+                    site_b = contract("cohort_incidence")))
+      }
+      frames[names(conns)]
+    },
+    .package = "dsOMOPClient")
+  expect_error(ds.omop.ohdsi.results("cohort_count", symbol = sym,
+                                     type = "combine"),
+               "differs across servers")
+  both <- ds.omop.ohdsi.results("cohort_count", symbol = sym, type = "both")
+  expect_named(both$per_site, c("site_a", "site_b"))
+  expect_null(both$pooled)
+  expect_identical(both$meta$type, "both")
+  expect_match(both$meta$pooling_reason, "differs across servers")
+})

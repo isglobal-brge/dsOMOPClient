@@ -109,7 +109,7 @@
   ds.omop.connect(resource = symbol, symbol = symbol, conns = conns)
   connected <- TRUE
   settings <- ds.omop.disclosure.settings(symbol = symbol, conns = conns)
-  expect_identical(names(settings), "site1")
+  expect_identical(names(settings$per_site), "site1")
   expect_equal(settings$site1$nfilter_subset, 5L)
   sid <- server$getSessionIds()
   stopifnot(length(sid) == 1L)

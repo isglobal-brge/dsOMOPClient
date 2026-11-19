@@ -9,7 +9,10 @@
   (`ds.omop.query.pool()`, now `pooling_policy`), `new_name` (now `newobj`),
   `type` in `ds.omop.merge()` (now `join`) and `combine` (now `scope_combine`
   in `ds.omop.analysis.run()`, `ds.omop.meta.effect_estimate()` and
-  `recipe_execute()`).
+  `recipe_execute()`). With no connections given, `ds.omop.connect()` and
+  `ds.omop.server.version()` now find them like dsBaseClient does (they used
+  only DSI's default connections), and the DP functions use the `"omop"`
+  session's connections first.
 - Count and table readers (`ds.omop.table.stats()`, `ds.omop.domain.coverage()`,
   `ds.omop.date.counts()`, `ds.omop.value.counts()`, `ds.omop.crosstab()`,
   `ds.omop.concept.locate()`, `ds.omop.achilles.results()`) now return per-server
