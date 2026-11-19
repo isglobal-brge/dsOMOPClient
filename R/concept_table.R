@@ -125,7 +125,8 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
                                   cvar = if (!is.null(by)) paste0(temporary, "$", by),
                                   useNA = useNA, report.chisq.tests = report.chisq.tests,
                                   datasources = conns)
-  out <- .conceptTableComplete(result, setNames(levels, c("C", "D")[seq_along(levels)]))
+  out <- .conceptTableComplete(result, setNames(levels, c("C", "D")[seq_along(levels)]),
+                               rename = setNames(paste0(data, "$"), paste0(temporary, "$")))
   attr(out, "variables") <- columns
   if (identical(small, "missing")) attr(out, "small") <- "missing"
   class(out) <- c("dsomop_table", "list")
@@ -137,7 +138,7 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
 # no valid site has added: zero counts; for proportions, zero along the other
 # margin and NA where the added category is the one normalised. Dimensions are
 # known by position (first column, second column, sites), never by their names.
-.conceptTableComplete <- function(result, maps) {
+.conceptTableComplete <- function(result, maps, rename = NULL) {
   if (!is.list(result) || is.null(result$output.list)) return(result)
   bad <- function() stop("ds.table counts do not match the permitted concept contract; rerun publication.", call. = FALSE)
   two_way <- length(maps) == 2L
@@ -160,6 +161,10 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
       labelled <- dimnames(x)
       labelled[[d]] <- c(maps[[prefix]], current[missing_level])
       dimnames(x) <- labelled
+    }
+    # Dimensions are named after the published table, not the temporary copy.
+    if (length(rename) && !is.null(names(dimnames(x)))) {
+      for (from in names(rename)) names(dimnames(x)) <- sub(from, rename[[from]], names(dimnames(x)), fixed = TRUE)
     }
     x
   }
