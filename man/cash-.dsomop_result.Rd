@@ -3,11 +3,17 @@
 \name{$.dsomop_result}
 \alias{$.dsomop_result}
 \alias{[[.dsomop_result}
+\alias{$.dsomop_listing}
+\alias{[[.dsomop_listing}
 \title{Access dsomop_result elements with backward compatibility}
 \usage{
 \method{$}{dsomop_result}(x, name)
 
 \method{[[}{dsomop_result}(x, i, exact = TRUE)
+
+\method{$}{dsomop_listing}(x, name)
+
+\method{[[}{dsomop_listing}(x, i, exact = TRUE)
 }
 \arguments{
 \item{x}{A \code{dsomop_result} object.}

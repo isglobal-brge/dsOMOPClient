@@ -26,7 +26,9 @@ test_that("DP status validates and prints exclusivity with legacy compatibility"
   )
   value <- ds.omop.dp.status(as.list(stats::setNames(names(statuses),
                                                     names(statuses))))
-  expect_s3_class(value, "dsomop_result")
+  expect_s3_class(value, "dsomop_listing")
+  # The old per-server status object, with its class, is the result itself.
+  expect_s3_class(value, "omop_dp_status")
   expect_s3_class(value$per_site, "omop_dp_status")
   expect_true(value$exclusive$exclusive)
   expect_false(value$opted_out$exclusive)

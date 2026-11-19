@@ -1472,14 +1472,14 @@ ds.omop.disclosure.settings <- function(symbol = "omop", conns = NULL,
       raw, expected_servers = names(conns), fail = FALSE
     ), error = function(e) NULL)
   }
-  .result_type_view(dsomop_result(
+  .as_listing(.result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = .build_code("ds.omop.disclosure.settings",
                                         type = result_type,
                                         symbol = symbol))),
     result_type,
     "No federation contract could be negotiated from every server's settings.",
-    pooling = .pooling_meta("federation_contract"))
+    pooling = .pooling_meta("federation_contract")))
 }
 
 #' Resolve a resource argument into a per-server resource map

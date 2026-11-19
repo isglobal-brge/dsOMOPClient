@@ -637,11 +637,11 @@ ds.omop.dp.status <- function(datasources = NULL, type = "split") {
   for (message in .dp_unpatched_warnings(statuses)) {
     warning(message, call. = FALSE)
   }
-  .result_type_view(dsomop_result(
+  .as_listing(.result_type_view(dsomop_result(
     per_site = statuses, pooled = NULL,
     meta = list(call_code = .build_code("ds.omop.dp.status",
                                         type = result_type))),
-    result_type, reason)
+    result_type, reason))
 }
 
 #' DP status of every server, negotiated with the protected-release contract

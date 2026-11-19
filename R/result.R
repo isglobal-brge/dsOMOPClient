@@ -448,3 +448,68 @@ ds.omop.copy_code <- function(x) {
   })
   invisible(code)
 }
+
+# Readers that returned their per-server list before 2.10.9
+# (ds.omop.tables(), ds.omop.columns(), ds.omop.cohort.list(),
+# ds.omop.disclosure.settings(), ds.omop.dp.status() and the plan and recipe
+# previews and validations) keep that shape: the object is the per-server
+# list, so names(), length(), [[i]], res$<server>, loops and lapply() work as
+# before. The view rides along: $per_site, $pooled and $meta answer as on a
+# dsomop_result, and printing shows the view.
+.as_listing <- function(result) {
+  per_site <- .subset2(result, "per_site")
+  out <- if (is.null(per_site)) list() else per_site
+  attr(out, "dsomop_view") <- list(pooled = .subset2(result, "pooled"),
+                                   meta = .subset2(result, "meta"))
+  class(out) <- unique(c("dsomop_listing", oldClass(per_site), "list"))
+  out
+}
+
+# The per-server list itself, as the reader returned it before 2.10.9.
+.listing_per_site <- function(x) {
+  attr(x, "dsomop_view") <- NULL
+  kept <- setdiff(oldClass(x), c("dsomop_listing", "list"))
+  class(x) <- if (length(kept)) kept else NULL
+  x
+}
+
+.listing_result <- function(x) {
+  view <- attr(x, "dsomop_view", exact = TRUE)
+  dsomop_result(per_site = .listing_per_site(x), pooled = view$pooled,
+                meta = view$meta %||% list())
+}
+
+#' @rdname cash-.dsomop_result
+#' @export
+`$.dsomop_listing` <- function(x, name) {
+  ps <- .listing_per_site(x)
+  if (name %in% names(ps)) return(ps[[name]])
+  view <- attr(x, "dsomop_view", exact = TRUE)
+  switch(name,
+    per_site = ps,
+    pooled = view$pooled,
+    meta = view$meta,
+    ps[[name, exact = FALSE]])
+}
+
+#' @rdname cash-.dsomop_result
+#' @export
+`[[.dsomop_listing` <- function(x, i, exact = TRUE) {
+  ps <- .listing_per_site(x)
+  if (is.character(i) && length(i) == 1L && !i %in% names(ps) &&
+      i %in% c("per_site", "pooled", "meta")) {
+    return(`$.dsomop_listing`(x, i))
+  }
+  ps[[i, exact = exact]]
+}
+
+#' @export
+print.dsomop_listing <- function(x, ...) {
+  print(.listing_result(x), ...)
+  invisible(x)
+}
+
+#' @export
+as.data.frame.dsomop_listing <- function(x, ...) {
+  as.data.frame(.listing_result(x), ...)
+}

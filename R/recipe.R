@@ -8212,8 +8212,8 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL,
     stop("recipe must be an omop_recipe object", call. = FALSE)
   plan <- .recipe_plan_for_session(recipe, symbol, conns)
   out <- .quiet_aliases(ds.omop.plan.preview(plan, symbol = symbol, conns = conns))
-  if (inherits(out, "dsomop_result") && !identical(result_type, "split")) {
-    out <- .result_type_view(out, result_type, reason)
+  if (inherits(out, "dsomop_listing") && !identical(result_type, "split")) {
+    out <- .as_listing(.result_type_view(.listing_result(out), result_type, reason))
   }
   out
 }
@@ -8274,8 +8274,8 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL,
     stop("recipe must be an omop_recipe object", call. = FALSE)
   plan <- .recipe_plan_for_session(recipe, symbol, conns)
   out <- .quiet_aliases(ds.omop.plan.validate(plan, symbol = symbol, conns = conns))
-  if (inherits(out, "dsomop_result") && !identical(result_type, "split")) {
-    out <- .result_type_view(out, result_type, reason)
+  if (inherits(out, "dsomop_listing") && !identical(result_type, "split")) {
+    out <- .as_listing(.result_type_view(.listing_result(out), result_type, reason))
   }
   out
 }

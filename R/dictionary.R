@@ -72,14 +72,14 @@ ds.omop.tables <- function(schema_category = NULL,
   pooled <- if (.result_type_wants_combine(result_type)) {
     .dictionary_common_rows(result, "table_name", names(conns))
   }
-  .result_type_view(dsomop_result(
+  .as_listing(.result_type_view(dsomop_result(
     per_site = result, pooled = pooled,
     meta = list(call_code = .build_code("ds.omop.tables",
       schema_category = schema_category, type = result_type,
       symbol = symbol))),
     result_type,
     "No complete list of the tables common to every server was available.",
-    pooling = .pooling_meta("common_tables"))
+    pooling = .pooling_meta("common_tables")))
 }
 
 # The rows (from the first server) whose key is present on every requested
@@ -151,13 +151,13 @@ ds.omop.columns <- function(table, symbol = "omop",
   pooled <- if (.result_type_wants_combine(result_type)) {
     .dictionary_common_rows(raw, "column_name", names(conns))
   }
-  .result_type_view(dsomop_result(
+  .as_listing(.result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = .build_code("ds.omop.columns", table = table,
                                         type = result_type, symbol = symbol))),
     result_type,
     "No complete list of the columns common to every server was available.",
-    pooling = .pooling_meta("common_columns"))
+    pooling = .pooling_meta("common_columns")))
 }
 
 .dictionary_columns_raw <- function(table, session, conns) {

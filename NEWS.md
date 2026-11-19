@@ -52,15 +52,16 @@
   used to stop for `"both"` too. Pooled results describe their method in
   `meta$pooling`, and printing shows the view type. With one server, a pooled
   result equal to that server's answer is not printed twice.
-- More readers return a `dsomop_result` with `type`:
-  `ds.omop.disclosure.settings()` (pooled: the negotiated federation contract),
-  `ds.omop.tables()` and `ds.omop.columns()` (pooled: what every server has),
-  `ds.omop.cohort.list()`, `ds.omop.plan.preview()`, `ds.omop.plan.validate()`,
-  `recipe_preview()`, `recipe_validate()`, `ds.omop.cdm.source()`,
-  `ds.omop.cdm.version()`, `ds.omop.dp.status()` and the vocabulary readers.
-  The old per-server list is `$per_site`, and `res$<server>` and
-  `res[["<server>"]]` still work; code that loops over the result itself must
-  loop over `$per_site`.
+- `type` on more readers, with their old shape kept: `ds.omop.tables()`,
+  `ds.omop.columns()`, `ds.omop.cohort.list()`,
+  `ds.omop.disclosure.settings()`, `ds.omop.dp.status()`,
+  `ds.omop.plan.preview()`, `ds.omop.plan.validate()`, `recipe_preview()` and
+  `recipe_validate()` still return their per-server list (`[[1]]`, `names()`,
+  `res$<server>` and loops work as before), which also carries the view:
+  `$pooled` (for tables and columns, what every server has; for disclosure
+  settings, the negotiated federation contract), `$per_site` and `$meta`;
+  printing shows the view. `ds.omop.cdm.source()`, `ds.omop.cdm.version()`
+  (pooled: a consensus) and the vocabulary readers take `type` too.
 - Corrected pooled views: missingness now pools (with dsOMOP 2.10.9 servers;
   older ones give `pooled = NULL` with the reason); value counts keep
   `n_persons`; concept prevalence follows `metric` and `top_n` and keeps

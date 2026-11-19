@@ -313,12 +313,12 @@ ds.omop.cohort.list <- function(symbol = "omop",
     conns,
     expr = call("omopCohortListDS", session$res_symbol)
   )
-  .result_type_view(dsomop_result(
+  .as_listing(.result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,
     meta = list(call_code = .build_code("ds.omop.cohort.list",
                                         type = result_type,
                                         symbol = symbol))),
-    result_type, reason)
+    result_type, reason))
 }
 
 #' Get a cohort definition by ID
