@@ -1,3 +1,20 @@
+# dsOMOPClient 2.10.7 (2026-11-19)
+
+- With dsOMOP 2.10.7 servers, a concept column with more observed levels than
+  DataSHIELD's rule admits publishes without any recipe change when a short
+  public vocabulary list holds its values: the servers declare it themselves.
+  Month, quarter and week dates (and year factors) without `level_range`
+  declare every period of their observed years. A list longer than a server's
+  `dsomop.auto_declared_levels_max` is refused, and the message names that
+  option with the remedies: group the codes, narrow the events, or declare the
+  codes studied with `omop_concept_levels()`.
+- New `ds.omop.drop_empty_levels()`: a copy for models whose factor columns keep
+  only the levels that hold a value at some site, identical everywhere, so a
+  pooled `ds.glm()` has no all-zero design column. Each site reports its levels
+  in use under DataSHIELD's level rule; a column that fails it somewhere keeps
+  all its levels, with a message to group it first. Needs dsOMOP 2.10.7.
+- REAL/NUMERIC birth columns give ages and dates with dsOMOP 2.10.7 servers.
+
 # dsOMOPClient 2.10.6 (2026-11-18)
 
 - Concept IDs are categories everywhere; DataSHIELD's factor-level rule.

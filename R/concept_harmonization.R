@@ -18,12 +18,18 @@
   }
   # Each server applies its own DataSHIELD options, so its administrator may
   # also admit more levels; declared levels need no server change at all.
+  # dsOMOP 2.10.7 servers declare a short public vocabulary list by themselves;
+  # a longer one is reported, and grouping is then the analyst's decision.
+  long <- any(all_rules == "dsomop.auto_declared_levels_max")
+  admin <- c(if (any(grepl("^nfilter[.]levels", all_rules))) "nfilter.levels.max / nfilter.levels.density",
+             if (long) "dsomop.auto_declared_levels_max")
   if (length(refused)) stop("Concept factor publication refused: ",
-    paste(refused, collapse = "; "),
-    ". Declare the levels (omop_category_spec(levels = ), for example from omop_concept_levels()), ",
+    paste(refused, collapse = "; "), ". ",
+    if (long) paste0("The public vocabulary list that holds these values is longer than the server declares ",
+      "automatically (dsomop.auto_declared_levels_max). ") else "",
+    "Declare the levels (omop_category_spec(levels = ), for example from omop_concept_levels()), ",
     "group them with omop_category_recode() / omop_category_rollup(), or narrow the events with concepts =",
-    if (any(grepl("^nfilter[.]levels", all_rules)))
-      "; otherwise the server's administrator can raise nfilter.levels.max / nfilter.levels.density" else "",
+    if (length(admin)) paste0("; otherwise the server's administrator can raise ", paste(admin, collapse = " or ")) else "",
     ".", call. = FALSE)
   invisible(NULL)
 }
