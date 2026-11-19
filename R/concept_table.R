@@ -81,7 +81,7 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
   # The labels the published columns carry (dsBase-safe ones when published so).
   levels <- lapply(keys, function(key) {
     column <- spec$columns[[key]]
-    safe <- any(vapply(reports, function(r) identical(unlist(r$styles[[key]]), "safe"), logical(1)))
+    safe <- any(vapply(reports, function(r) key %in% unlist(r$safe_columns), logical(1)))
     as.character(unlist((if (safe) .conceptSafeColumn(column) else column)$levels, use.names = FALSE))
   })
   # Reserve fresh symbols on every site; never overwrite the publication.

@@ -2739,9 +2739,9 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
   broadcast <- .conceptSpecForServers(spec)
   # dsBase-safe labels (dsOMOP 2.10.9), only when every site applies them.
-  safe_labels <- !identical(getOption("dsomop.label_style", "safe"), "names") &&
-    all(vapply(per_server, function(x) "safe" %in% unlist(x$label_styles), logical(1)))
-  if (safe_labels) broadcast$label_style <- "safe"
+  safe_labels <- !isFALSE(getOption("dsomop.safe_labels", TRUE)) &&
+    all(vapply(per_server, function(x) isTRUE(x$safe_labels), logical(1)))
+  if (safe_labels) broadcast$safe_labels <- TRUE
   if (fingerprinted) {
     broadcast$fingerprint <- TRUE
     for (col in names(compact)) broadcast$columns[[col]] <- .conceptCompactShared(broadcast$columns[[col]], compact[[col]])
