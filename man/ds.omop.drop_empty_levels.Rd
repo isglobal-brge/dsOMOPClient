@@ -17,7 +17,8 @@ ds.omop.drop_empty_levels(
 \code{recipe_execute()} output, for example).}
 
 \item{columns}{Optional character vector of factor columns; by default every
-published factor column.}
+published concept, category or calendar column (the columns the servers
+reconciled; other factors, such as legacy age bands, are left as they are).}
 
 \item{newobj}{Character; the server-side name of the copy.}
 
