@@ -2,6 +2,38 @@
 # site. A stricter rule protects nothing: ds.asFactor releases the same levels,
 # and means of public per-concept 0/1 flags already give exact counts. A looser
 # rule would expose levels DataSHIELD refuses. Shared assignment has no union cap.
+# A compact shared column for servers holding the same public list: the list
+# travels as its fingerprint, with the extra identities and only the labels
+# that differ from the list's own resolution. A digest of the complete
+# resolution lets each server confirm it rebuilt exactly this one.
+.conceptCompactShared <- function(full, listed) {
+  own <- .conceptResolve(listed$records)
+  ids <- as.character(unlist(full$ids, use.names = FALSE))
+  labels <- unname(.categoryNullableStrings(full$labels))
+  vocabulary <- as.character(unlist(full$vocabulary, use.names = FALSE))
+  own_labels <- setNames(own$labels, own$ids)[ids]
+  own_vocabulary <- setNames(unname(own$vocabulary), own$ids)[ids]
+  keep <- is.na(own_labels) | labels != own_labels | vocabulary != own_vocabulary
+  keep[is.na(keep)] <- TRUE
+  out <- full
+  out$ids <- ids[keep]; out$labels <- labels[keep]; out$vocabulary <- vocabulary[keep]
+  out$levels <- NULL
+  out$list <- list(digest = listed$digest, n = listed$n,
+                   resolution = .conceptResolutionDigest(ids, labels, vocabulary))
+  out
+}
+.conceptResolutionDigest <- function(ids, labels, vocabulary) {
+  unclass(as.character(openssl::sha256(charToRaw(enc2utf8(paste(ids, labels, vocabulary, sep = "\t", collapse = "\n"))))))
+}
+
+# The shared spec as servers receive it: naming provenance explains the union
+# to the analyst only, and no server reads it, so it never travels (it was most
+# of the payload for long level lists).
+.conceptSpecForServers <- function(spec) {
+  if (is.list(spec$columns)) spec$columns <- lapply(spec$columns, function(col) { col$provenance <- NULL; col })
+  spec
+}
+
 .conceptRefuseUnsafe <- function(per_server) {
   sites <- names(per_server) %||% as.character(seq_along(per_server))
   refused <- character()

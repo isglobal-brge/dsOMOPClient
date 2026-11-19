@@ -2645,7 +2645,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 #' @param .retry Internal flag allowing one evidence refresh.
 #' @return Permitted resolution text invisibly, for the client publication receipt.
 #' @keywords internal
-.harmonizeOneSymbol <- function(sym, conns, .retry = TRUE) {
+.harmonizeOneSymbol <- function(sym, conns, .retry = TRUE,
+                                .fingerprint = getOption("dsomop.fingerprint_levels", TRUE)) {
   expected_servers <- names(conns)
   aggregate_success <- character(0)
   aggregate_errors <- character(0)
@@ -2660,8 +2661,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   per_server <- list()
   for (target in unique(unname(sym))) {
     sites <- names(sym)[sym == target]
+    # dsOMOP 2.10.8 sends long public lists as fingerprints when asked.
+    expr <- if (isTRUE(.fingerprint)) call("omopFactorLevelsDS", as.symbol(target), fingerprint = TRUE) else
+      call("omopFactorLevelsDS", as.symbol(target))
     values <- tryCatch(DSI::datashield.aggregate(
-      conns[sites], call("omopFactorLevelsDS", as.symbol(target)),
+      conns[sites], expr,
       success = function(server, value) {
         aggregate_success <<- c(aggregate_success, server)
       },
@@ -2690,6 +2694,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     names(aggregate_errors), missing_results, null_results, invalid_results,
     setdiff(expected_servers, aggregate_success)
   ))
+  # A server before 2.10.8 does not know the argument: collect plainly.
+  if (length(failed) > 0L && isTRUE(.fingerprint) && length(aggregate_errors) &&
+      all(grepl("unused argument", unlist(aggregate_errors), fixed = TRUE))) {
+    return(.harmonizeOneSymbol(sym, conns, .retry = .retry, .fingerprint = FALSE))
+  }
   if (length(failed) > 0L) {
     stop("Concept-factor level collection failed or was incomplete on: ",
          paste(failed, collapse = ", "), ". ",
@@ -2700,11 +2709,38 @@ ds.omop.plan.execute <- function(plan, out = NULL,
          } else "", call. = FALSE)
   }
   per_server <- per_server[expected_servers]
+  # A fingerprinted list is fetched once when every holder has the same one;
+  # different lists (versions, adaptive containers) are fetched from each.
+  compact <- list()
+  for (col in unique(unlist(lapply(per_server, function(x) names(x$lists)), use.names = FALSE))) {
+    holders <- names(per_server)[vapply(per_server, function(x) !is.null(x$lists[[col]]), logical(1))]
+    digests <- unique(vapply(holders, function(site) as.character(per_server[[site]]$lists[[col]]$digest), ""))
+    for (site in if (length(digests) == 1L) holders[[1L]] else holders) {
+      got <- tryCatch(DSI::datashield.aggregate(conns[site],
+        call("omopFactorLevelsDS", as.symbol(sym[[site]]), list_records = col))[[site]], error = function(e) e)
+      if (inherits(got, "error") || !identical(as.character(got$digest), as.character(per_server[[site]]$lists[[col]]$digest))) {
+        stop("Concept-factor level collection failed: the public list of '", col, "' could not be read on ", site,
+             ". Execution-owned artifacts were revoked and removed.", call. = FALSE)
+      }
+      per_server[[site]]$concepts[[col]] <- c(per_server[[site]]$concepts[[col]], got$records)
+      per_server[[site]]$levels[[col]] <- c(as.character(unlist(per_server[[site]]$levels[[col]])),
+                                            vapply(got$records, function(r) as.character(r$id), ""))
+      # Servers rebuild from a fingerprint only if every one holds that list.
+      if (length(digests) == 1L && setequal(holders, names(per_server)))
+        compact[[col]] <- list(digest = digests, n = per_server[[site]]$lists[[col]]$n, records = got$records)
+    }
+  }
+  fingerprinted <- isTRUE(.fingerprint) && any(vapply(per_server, function(x) !is.null(x$concept_protocol), logical(1)))
   spec <- if (any(vapply(per_server, function(x) !is.null(x$concept_protocol), logical(1)))) {
     .conceptUnionReports(per_server)
   } else .unionConceptLevels(per_server)
   if (length(spec) == 0L) {
     return(invisible(NULL))
+  }
+  broadcast <- .conceptSpecForServers(spec)
+  if (fingerprinted) {
+    broadcast$fingerprint <- TRUE
+    for (col in names(compact)) broadcast$columns[[col]] <- .conceptCompactShared(broadcast$columns[[col]], compact[[col]])
   }
   assign_success <- character(0)
   assign_errors <- character(0)
@@ -2713,7 +2749,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     sites <- names(sym)[sym == target]
     tryCatch(DSI::datashield.assign.expr(
       conns[sites], symbol = target,
-      expr = call("omopAsFactorColumnsDS", as.symbol(target), .ds_encode(spec)),
+      expr = call("omopAsFactorColumnsDS", as.symbol(target), .ds_encode(broadcast)),
       success = function(server) {
         assign_success <<- c(assign_success, server)
       },

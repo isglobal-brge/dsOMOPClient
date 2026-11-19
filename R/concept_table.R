@@ -72,7 +72,7 @@ ds.omop.table <- function(data, column, conns = NULL) {
   DSI::datashield.assign.expr(conns, temporary,
     # The appended formal also makes older servers refuse instead of silently
     # ignoring the request and passing public labels to the lossy dsBase codec.
-    call("omopAsFactorColumnsDS", as.symbol(data), .ds_encode(spec), key),
+    call("omopAsFactorColumnsDS", as.symbol(data), .ds_encode(.conceptSpecForServers(spec)), key),
     success = function(server) succeeded <<- c(succeeded, server),
     error = function(server, message) failed[[server]] <<- message)
   if (length(failed) || !setequal(succeeded, names(conns))) {
