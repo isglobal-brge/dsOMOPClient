@@ -51,7 +51,7 @@
     config$Options[["nfilter.tab"]] <- "3"; config$Options[["nfilter.subset"]] <- "3"
     config$Options[["nfilter.levels.max"]] <- levels_max; config$Options[["nfilter.levels.density"]] <- "0.33"
     # DSLite sessions set options for the whole R process: always set it.
-    config$Options[["dsomop.auto_declared_levels_max"]] <- auto_max %||% "1000"
+    config$Options[["dsomop.auto_declared_levels_max"]] <- auto_max %||% "10000"
     server <- DSLite::newDSLiteServer(resources = list(cvl = resource), config = config)
     global <- paste0("cvl_site_", i)
     assign(global, server, globalenv())
