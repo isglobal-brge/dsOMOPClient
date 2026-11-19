@@ -16,7 +16,8 @@ ds.omop.connect(
   results_schema = NULL,
   temp_schema = NULL,
   strict = TRUE,
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 ```
 
@@ -57,7 +58,15 @@ ds.omop.connect(
 
   - conns:
     
-    DSI connections object (NULL uses default connections).
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -98,6 +107,7 @@ builder <- newDSLoginBuilder()
 builder$append(server = "server1", url = "https://opal.example.org",
                resource = "project.omop_cdm", driver = "OpalDriver")
 conns <- datashield.login(builder$build())
-session <- ds.omop.connect(resource = "project.omop_cdm", conns = conns)
+session <- ds.omop.connect(resource = "project.omop_cdm",
+                           datasources = conns)
 } # }
 ```

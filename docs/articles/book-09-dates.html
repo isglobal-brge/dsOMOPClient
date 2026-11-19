@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-09-dates.Rmd" class="external-link"><code>vignettes/book-09-dates.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-09-dates.Rmd" class="external-link"><code>vignettes/book-09-dates.Rmd</code></a></small>
       <div class="d-none name"><code>book-09-dates.Rmd</code></div>
     </div>
 
@@ -116,7 +116,7 @@
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">exact</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visit_date <span class="op">=</span> <span class="va">first_visit</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">exact</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_exact"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">exact</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_exact"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_date_exact"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "person_id"  "visit_date"</span></span></code></pre>
@@ -133,12 +133,22 @@
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">months</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>month <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"first_visit"</span>, <span class="va">month_spec</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">months</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_months"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">months</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_months"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_months"</span>, <span class="st">"month"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_date_months$month</span></span>
-<span><span class="co">#&gt; 2020-03 2020-04 2020-05 2020-06 2020-07</span></span>
-<span><span class="co">#&gt;      12       0       0      12      12</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_months"</span>, <span class="st">"month"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Combined (all valid sites): month </span></span>
+<span><span class="co">#&gt; D_date_months$month</span></span>
+<span><span class="co">#&gt; 2020-03 2020-04 2020-05 2020-06 2020-07 </span></span>
+<span><span class="co">#&gt;      12       0       0      12      12 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; By site:</span></span>
+<span><span class="co">#&gt;                    study</span></span>
+<span><span class="co">#&gt; D_date_months$month site</span></span>
+<span><span class="co">#&gt;             2020-03   12</span></span>
+<span><span class="co">#&gt;             2020-04    0</span></span>
+<span><span class="co">#&gt;             2020-05    0</span></span>
+<span><span class="co">#&gt;             2020-06   12</span></span>
+<span><span class="co">#&gt;             2020-07   12</span></span></code></pre>
 <p>March, June and July each contain 12 first visits; another 12 people have no visit and are omitted from this table. <code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code> excludes missing values while retaining declared zero categories such as April and May. Ordered factors have ordered-factor model contrasts; for a linear time trend request a number explicitly.</p>
 </div>
 <div class="section level2">
@@ -149,18 +159,18 @@
 <span>  <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"month"</span>, representation <span class="op">=</span> <span class="st">"number"</span>,</span>
 <span>    numeric <span class="op">=</span> <span class="st">"index"</span>, origin <span class="op">=</span> <span class="st">"2020-01-01"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">numbers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_numbers"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">numbers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_numbers"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_date_numbers$month_index"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 2.000000 2.000000 2.000000 5.000000 6.000000 6.000000 6.000000 4.333333</span></span></code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_date_numbers$month_index"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -180,20 +190,20 @@
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>start <span class="op">=</span> <span class="va">month_start</span>, end <span class="op">=</span> <span class="va">month_end</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">bounds</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_bounds"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">bounds</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_bounds"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_date_bounds"</span>, days <span class="op">=</span> <span class="va">end</span> <span class="op">-</span> <span class="va">start</span> <span class="op">+</span> <span class="fl">1L</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_month_lengths"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span>  newobj <span class="op">=</span> <span class="st">"D_month_lengths"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_month_lengths$days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 30.00000 30.00000 30.00000 31.00000 31.00000 31.00000 31.00000 30.66667</span></span></code></pre>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_month_lengths$days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -209,12 +219,24 @@
 <code class="sourceCode R"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visit <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_parts</a></span><span class="op">(</span><span class="st">"first_visit"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>visit_year <span class="op">=</span> <span class="st">"year"</span>, visit_month <span class="op">=</span> <span class="st">"month"</span>, weekday <span class="op">=</span> <span class="st">"weekday_name"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">parts</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_parts"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">parts</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_parts"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_parts"</span>, <span class="st">"weekday"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_date_parts$weekday</span></span>
-<span><span class="co">#&gt;    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday</span></span>
-<span><span class="co">#&gt;        24         0         0         0         0        12         0</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_parts"</span>, <span class="st">"weekday"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Combined (all valid sites): weekday </span></span>
+<span><span class="co">#&gt; D_date_parts$weekday</span></span>
+<span><span class="co">#&gt;    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday </span></span>
+<span><span class="co">#&gt;        24         0         0         0         0        12         0 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; By site:</span></span>
+<span><span class="co">#&gt;                     study</span></span>
+<span><span class="co">#&gt; D_date_parts$weekday site</span></span>
+<span><span class="co">#&gt;            Monday      24</span></span>
+<span><span class="co">#&gt;            Tuesday      0</span></span>
+<span><span class="co">#&gt;            Wednesday    0</span></span>
+<span><span class="co">#&gt;            Thursday     0</span></span>
+<span><span class="co">#&gt;            Friday       0</span></span>
+<span><span class="co">#&gt;            Saturday    12</span></span>
+<span><span class="co">#&gt;            Sunday       0</span></span></code></pre>
 <p>The first visits fall on Saturday for 12 people and Monday for 24; another 12 people have no visit and are omitted here. Weekday names use fixed English levels, with Monday first. Month categories likewise include all twelve months. Year, ISO week/year, quarter, day-of-year and cyclic sine/cosine parts are also available. For season parts, declare the intended hemisphere (the default is north); using only a week number without its week-year can mix different years.</p>
 <div class="book-tip">
 <p><strong>Tip</strong></p>
@@ -230,19 +252,19 @@
 <span><span class="va">ages</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>at_death <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>,</span>
 <span>  at_question <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="va">education_date</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">ages</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_ages"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">ages</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_ages"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_date_ages$at_death"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_ages$at_death</span></span>
-<span><span class="co">#&gt; 32 33 42 43 NA</span></span>
+<span><span class="co">#&gt; 32 33 42 43 NA </span></span>
 <span><span class="co">#&gt;  6  6  6  6 24</span></span></code></pre>
 <p>Six people each died at completed ages 32, 33, 42 and 43. The 24 missing ages come from 12 people with no death and 12 with an incomplete birth date. A table makes these few ages clearer than interpolated summary quantiles. A February 29 birthday completes on March 1 in a non-leap year. Exact age does not equal year subtraction.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_date_ages$at_question"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_ages$at_question</span></span>
-<span><span class="co">#&gt; 29 39 NA</span></span>
+<span><span class="co">#&gt; 29 39 NA </span></span>
 <span><span class="co">#&gt; 12 12 24</span></span></code></pre>
 <p>At the first education question, 12 people were 29 and 12 were 39; the 24 without that question have no age at that anchor. The event sets a different age reference. An index, an observation bound or a fixed ISO date works through the same API.</p>
 </div>
@@ -254,23 +276,32 @@
 <code class="sourceCode R"><span><span class="va">partial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>birth_year <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"birth"</span>,</span>
 <span>  <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"year"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">partial</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_partial"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">partial</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_partial"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_partial"</span>, <span class="st">"birth_year"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_date_partial$birth_year</span></span>
-<span><span class="co">#&gt; 1975 1980 1990 2000</span></span>
-<span><span class="co">#&gt;   12   12   12   12</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_partial"</span>, <span class="st">"birth_year"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Combined (all valid sites): birth_year </span></span>
+<span><span class="co">#&gt; D_date_partial$birth_year</span></span>
+<span><span class="co">#&gt; 1975 1980 1990 2000 </span></span>
+<span><span class="co">#&gt;   12   12   12   12 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; By site:</span></span>
+<span><span class="co">#&gt;                          study</span></span>
+<span><span class="co">#&gt; D_date_partial$birth_year site</span></span>
+<span><span class="co">#&gt;                      1975   12</span></span>
+<span><span class="co">#&gt;                      1980   12</span></span>
+<span><span class="co">#&gt;                      1990   12</span></span>
+<span><span class="co">#&gt;                      2000   12</span></span></code></pre>
 <p>Each birth-year category contains 12 people: 1975, 1980, 1990 and 2000. All 48 birth years are known even though 12 exact birthdays are not. If the study permits an estimate, declare imputation instead of letting an implicit convention choose it.</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">estimated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"death"</span>,</span>
 <span>  date_spec <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>partial <span class="op">=</span> <span class="st">"mid"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">estimated</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_estimated"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">estimated</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_estimated"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_date_estimated$age"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_estimated$age</span></span>
-<span><span class="co">#&gt; 23 24 32 33 42 43 NA</span></span>
+<span><span class="co">#&gt; 23 24 32 33 42 43 NA </span></span>
 <span><span class="co">#&gt;  6  6  6  6  6  6 12</span></span></code></pre>
 <p>The estimate adds six people aged 23 and six aged 24. Missing age at death falls from 24 to 12; the remaining 12 have no death date. The middle possible birth day supplies an <strong>estimated</strong> completed age. <code>start</code> and <code>end</code> use the first/last possible day. <code>unit = "annual_years"</code> explicitly asks for calendar-year subtraction instead. Invalid components stay missing even with imputation. <code>future = "na"</code> requires a fixed <code>as_of</code> date; do not use a moving “today” cutoff in a reproducible plan.</p>
 </div>
@@ -281,12 +312,20 @@
 <code class="sourceCode R"><span><span class="va">custom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>month <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"first_visit"</span>,</span>
 <span>  <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"custom"</span>, pattern <span class="op">=</span> <span class="st">"%b %Y"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">custom</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_custom"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">custom</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_custom"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_custom"</span>, <span class="st">"month"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_date_custom$month</span></span>
-<span><span class="co">#&gt; Mar 2020 Jun 2020 Jul 2020</span></span>
-<span><span class="co">#&gt;       12       12       12</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_custom"</span>, <span class="st">"month"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Combined (all valid sites): month </span></span>
+<span><span class="co">#&gt; D_date_custom$month</span></span>
+<span><span class="co">#&gt; Mar_2020 Jun_2020 Jul_2020 </span></span>
+<span><span class="co">#&gt;       12       12       12 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; By site:</span></span>
+<span><span class="co">#&gt;                    study</span></span>
+<span><span class="co">#&gt; D_date_custom$month site</span></span>
+<span><span class="co">#&gt;            Mar_2020   12</span></span>
+<span><span class="co">#&gt;            Jun_2020   12</span></span>
+<span><span class="co">#&gt;            Jul_2020   12</span></span></code></pre>
 <p>The counts are again 12 each for Mar 2020, Jun 2020 and Jul 2020; the 12 missing visits are omitted. Only the month labels have changed. This uses fixed English month abbreviations and a year. The supported directives are <code>%Y</code>, <code>%m</code>, <code>%d</code>, <code>%j</code>, <code>%G</code>, <code>%V</code>, <code>%u</code>, <code>%b</code>, <code>%B</code>, <code>%a</code>, <code>%A</code> and <code>%%</code>, with simple literal text/punctuation. ISO weeks require <code>%G-W%V</code>, not <code>%Y-W%V</code>. Arbitrary <code>strftime</code> directives, locale-dependent code and time-of-day are refused. A named <code>labels</code> map may rename public date categories but must keep them unique; it cannot merge dates. Fine-grained factor labels still face disclosure checks.</p>
 </div>
 <div class="section level2">
@@ -342,12 +381,20 @@
 <code class="sourceCode R"><span><span class="va">fiscal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>quarter <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"first_visit"</span>,</span>
 <span>  <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"fiscal_quarter"</span>, fiscal_start <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">fiscal</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_fiscal"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">fiscal</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_fiscal"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_fiscal"</span>, <span class="st">"quarter"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_date_fiscal$quarter</span></span>
-<span><span class="co">#&gt; 2019-FQ4 2020-FQ1 2020-FQ2</span></span>
-<span><span class="co">#&gt;       12       12       12</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_fiscal"</span>, <span class="st">"quarter"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Combined (all valid sites): quarter </span></span>
+<span><span class="co">#&gt; D_date_fiscal$quarter</span></span>
+<span><span class="co">#&gt; 2019-FQ4 2020-FQ1 2020-FQ2 </span></span>
+<span><span class="co">#&gt;       12       12       12 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; By site:</span></span>
+<span><span class="co">#&gt;                      study</span></span>
+<span><span class="co">#&gt; D_date_fiscal$quarter site</span></span>
+<span><span class="co">#&gt;              2019-FQ4   12</span></span>
+<span><span class="co">#&gt;              2020-FQ1   12</span></span>
+<span><span class="co">#&gt;              2020-FQ2   12</span></span></code></pre>
 <p>March maps to 2019-FQ4, June to 2020-FQ1 and July to 2020-FQ2, with 12 people each. The 12 missing visits are omitted. March belongs to the preceding fiscal year. The variable’s specification overrides the recipe’s specification, which overrides the defaults.</p>
 </div>
 <div class="section level2">
@@ -358,17 +405,17 @@
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">elapsed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>days <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_time_between</a></span><span class="op">(</span><span class="st">"first_visit"</span>, <span class="st">"death"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">elapsed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_elapsed"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">elapsed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_date_elapsed"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_date_elapsed$days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 1095.000 1095.000 1095.000 1362.500 1461.000 1630.000 1630.000 1334.333</span></span></code></pre>
 <div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_date_elapsed$days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>

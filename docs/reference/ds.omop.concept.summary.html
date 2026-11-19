@@ -47,7 +47,7 @@ blocked."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,7 +98,7 @@ blocked."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Summarise a value column scoped to one concept of one table</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/exploration.R" class="external-link"><code>R/exploration.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/exploration.R" class="external-link"><code>R/exploration.R</code></a></small>
       <div class="d-none name"><code>ds.omop.concept.summary.Rd</code></div>
     </div>
 
@@ -135,7 +135,8 @@ blocked.</p>
 <span>  pooling_policy <span class="op">=</span> <span class="st">"strict"</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  type <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  type <span class="op">=</span> <span class="st">"split"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -162,16 +163,17 @@ summarised.</p></dd>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Character; <code>"per_site"</code> (default) or <code>"pooled"</code>.
-Passed through to the underlying calls.</p></dd>
+<dd><p>Deprecated alias of <code>type</code> (<code>"per_site"</code> or
+<code>"pooled"</code>), passed through to the underlying calls.</p></dd>
 
 
 <dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
 <dd><p>Character; <code>"strict"</code> (default) or
-<code>"pooled_only_ok"</code> (Best Effort). Passed through to the underlying
-value-counts, column-stats and quantile calls so that, when pooled,
-categories/values present on only some sites are summed across the
-available sites rather than suppressed.</p></dd>
+<code>"pooled_only_ok"</code>, passed through to the underlying value-counts,
+column-stats and quantile calls. Value counts keep only values released
+by every server under both policies; <code>"pooled_only_ok"</code> lets the
+column statistics pool the servers that returned them. See
+<a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -179,13 +181,20 @@ available sites rather than suppressed.</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s) or NULL to use the session default.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional result view propagated to every aggregate component:
-<code>"split"</code>, <code>"combine"</code>, or <code>"both"</code>. When omitted,
-legacy <code>scope</code> behaviour is preserved.</p></dd>
+<dd><p>Result view propagated to every component: <code>"split"</code>
+(default) or <code>"both"</code>. The quantiles are never pooled.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">

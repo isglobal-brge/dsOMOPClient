@@ -13,7 +13,8 @@ ds.omop.query.pool(
   sensitive_fields = NULL,
   pool_strategy = "sum",
   policy = "strict",
-  symbol = "omop"
+  symbol = "omop",
+  pooling_policy = NULL
 )
 ```
 
@@ -39,14 +40,19 @@ ds.omop.query.pool(
 
   - policy:
     
-    Character; suppression propagation policy. `"strict"` (the default)
-    sets the pooled value to NA if any server suppressed the cell.
-    `"pooled_only_ok"` sums only the non-suppressed values.
+    Deprecated alias of `pooling_policy`.
 
   - symbol:
     
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
+
+  - pooling\_policy:
+    
+    Character; suppression propagation policy. `"strict"` (the default)
+    sets the pooled value to NA if any server suppressed the cell.
+    `"pooled_only_ok"` sums only the non-suppressed values. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

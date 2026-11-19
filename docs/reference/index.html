@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,7 +79,14 @@
 
         <dt>
 
-          <code><a href="cash-.dsomop_result.html">`$`(<i>&lt;dsomop_result&gt;</i>)</a></code>
+          <code><a href="as.table.dsomop_table.html">as.table(<i>&lt;dsomop_table&gt;</i>)</a></code>
+
+        </dt>
+        <dd>The combined counts of a ds.omop.table() result, as the plain table that dsOMOPClient 2.10.8 and earlier returned.</dd>
+
+        <dt>
+
+          <code><a href="cash-.dsomop_result.html">`$`(<i>&lt;dsomop_result&gt;</i>)</a></code> <code><a href="cash-.dsomop_result.html">`[[`(<i>&lt;dsomop_result&gt;</i>)</a></code>
 
         </dt>
         <dd>Access dsomop_result elements with backward compatibility</dd>
@@ -429,6 +436,13 @@
 
         <dt>
 
+          <code><a href="ds.omop.drop_small_categories.html">ds.omop.drop_small_categories()</a></code>
+
+        </dt>
+        <dd>Make categories held by very few people missing, for tables</dd>
+
+        <dt>
+
           <code><a href="ds.omop.filter.html">ds.omop.filter()</a></code>
 
         </dt>
@@ -740,7 +754,7 @@
           <code><a href="ds.omop.table.html">ds.omop.table()</a></code>
 
         </dt>
-        <dd>Pool a published concept category with its complete level contract</dd>
+        <dd>Tables of published categories, as <code>ds.table()</code> returns them</dd>
 
         <dt>
 
@@ -797,6 +811,13 @@
 
         </dt>
         <dd>List the vocabularies available on each server</dd>
+
+        <dt>
+
+          <code><a href="dsomop_conventions.html">dsomop_conventions</a></code> <code><a href="dsomop_conventions.html">dsomop_result_views</a></code>
+
+        </dt>
+        <dd>Result views, connections and pooling in dsOMOPClient</dd>
 
         <dt>
 

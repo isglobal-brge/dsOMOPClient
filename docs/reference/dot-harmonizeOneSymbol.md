@@ -10,7 +10,12 @@ objects use the legacy level transport.
 ## Usage
 
 ``` r
-.harmonizeOneSymbol(sym, conns, .retry = TRUE)
+.harmonizeOneSymbol(
+  sym,
+  conns,
+  .retry = TRUE,
+  .fingerprint = getOption("dsomop.fingerprint_levels", TRUE)
+)
 ```
 
 ## Arguments

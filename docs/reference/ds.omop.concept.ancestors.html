@@ -19,7 +19,7 @@ frames are pooled by set union.'></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@ frames are pooled by set union.'></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Get a concept's ancestors and descendants (hierarchy)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/vocabulary.R" class="external-link"><code>R/vocabulary.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/vocabulary.R" class="external-link"><code>R/vocabulary.R</code></a></small>
       <div class="d-none name"><code>ds.omop.concept.ancestors.Rd</code></div>
     </div>
 
@@ -90,7 +90,9 @@ frames are pooled by set union.</p>
 <span>  <span class="va">concept_ids</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  execute <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  execute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -109,14 +111,29 @@ was initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-execute">execute<a class="anchor" aria-label="anchor" href="#arg-execute"></a></dt>
 <dd><p>Logical; if <code>FALSE</code>, returns a dry-run
 <code>dsomop_result</code> containing only the reproducible R code without
 contacting the servers.</p></dd>
+
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Result view: <code>"both"</code> (default), <code>"split"</code>, or
+<code>"combine"</code>. The pooled view is the de-duplicated union of the
+servers' rows (shared reference data, no patient counts); it is
+<code>NULL</code> with <code>meta$pooling_reason</code> when a server did not
+answer. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">

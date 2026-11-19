@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-22-case-drug.Rmd" class="external-link"><code>vignettes/book-22-case-drug.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-22-case-drug.Rmd" class="external-link"><code>vignettes/book-22-case-drug.Rmd</code></a></small>
       <div class="d-none name"><code>book-22-case-drug.Rmd</code></div>
     </div>
 
@@ -134,7 +134,7 @@
 <h2 id="find-a-class-and-its-descendants">Find a class and its descendants<a class="anchor" aria-label="anchor" href="#find-a-class-and-its-descendants"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">classes</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"concept_class_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -160,7 +160,7 @@
 </table>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">class_id</span> <span class="op">&lt;-</span> <span class="va">classes</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">classes</span><span class="op">$</span><span class="va">concept_class_id</span> <span class="op">==</span> <span class="st">"ATC 2nd"</span><span class="op">]</span></span>
-<span><span class="va">children</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">class_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">children</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">class_id</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">children</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -173,17 +173,19 @@
 </tr></tbody>
 </table>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
-<th align="right">n_persons</th>
 <th align="left">concept_name</th>
+<th align="right">n_persons</th>
+<th align="right">n_records</th>
 </tr></thead>
 <tbody><tr class="odd">
 <td align="right">950001</td>
-<td align="right">35</td>
 <td align="left">Questionnaire study medicine</td>
+<td align="right">35</td>
+<td align="right">80</td>
 </tr></tbody>
 </table>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -206,25 +208,25 @@
 <span><span class="va">study</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">users</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, require <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>followup <span class="op">=</span> <span class="fl">364</span><span class="op">)</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>covered <span class="op">=</span> <span class="va">covered</span>, persistence <span class="op">=</span> <span class="va">persistence</span>,</span>
 <span>    discontinued <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_flag</a></span><span class="op">(</span><span class="va">persistence</span>, <span class="st">"lt"</span>, <span class="fl">365</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">study</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_supply"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_supply"</span>, pdc <span class="op">=</span> <span class="va">covered</span> <span class="op">/</span> <span class="fl">365</span>, newobj <span class="op">=</span> <span class="st">"D_use"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">study</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_supply"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_supply"</span>, pdc <span class="op">=</span> <span class="va">covered</span> <span class="op">/</span> <span class="fl">365</span>, newobj <span class="op">=</span> <span class="st">"D_use"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_use$pdc"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 36</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean</span></span>
+<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt; 0.1643836 0.1643836 0.1643836 0.3287671 1.0000000 1.0000000 1.0000000 0.4977169</span></span></code></pre>
 <p>Mean PDC is <strong>0.4977</strong> across 36 people: (365 + 120 + 60)/(3 × 365). PDC is a dimensionless fraction of eligible days. It measures recorded supply, not ingestion. This class contains one ingredient; a class with several would also need a rule about whether switching preserves persistence.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_use$covered"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_use$covered</span></span>
-<span><span class="co">#&gt;  60 120 365  NA</span></span>
+<span><span class="co">#&gt;  60 120 365  NA </span></span>
 <span><span class="co">#&gt;  12  12  12   0</span></span></code></pre>
 <p>Twelve people each have 60, 120 and 365 covered days, matching the three patterns. The restarted course contributes 60 covered days across two eras, even though its first era lasts only 30 days.</p>
 </div>
@@ -237,7 +239,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_use$persistence"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_use$persistence</span></span>
-<span><span class="co">#&gt;  30 120 365  NA</span></span>
+<span><span class="co">#&gt;  30 120 365  NA </span></span>
 <span><span class="co">#&gt;  12  12  12   0</span></span></code></pre>
 <p>First eras last 30, 120 and 365 days, with 12 people in each and mean <strong>171.67</strong> days. The gap before the restart exceeds 30 days, so the second course does not extend the first era. A tolerated gap can add to an era’s span without adding covered supply days.</p>
 </details><p><strong>2. Interpret discontinuation.</strong> How many first eras end before the first year is complete? Does this prove permanent cessation?</p>
@@ -246,7 +248,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_use$discontinued"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_use$discontinued</span></span>
-<span><span class="co">#&gt;  0  1 NA</span></span>
+<span><span class="co">#&gt;  0  1 NA </span></span>
 <span><span class="co">#&gt; 12 24  0</span></span></code></pre>
 <p>There are <strong>24</strong> indicators of one and <strong>12</strong> of zero. The definition says the first era ended before day 365 under this gap rule. It permits restarting, as the third pattern demonstrates; it does not prove permanent cessation.</p>
 </details>
@@ -256,10 +258,10 @@
 </h2>
 <p>GiBleed has no ATC hierarchy, but <a href="book-20-case-gibleed.html#find-the-drugs-and-outcome">chapter 20</a> identifies celecoxib ingredient <strong>1118084</strong>. Check what its available exposure spans can support.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"celecoxib"</span>, domain <span class="op">=</span> <span class="st">"Drug"</span>, vocabulary <span class="op">=</span> <span class="st">"RxNorm"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"celecoxib"</span>, domain <span class="op">=</span> <span class="st">"Drug"</span>, vocabulary <span class="op">=</span> <span class="st">"RxNorm"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -290,17 +292,17 @@
 <span>  outputs <span class="op">=</span> <span class="st">"baseline"</span>, require <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>followup <span class="op">=</span> <span class="fl">364</span><span class="op">)</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    covered <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">gibleed_era</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"covered_days"</span>,</span>
 <span>      window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">364</span><span class="op">)</span>, coverage <span class="op">=</span> <span class="st">"effective_supply"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">feasibility</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_feasibility"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">feasibility</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_feasibility"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_feasibility$covered"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 1745</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean</span></span>
+<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean </span></span>
 <span><span class="co">#&gt;    1    1    1    1    1    1    1    1</span></span></code></pre>
 <p>Every covered-days summary is one day because the source has zero days supplied and equal exposure start/end dates. These records cannot establish longitudinal adherence or discontinuation, so a PDC conclusion would be unsupported.</p>
 </div>

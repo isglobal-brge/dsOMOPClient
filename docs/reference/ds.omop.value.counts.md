@@ -3,8 +3,9 @@
 Returns the top-N most frequent distinct values for a column in an OMOP
 CDM table, along with their counts. This is useful for profiling
 categorical or low-cardinality columns such as `type_concept_id` or
-`unit_concept_id`. Counts below the disclosure threshold are suppressed,
-and concept names are resolved where available.
+`unit_concept_id`. Values below the disclosure threshold are left out,
+surviving counts are banded, and concept names are resolved for concept
+columns.
 
 ## Usage
 
@@ -20,7 +21,8 @@ ds.omop.value.counts(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -55,11 +57,13 @@ ds.omop.value.counts(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type`: `"per_site"` means `type = "split"`,
+    `"pooled"` means `type = "both"`.
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -67,7 +71,8 @@ ds.omop.value.counts(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -76,14 +81,23 @@ ds.omop.value.counts(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of data frames
-with columns `value`, `count_value`), `$pooled` (combined value counts
-when pooled), and `$meta`.
+A `dsomop_result`. Each `$per_site` entry is a data frame with `value`,
+`n` (banded records), `n_persons` (banded distinct persons, person
+tables) and `concept_name` (concept columns). `$pooled` sums `n` and
+`n_persons` per value over the servers; a value must be released by
+every server.
 
 ## Examples
 
@@ -91,7 +105,7 @@ when pooled), and `$meta`.
 if (FALSE) { # \dontrun{
 vc <- ds.omop.value.counts("condition_occurrence",
                             "condition_type_concept_id",
-                            top_n = 10, scope = "pooled")
+                            top_n = 10)
 vc$pooled
 } # }
 ```

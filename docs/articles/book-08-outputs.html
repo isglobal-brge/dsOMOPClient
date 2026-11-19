@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-08-outputs.Rmd" class="external-link"><code>vignettes/book-08-outputs.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-08-outputs.Rmd" class="external-link"><code>vignettes/book-08-outputs.Rmd</code></a></small>
       <div class="d-none name"><code>book-08-outputs.Rmd</code></div>
     </div>
 
@@ -211,11 +211,11 @@
 <h2 id="wide-named-columns">Wide: named columns<a class="anchor" aria-label="anchor" href="#wide-named-columns"></a>
 </h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">wide_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">base</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>wide <span class="op">=</span> <span class="st">"D_fmt_wide"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">wide_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">base</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>wide <span class="op">=</span> <span class="st">"D_fmt_wide"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_wide"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_wide in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_wide in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>There are 28 rows, one per first-visit episode, and one column per requested variable. A person’s pseudonym and episode keys are supplied by the server.</p>
@@ -229,11 +229,11 @@
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="va">study_variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"long"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"long"</span>,</span>
 <span>  sources <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">long</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>long <span class="op">=</span> <span class="st">"D_fmt_long"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">long</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>long <span class="op">=</span> <span class="st">"D_fmt_long"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_long"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_long in site`</span></span>
 <span><span class="co">#&gt; [1] 1735    9</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_long in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 1735    9</span></span></code></pre>
 <p>The long output has 1,735 rows, one per selected visit. Its columns include <code>concept_id</code> and <code>start_date</code>. Dates default to offsets from the index. One source makes the event-row meaning clear; multiple sources need an explicit event-log design.</p>
@@ -241,7 +241,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_fmt_long$concept_id"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_fmt_long$concept_id</span></span>
-<span><span class="co">#&gt;  Inpatient Visit Outpatient Visit</span></span>
+<span><span class="co">#&gt;  Inpatient_Visit Outpatient_Visit </span></span>
 <span><span class="co">#&gt;               13             1722</span></span></code></pre>
 <p>The 13 inpatient and 1,722 outpatient visits sum to 1,735 records. These are visits by setting, rather than numbers of people. A person may contribute many visits to either setting.</p>
 </div>
@@ -253,11 +253,11 @@
 <code class="sourceCode R"><span><span class="va">features</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span>, <span class="va">spans</span>, <span class="va">inpatient</span><span class="op">)</span>,</span>
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="va">study_variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"features"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, type <span class="op">=</span> <span class="st">"features"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">features</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>features <span class="op">=</span> <span class="st">"D_fmt_features"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">features</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>features <span class="op">=</span> <span class="st">"D_fmt_features"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_features"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_features in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_features in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>The features table has 28 rows, one per visitor, with the same values as wide.</p>
@@ -275,11 +275,11 @@
 <span><span class="va">baseline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span>, <span class="va">spans</span>, <span class="va">inpatient</span><span class="op">)</span>,</span>
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="va">baseline_variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"baseline"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, type <span class="op">=</span> <span class="st">"baseline"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">baseline</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_fmt_baseline"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">baseline</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_fmt_baseline"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_baseline"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_baseline in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_baseline in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>The baseline preset also has 28 rows. Here we explicitly changed the variables to a visit count during days −365 to 0 and hemoglobin closest to entry within days −90 to 0. The preset itself neither restricts all-history values nor bands age; the variable definitions make these entry characteristics.</p>
@@ -294,11 +294,11 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"panel"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"person_period"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">30L</span><span class="op">)</span>,</span>
 <span>    window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">90</span><span class="op">)</span>, analyses <span class="op">=</span> <span class="st">"count"</span>, representation <span class="op">=</span> <span class="st">"dense"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">panel</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="st">"D_fmt_panel"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">panel</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="st">"D_fmt_panel"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_panel"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_panel in site`</span></span>
 <span><span class="co">#&gt; [1] 84  8</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_panel in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 84  8</span></span></code></pre>
 <p>The panel has 84 rows: 28 visitors × three bins. A dense panel retains empty bins with zero event counts. <code>bins = list(calendar = "month")</code> instead aligns to calendar months, whose lengths vary. Account for repeated rows per person in downstream analysis.</p>
@@ -308,12 +308,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 84</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean</span></span>
+<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt; 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 1.0000000 1.0000000 0.1904762</span></span></code></pre>
 <p>The mean is 0.19 outpatient visits per person and 30-day bin, and the median is zero across 84 bins. Zero bins remain in the denominator; a mean per bin is different from an all-history visit count per person.</p>
 </div>
@@ -327,19 +327,19 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"temporal"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"temporal_covariates"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, bin_width <span class="op">=</span> <span class="fl">30L</span>,</span>
 <span>    window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">89</span><span class="op">)</span>, analyses <span class="op">=</span> <span class="st">"count"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">temporal_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">temporal</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>temporal <span class="op">=</span> <span class="st">"D_fmt_temporal"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">temporal_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">temporal</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>temporal <span class="op">=</span> <span class="st">"D_fmt_temporal"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; [1] "D_fmt_baseline"              "D_fmt_features"</span></span>
-<span><span class="co">#&gt; [3] "D_fmt_long"                  "D_fmt_panel"</span></span>
+<span><span class="co">#&gt; [1] "D_fmt_baseline"              "D_fmt_features"             </span></span>
+<span><span class="co">#&gt; [3] "D_fmt_long"                  "D_fmt_panel"                </span></span>
 <span><span class="co">#&gt; [5] "D_fmt_temporal"              "D_fmt_temporal.covariateRef"</span></span>
-<span><span class="co">#&gt; [7] "D_fmt_temporal.timeRef"      "D_fmt_wide"</span></span>
+<span><span class="co">#&gt; [7] "D_fmt_temporal.timeRef"      "D_fmt_wide"                 </span></span>
 <span><span class="co">#&gt; [9] "omop"</span></span></code></pre>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_temporal"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_temporal in site`</span></span>
 <span><span class="co">#&gt; [1] 36  6</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_temporal in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 36  6</span></span></code></pre>
 <p>The server now also holds <code>D_fmt_temporal.covariateRef</code> and <code>D_fmt_temporal.timeRef</code>. The 36 rows count nonzero covariate/bin entries rather than people. Keep the covariate and time reference tables with this result: their keys need those definitions. Missing records and missing measurements are not automatically interchangeable.</p>
@@ -354,11 +354,11 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"survival"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"survival"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>admission <span class="op">=</span> <span class="va">inpatient</span><span class="op">)</span>,</span>
 <span>    tar <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NULL</span><span class="op">)</span>, censor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"observation_end"</span>, <span class="st">"death"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">survival</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="st">"D_fmt_survival"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">survival</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="st">"D_fmt_survival"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_survival"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_survival in site`</span></span>
 <span><span class="co">#&gt; [1] 28  8</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_survival in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  8</span></span></code></pre>
 <p>The survival output has 28 rows, one per person for this single outcome. Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the default 730-day window.</p>
@@ -366,7 +366,7 @@
 <code class="sourceCode R"><span><span class="va">survival_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_fmt_survival$event"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">survival_result</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_fmt_survival$event</span></span>
-<span><span class="co">#&gt;  0  1</span></span>
+<span><span class="co">#&gt;  0  1 </span></span>
 <span><span class="co">#&gt; 21  7</span></span></code></pre>
 <p>Seven people have <code>event = 1</code> (an observed admission); 21 have <code>event = 0</code> (follow-up ended without an admission in the risk window).</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
@@ -374,12 +374,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean</span></span>
+<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt;   993.350  1913.500  3821.250  7462.000 14257.500 18489.000 21647.200  9291.571</span></span></code></pre>
 <p>Median follow-up is 7,462 days and the mean is 9,291.6 days. This spans much of the simulated life histories because no upper time limit was imposed. <code>follow_up_days</code> describes time observed until admission or censoring. Different durations are why a survival analysis needs time as well as the event indicator.</p>
 </div>
@@ -392,11 +392,11 @@
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="va">study_variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"intervals"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"intervals"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">spans</span><span class="op">)</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">intervals</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>intervals <span class="op">=</span> <span class="st">"D_fmt_intervals"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">intervals</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>intervals <span class="op">=</span> <span class="st">"D_fmt_intervals"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_intervals"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_intervals in site`</span></span>
 <span><span class="co">#&gt; [1] 1735    7</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_intervals in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 1735    7</span></span></code></pre>
 <p>The 1,735 interval rows represent recorded visit spans, with a start and an end. Both bounds remain private, normally as index-relative days. Overlapping intervals are not automatically a union of covered days; define an era or a coverage reducer for that question.</p>
@@ -410,21 +410,21 @@
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="va">study_variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"sparse"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"sparse"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, analyses <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"binary"</span>, <span class="st">"count"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sparse_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">sparse</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>sparse <span class="op">=</span> <span class="st">"D_fmt_sparse"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">sparse_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">sparse</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>sparse <span class="op">=</span> <span class="st">"D_fmt_sparse"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt;  [1] "D_fmt_baseline"              "D_fmt_features"</span></span>
-<span><span class="co">#&gt;  [3] "D_fmt_intervals"             "D_fmt_long"</span></span>
-<span><span class="co">#&gt;  [5] "D_fmt_panel"                 "D_fmt_sparse"</span></span>
-<span><span class="co">#&gt;  [7] "D_fmt_sparse.covariateRef"   "D_fmt_survival"</span></span>
+<span><span class="co">#&gt;  [1] "D_fmt_baseline"              "D_fmt_features"             </span></span>
+<span><span class="co">#&gt;  [3] "D_fmt_intervals"             "D_fmt_long"                 </span></span>
+<span><span class="co">#&gt;  [5] "D_fmt_panel"                 "D_fmt_sparse"               </span></span>
+<span><span class="co">#&gt;  [7] "D_fmt_sparse.covariateRef"   "D_fmt_survival"             </span></span>
 <span><span class="co">#&gt;  [9] "D_fmt_temporal"              "D_fmt_temporal.covariateRef"</span></span>
-<span><span class="co">#&gt; [11] "D_fmt_temporal.timeRef"      "D_fmt_wide"</span></span>
+<span><span class="co">#&gt; [11] "D_fmt_temporal.timeRef"      "D_fmt_wide"                 </span></span>
 <span><span class="co">#&gt; [13] "omop"</span></span></code></pre>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_sparse"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_sparse in site`</span></span>
 <span><span class="co">#&gt; [1] 70  5</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_sparse in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 70  5</span></span></code></pre>
 <p><code>D_fmt_sparse</code> comes with its reference table <code>D_fmt_sparse.covariateRef</code>. The 70 sparse rows each hold a nonzero value for one person and covariate, so this row count is not a population size. The data contain a covariate key and value. The reference companion maps keys to source, concept and analysis. A missing sparse row is not a missing person roster: retain membership separately. Each published patient component must meet its own support rule.</p>
@@ -437,11 +437,11 @@
 <code class="sourceCode R"><span><span class="va">membership</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span>, <span class="va">spans</span>, <span class="va">inpatient</span><span class="op">)</span>,</span>
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="va">study_variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"membership"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">membership</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>membership <span class="op">=</span> <span class="st">"D_fmt_membership"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">membership</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>membership <span class="op">=</span> <span class="st">"D_fmt_membership"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_membership"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_membership in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_membership in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>The membership output has 28 rows, one for each first-visit episode. This is still a patient-linked private object. It is not a public list of participants.</p>
@@ -456,11 +456,11 @@
 <span>  counts <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"counts"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, columns <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span>,</span>
 <span>  dictionary <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"dictionary"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"dictionary"</span>,</span>
 <span>    options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>source_outputs <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, publish <span class="op">=</span> <span class="st">"dictionary"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">dictionary</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>dictionary <span class="op">=</span> <span class="st">"D_fmt_dictionary"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">dictionary</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>dictionary <span class="op">=</span> <span class="st">"D_fmt_dictionary"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_dictionary"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_dictionary in site`</span></span>
 <span><span class="co">#&gt; [1] 2 6</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_dictionary in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 2 6</span></span></code></pre>
 <p>The two dictionary rows describe the two visit-setting concepts, not patients or frequencies. A dictionary does not certify that a concept occurred in a particular person, and it is not a replacement for the sparse covariate reference.</p>
@@ -479,11 +479,11 @@
 <span>      how <span class="op">=</span> <span class="st">"left"</span>, cardinality <span class="op">=</span> <span class="st">"one_to_one"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, publish <span class="op">=</span> <span class="st">"joined"</span><span class="op">)</span></span></code></pre></div>
 <p>Only the final joined output is published. The two input outputs are private intermediate steps and do not each need a separately published symbol.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">joined_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">joined</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>joined <span class="op">=</span> <span class="st">"D_fmt_joined"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">joined_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">joined</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>joined <span class="op">=</span> <span class="st">"D_fmt_joined"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_fmt_joined"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_joined in site`</span></span>
 <span><span class="co">#&gt; [1] 28  5</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_joined in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  5</span></span></code></pre>
 <p>The joined table retains 28 rows. A left join retains the first input’s rows. Here each episode has exactly one counts row and one ages row. Repeated event rows would require a different, explicit cardinality; do not silently multiply a study population.</p>
@@ -588,12 +588,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean</span></span>
+<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt;  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429</span></span></code></pre>
 <p>The mean is 61.96 visits per person across 28 people. Both outputs use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.</p>
 </details>
@@ -608,12 +608,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679</span></span></code></pre>
 <p>The overall mean is 14.47 g/dL across 28 person-level means. The wide table gives each included person one mean in g/dL. An average over measurement rows would give more weight to people with more measurements. <a href="book-14-labs.html">Working with lab values</a> builds this distinction into a two-connection analysis. Neither shape grants access to individual rows.</p>
 </details><p><a href="book-16-longitudinal.html">Chapter 16</a> develops these choices through irregular measurements, server reshaping, a discrete-time hazard and pooled mixed models.</p>

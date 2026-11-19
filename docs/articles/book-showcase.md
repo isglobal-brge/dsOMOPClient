@@ -31,17 +31,17 @@ vocabulary wording.
 education <- omop_variable(event = omop_event("observation", 900001L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 named <- omop_recipe(variables = list(education = education))
-recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
+recipe_execute(named, out = c(output = "D_tour_named"), datasources = conns)
 education_counts <- dsBaseClient::ds.table("D_tour_named$education",
   useNA = "always", datasources = conns)
 education_counts$output.list$TABLE_rvar.by.study_counts
 ```
 
-|                          | site | site2 |
-| :----------------------- | ---: | ----: |
-| Secondary education      |   12 |     0 |
-| University qualification |   12 |    24 |
-| NA                       |   24 |    24 |
+|                           | site | site2 |
+| :------------------------ | ---: | ----: |
+| Secondary\_education      |   12 |     0 |
+| University\_qualification |   12 |    24 |
+| NA                        |   24 |    24 |
 
 Site 1 has 12 Secondary and 12 University answers; site 2 has 0 and 24.
 Both use “University qualification”, the newer name for concept
@@ -54,7 +54,7 @@ harmonisation
 The next three cards use one questionnaire site:
 
 ``` r
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 conns <- ds.omop.login("https://localhost:8443", user = "administrator",
   password = "password", resource = "omop.questionnaire", server = "site")$conns
@@ -67,7 +67,7 @@ birth and death dates. Incomplete dates stay missing by default.
 
 ``` r
 dates <- omop_recipe(variables = list(age = omop_age_at("death")))
-recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
+recipe_execute(dates, out = c(output = "D_tour_dates"), datasources = conns)
 dsBaseClient::ds.quantileMean("D_tour_dates$age", datasources = conns)
 ```
 
@@ -106,7 +106,7 @@ study <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = shapes)
 targets <- c(wide = "D_tour_wide", long = "D_tour_long",
   panel = "D_tour_panel", survival = "D_tour_survival")
-recipe_execute(study, out = targets, conns = conns)
+recipe_execute(study, out = targets, datasources = conns)
 shape_sizes <- do.call(rbind, lapply(names(targets), function(shape)
   data.frame(Shape = shape, Rows = dsBaseClient::ds.dim(targets[[shape]],
     datasources = conns)[[1L]][1L])))
@@ -138,13 +138,13 @@ cause <- omop_variable(event = omop_event("death"),
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
 causes <- omop_recipe(variables = list(cause = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(causes, out = c(people = "D_tour_causes"), conns = conns)
+recipe_execute(causes, out = c(people = "D_tour_causes"), datasources = conns)
 dsBaseClient::ds.table("D_tour_causes$cause",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
     #> D_tour_causes$cause
-    #> Myocardial infarction             Pneumonia                    NA
+    #> Myocardial_infarction             Pneumonia                    NA
     #>                    24                    12                    12
 
 There are 24 myocardial infarction deaths, 12 pneumonia deaths and 12
@@ -155,8 +155,8 @@ stay private. [Build and analyse this table
 Switch to Synthea27Nj for numeric values:
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
 ```
 
 ## Numbers and their groupings
@@ -172,7 +172,7 @@ hb <- omop_variable(event = omop_event("measurement", 3000963L,
 band_names <- c("below 14", "14 to below 15", "15 or above")
 labs <- omop_recipe(variables = list(hb = hb,
   band = omop_number_bins(hb, breaks = c(-Inf, 14, 15, Inf), labels = band_names)))
-recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
+recipe_execute(labs, out = c(output = "D_tour_labs"), datasources = conns)
 groups <- dsBaseClient::ds.meanSdGp("D_tour_labs$hb", "D_tour_labs$band",
   type = "combine", datasources = conns)
 data.frame(`Band (g/dL)` = band_names,
@@ -199,7 +199,7 @@ teaching cutoff of 14 g/dL. Find the target unit by its exact name:
 
 ``` r
 target_units <- ds.omop.concept.search("gram per liter", domain = "Unit",
-  standard_only = FALSE, conns = conns)$pooled
+  standard_only = FALSE, datasources = conns)$pooled
 target_unit <- target_units[target_units$concept_name == "gram per liter", ]
 target_unit[c("concept_id", "concept_name")]
 ```
@@ -220,11 +220,11 @@ people are included.
 converted <- omop_recipe(variables = list(hb = hb,
   hb_gl = omop_number(hb, omop_number_spec(
     unit = omop_number_unit("unit:8713", paste0("unit:", gl_id), 10)))))
-recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns)
+recipe_execute(converted, out = c(output = "D_tour_converted"), datasources = conns)
 ds.omop.mutate("D_tour_converted", above_cutoff = ifelse(hb >= 14, 1L, 0L),
-  newobj = "D_tour_flagged", conns = conns)
+  newobj = "D_tour_flagged", datasources = conns)
 ds.omop.filter("D_tour_flagged", expr = omop_where(above_cutoff == 1L),
-  newobj = "D_tour_selected", conns = conns)
+  newobj = "D_tour_selected", datasources = conns)
 dsBaseClient::ds.mean("D_tour_selected$hb_gl", datasources = conns)$Mean.by.Study
 ```
 

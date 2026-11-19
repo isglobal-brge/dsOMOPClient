@@ -17,7 +17,8 @@ ds.omop.achilles.distribution(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -30,13 +31,12 @@ ds.omop.achilles.distribution(
 
   - scope:
     
-    Character; `"per_site"` returns each server's results separately,
-    `"pooled"` additionally attempts weighted aggregation.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - pooling\_policy:
     
-    Character; controls how suppressed (NA) cells are handled during
-    pooling. `"strict"` (the default) or `"pooled_only_ok"`.
+    Character; `"strict"` (the default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -45,8 +45,8 @@ ds.omop.achilles.distribution(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -55,8 +55,15 @@ ds.omop.achilles.distribution(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"split"` (default), `"both"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -67,10 +74,11 @@ frames with columns `analysis_id`, `stratum_1`, `count_value`,
 
 ## Details
 
-When `scope = "pooled"`, pooling is attempted via weighted aggregation;
-however, percentile values cannot be meaningfully combined from
-pre-computed summaries, so all percentile columns in the pooled result
-are set to `NA`. Use per-site data for percentile display.
+Like `ds.mean`, the default view is per server. A pooled view (`type =
+"both"`) combines the counts, count-weighted averages and pooled SDs;
+percentile values cannot be combined from pre-computed summaries, so all
+percentile columns in the pooled result are `NA`. Use per-site data for
+percentile display.
 
 ## Examples
 
@@ -80,7 +88,7 @@ if (FALSE) { # \dontrun{
 age_dist <- ds.omop.achilles.distribution(analysis_ids = 103)
 age_dist$per_site[["server_a"]]
 
-# Multiple distribution analyses
-dists <- ds.omop.achilles.distribution(c(103, 105), scope = "per_site")
+# Multiple distribution analyses, pooled as well
+dists <- ds.omop.achilles.distribution(c(103, 105), type = "both")
 } # }
 ```

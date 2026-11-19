@@ -25,7 +25,7 @@ single table; the unstratified total is never returned."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -76,7 +76,7 @@ single table; the unstratified total is never returned."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Disclosure-safe two-way cross-tabulation</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/profiling.R" class="external-link"><code>R/profiling.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/profiling.R" class="external-link"><code>R/profiling.R</code></a></small>
       <div class="d-none name"><code>ds.omop.crosstab.Rd</code></div>
     </div>
 
@@ -110,7 +110,8 @@ single table; the unstratified total is never returned.</p>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  execute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  type <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -165,13 +166,16 @@ Takes precedence over <code>cohort_table</code>.</p></dd>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Character; <code>"per_site"</code> (default) or <code>"pooled"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>type</code>: <code>"per_site"</code> means
+<code>type = "split"</code>, <code>"pooled"</code> means <code>type = "both"</code>.</p></dd>
 
 
 <dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
 <dd><p>Character; <code>"strict"</code> (default) or
-<code>"pooled_only_ok"</code>. Under <code>strict</code>, a cell absent or suppressed
-on any site is suppressed in the pooled table.</p></dd>
+<code>"pooled_only_ok"</code>. Under both policies a cell absent or suppressed
+on any contributing server is <code>NA</code> in the pooled table;
+<code>"pooled_only_ok"</code> only leaves out servers whose whole cross-tab
+was suppressed or empty. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -179,7 +183,8 @@ on any site is suppressed in the pooled table.</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s) or NULL to use the session default.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-execute">execute<a class="anchor" aria-label="anchor" href="#arg-execute"></a></dt>
@@ -188,15 +193,26 @@ containing only the generated call code (default: <code>TRUE</code>).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional result view: <code>"split"</code>, <code>"combine"</code>, or
-<code>"both"</code>. When omitted, legacy <code>scope</code> behaviour is preserved.</p></dd>
+<dd><p>Result view: <code>"both"</code> (default), <code>"split"</code>, or
+<code>"combine"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dsomop_result</code> object with <code>$per_site</code> (named list of
-  server cross-tab objects), <code>$pooled</code> (cell-wise summed table when
-  pooled), and <code>$meta</code>.</p>
+    <p>A <code>dsomop_result</code>. Each <code>$per_site</code> entry is the server's
+  cross-tab: <code>row_col</code>, <code>col_col</code>, <code>count_mode</code>,
+  <code>row_levels</code>, <code>col_levels</code> and <code>counts</code> (banded matrix,
+  <code>NA</code> = suppressed), or for a stratified call
+  <code>stratified = TRUE</code>, <code>stratify_by</code> and <code>strata</code> (one such
+  slice per level). <code>$pooled</code> has the same shape with cell-wise sums
+  and a <code>suppressed</code> flag.</p>
     </div>
     <div class="section level2">
     <h2 id="cross-tab-is-descriptive-not-inferential">Cross-tab is descriptive, not inferential<a class="anchor" aria-label="anchor" href="#cross-tab-is-descriptive-not-inferential"></a></h2>
@@ -213,8 +229,7 @@ cell tables, which are disclosure-unsafe and lose utility on small data.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="va">ct</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.crosstab</span><span class="op">(</span><span class="st">"person"</span>, <span class="st">"gender_concept_id"</span>, <span class="st">"race_concept_id"</span>,</span>
-<span>                       scope <span class="op">=</span> <span class="st">"pooled"</span><span class="op">)</span></span>
+<span><span class="va">ct</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.crosstab</span><span class="op">(</span><span class="st">"person"</span>, <span class="st">"gender_concept_id"</span>, <span class="st">"race_concept_id"</span><span class="op">)</span></span>
 <span><span class="va">ct</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">counts</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>

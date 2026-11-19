@@ -43,7 +43,7 @@ inventory:
 ``` r
 exact <- omop_recipe(variables = list(visit_date = first_visit),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns)
+recipe_execute(exact, out = c(people = "D_date_exact"), datasources = conns)
 dsBaseClient::ds.colnames("D_date_exact", datasources = conns)
 ```
 
@@ -75,16 +75,26 @@ private minimum/maximum dates.
 ``` r
 months <- omop_recipe(variables = list(month = omop_date("first_visit", month_spec)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(months, out = c(people = "D_date_months"), conns = conns)
+recipe_execute(months, out = c(people = "D_date_months"), datasources = conns)
 ```
 
 ``` r
-ds.omop.table("D_date_months", "month", conns = conns)
+ds.omop.table("D_date_months", "month", datasources = conns)
 ```
 
+    #> Combined (all valid sites): month
     #> D_date_months$month
     #> 2020-03 2020-04 2020-05 2020-06 2020-07
     #>      12       0       0      12      12
+    #>
+    #> By site:
+    #>                    study
+    #> D_date_months$month site
+    #>             2020-03   12
+    #>             2020-04    0
+    #>             2020-05    0
+    #>             2020-06   12
+    #>             2020-07   12
 
 March, June and July each contain 12 first visits; another 12 people
 have no visit and are omitted from this table. `ds.omop.table()`
@@ -99,7 +109,7 @@ numbers <- omop_recipe(variables = list(month_index = omop_date("first_visit",
   omop_date_spec(precision = "month", representation = "number",
     numeric = "index", origin = "2020-01-01"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns)
+recipe_execute(numbers, out = c(people = "D_date_numbers"), datasources = conns)
 ```
 
 ``` r
@@ -146,9 +156,9 @@ occurred at a boundary.
 ``` r
 bounds <- omop_recipe(variables = list(start = month_start, end = month_end),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns)
+recipe_execute(bounds, out = c(people = "D_date_bounds"), datasources = conns)
 ds.omop.mutate("D_date_bounds", days = end - start + 1L,
-  newobj = "D_month_lengths", conns = conns)
+  newobj = "D_month_lengths", datasources = conns)
 ```
 
 ``` r
@@ -187,16 +197,28 @@ choose the final column names in this bundle.
 parts <- omop_recipe(variables = list(visit = omop_date_parts("first_visit",
   c(visit_year = "year", visit_month = "month", weekday = "weekday_name"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns)
+recipe_execute(parts, out = c(people = "D_date_parts"), datasources = conns)
 ```
 
 ``` r
-ds.omop.table("D_date_parts", "weekday", conns = conns)
+ds.omop.table("D_date_parts", "weekday", datasources = conns)
 ```
 
+    #> Combined (all valid sites): weekday
     #> D_date_parts$weekday
     #>    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday
     #>        24         0         0         0         0        12         0
+    #>
+    #> By site:
+    #>                     study
+    #> D_date_parts$weekday site
+    #>            Monday      24
+    #>            Tuesday      0
+    #>            Wednesday    0
+    #>            Thursday     0
+    #>            Friday       0
+    #>            Saturday    12
+    #>            Sunday       0
 
 The first visits fall on Saturday for 12 people and Monday for 24;
 another 12 people have no visit and are omitted here. Weekday names use
@@ -223,7 +245,7 @@ education_date <- omop_anchor(omop_event("observation", concepts = 900001L))
 ages <- omop_recipe(variables = list(at_death = omop_age_at("death"),
   at_question = omop_age_at(education_date)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns)
+recipe_execute(ages, out = c(people = "D_date_ages"), datasources = conns)
 ```
 
 ``` r
@@ -265,16 +287,25 @@ completed age.
 partial <- omop_recipe(variables = list(birth_year = omop_date("birth",
   omop_date_spec(precision = "year"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns)
+recipe_execute(partial, out = c(people = "D_date_partial"), datasources = conns)
 ```
 
 ``` r
-ds.omop.table("D_date_partial", "birth_year", conns = conns)
+ds.omop.table("D_date_partial", "birth_year", datasources = conns)
 ```
 
+    #> Combined (all valid sites): birth_year
     #> D_date_partial$birth_year
     #> 1975 1980 1990 2000
     #>   12   12   12   12
+    #>
+    #> By site:
+    #>                          study
+    #> D_date_partial$birth_year site
+    #>                      1975   12
+    #>                      1980   12
+    #>                      1990   12
+    #>                      2000   12
 
 Each birth-year category contains 12 people: 1975, 1980, 1990 and 2000.
 All 48 birth years are known even though 12 exact birthdays are not. If
@@ -285,7 +316,7 @@ implicit convention choose it.
 estimated <- omop_recipe(variables = list(age = omop_age_at("death",
   date_spec = omop_date_spec(partial = "mid"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns)
+recipe_execute(estimated, out = c(people = "D_date_estimated"), datasources = conns)
 ```
 
 ``` r
@@ -312,16 +343,24 @@ reproducible plan.
 custom <- omop_recipe(variables = list(month = omop_date("first_visit",
   omop_date_spec(precision = "custom", pattern = "%b %Y"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns)
+recipe_execute(custom, out = c(people = "D_date_custom"), datasources = conns)
 ```
 
 ``` r
-ds.omop.table("D_date_custom", "month", conns = conns)
+ds.omop.table("D_date_custom", "month", datasources = conns)
 ```
 
+    #> Combined (all valid sites): month
     #> D_date_custom$month
-    #> Mar 2020 Jun 2020 Jul 2020
+    #> Mar_2020 Jun_2020 Jul_2020
     #>       12       12       12
+    #>
+    #> By site:
+    #>                    study
+    #> D_date_custom$month site
+    #>            Mar_2020   12
+    #>            Jun_2020   12
+    #>            Jul_2020   12
 
 The counts are again 12 each for Mar 2020, Jun 2020 and Jul 2020; the 12
 missing visits are omitted. Only the month labels have changed. This
@@ -352,16 +391,24 @@ For example, choose an April-start fiscal quarter explicitly:
 fiscal <- omop_recipe(variables = list(quarter = omop_date("first_visit",
   omop_date_spec(precision = "fiscal_quarter", fiscal_start = 4L))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns)
+recipe_execute(fiscal, out = c(people = "D_date_fiscal"), datasources = conns)
 ```
 
 ``` r
-ds.omop.table("D_date_fiscal", "quarter", conns = conns)
+ds.omop.table("D_date_fiscal", "quarter", datasources = conns)
 ```
 
+    #> Combined (all valid sites): quarter
     #> D_date_fiscal$quarter
     #> 2019-FQ4 2020-FQ1 2020-FQ2
     #>       12       12       12
+    #>
+    #> By site:
+    #>                      study
+    #> D_date_fiscal$quarter site
+    #>              2019-FQ4   12
+    #>              2020-FQ1   12
+    #>              2020-FQ2   12
 
 March maps to 2019-FQ4, June to 2020-FQ1 and July to 2020-FQ2, with 12
 people each. The 12 missing visits are omitted. March belongs to the
@@ -378,7 +425,7 @@ Solution
 ``` r
 elapsed <- omop_recipe(variables = list(days = omop_time_between("first_visit", "death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns)
+recipe_execute(elapsed, out = c(people = "D_date_elapsed"), datasources = conns)
 dsBaseClient::ds.summary("D_date_elapsed$days", datasources = conns)
 ```
 

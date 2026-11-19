@@ -17,7 +17,9 @@ recipe_explain(
   recipe,
   detail = c("summary", "semantics"),
   conns = NULL,
-  symbol = "omop"
+  symbol = "omop",
+  offline = NULL,
+  datasources = NULL
 )
 ```
 
@@ -34,11 +36,26 @@ recipe_explain(
 
   - conns:
     
-    Optional DSI connections (uses the active OMOP session).
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - symbol:
     
     OMOP session symbol used with `conns`.
+
+  - offline:
+    
+    Logical or `NULL`. `TRUE` explains the recipe without contacting any
+    server; `FALSE` asks the servers (through `datasources`, or the
+    default connections when it is `NULL`). `NULL` (the default) keeps
+    the earlier behaviour: offline unless connections are given.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -62,17 +79,18 @@ form with its semantic digest. A recipe that executes as its v1 plan is
 explained from that v1 payload and the legacy rules it relies on;
 offline its lowered IR and digest are not available (the server lowers
 it), and its native rendering (`recipe_to_plan(version = 2)`) is never
-presented as the executed plan. With `conns`, each server whose profile
-publishes `omopPlanExplainDS` (dsOMOP 2.10.3) receives the selected wire
-plan and reports its normalised IR, compatibility variants and semantic
-digest (attached as `$server`). A server whose profile does not publish
-it, and a call that fails, is reported by site and changes nothing else.
-For a v1 plan the IR and digest are taken from the servers that
-explained it when they agree; otherwise they are reported unavailable
-(`$digest` is then `NULL`). The execution route on these servers (the
-publication protocol, the legacy call of a federation with an older
-server, or a refusal) is stated, and a recipe they could not execute is
-still explained, with the refusal reported.
+presented as the executed plan. With connections (`datasources`), each
+server whose profile publishes `omopPlanExplainDS` (dsOMOP 2.10.3)
+receives the selected wire plan and reports its normalised IR,
+compatibility variants and semantic digest (attached as `$server`). A
+server whose profile does not publish it, and a call that fails, is
+reported by site and changes nothing else. For a v1 plan the IR and
+digest are taken from the servers that explained it when they agree;
+otherwise they are reported unavailable (`$digest` is then `NULL`). The
+execution route on these servers (the publication protocol, the legacy
+call of a federation with an older server, or a refusal) is stated, and
+a recipe they could not execute is still explained, with the refusal
+reported.
 
 With connections, a matching last-successful-publication receipt reports
 permitted conflicts, chosen labels and versions. It uses only the factor

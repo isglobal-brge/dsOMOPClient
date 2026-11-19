@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-04-vocabulary.Rmd" class="external-link"><code>vignettes/book-04-vocabulary.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-04-vocabulary.Rmd" class="external-link"><code>vignettes/book-04-vocabulary.Rmd</code></a></small>
       <div class="d-none name"><code>book-04-vocabulary.Rmd</code></div>
     </div>
 
@@ -109,7 +109,7 @@
 </h2>
 <p>A concept is a public vocabulary meaning with a stable numeric ID. Its <strong>domain</strong> is the kind of fact, such as Condition or Measurement; its <strong>vocabulary</strong> is the coding system. Standard concepts (<code>S</code>) are preferred OMOP targets. Classification concepts (<code>C</code>) group meanings; non-standard source codes may map to standard ones.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -142,7 +142,7 @@
 <p>The word matches Asthma, Childhood asthma and Asthma screening, a procedure. Keep the ID beside the name: a familiar word alone does not specify which meaning you intend.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, domain <span class="op">=</span> <span class="st">"Condition"</span>,</span>
-<span>  vocabulary <span class="op">=</span> <span class="st">"SNOMED"</span>, standard_only <span class="op">=</span> <span class="cn">TRUE</span>, valid <span class="op">=</span> <span class="cn">TRUE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  vocabulary <span class="op">=</span> <span class="st">"SNOMED"</span>, standard_only <span class="op">=</span> <span class="cn">TRUE</span>, valid <span class="op">=</span> <span class="cn">TRUE</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">conditions</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -175,7 +175,7 @@
 </h2>
 <p>Look up the chosen ID to confirm its identity:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">asthma_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="va">asthma_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">asthma_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="va">asthma_id</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">asthma_info</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -217,7 +217,7 @@
 <p>A <strong>Maps to</strong> relationship connects a source code to its standard target. Find gastrointestinal haemorrhage to see a real mapping in this vocabulary:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bleeding</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Gastrointestinal hemorrhage"</span>, domain <span class="op">=</span> <span class="st">"Condition"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">bleeding</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -238,7 +238,7 @@
 <p>The standard SNOMED concept is <strong>192671</strong>. Inspect the mapping edges touching it:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mappings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.relationships.html">ds.omop.concept.relationships</a></span><span class="op">(</span><span class="va">bleeding_id</span>,</span>
-<span>  relationship_id <span class="op">=</span> <span class="st">"Maps to"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  relationship_id <span class="op">=</span> <span class="st">"Maps to"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">mappings</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"related_concept_id"</span>, <span class="st">"related_concept_name"</span>,</span>
 <span>  <span class="st">"relationship_id"</span>, <span class="st">"direction"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -260,7 +260,7 @@
 <p><code>reverse</code> means the related concept <strong>35208414</strong> is the source of the mapping into the requested target <strong>192671</strong>. Inspect that source code explicitly:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">source_code</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, concept_id <span class="op">=</span> <span class="fl">35208414L</span>,</span>
-<span>  standard_only <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  standard_only <span class="op">=</span> <span class="cn">FALSE</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">source_code</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"vocabulary_id"</span>,</span>
 <span>  <span class="st">"concept_code"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -286,7 +286,7 @@
 </h2>
 <p>Descendants are more specific meanings; ancestors are broader meanings. Inspect them before including a whole branch in your study.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">desc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">asthma_id</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">desc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">asthma_id</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">desc</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -302,7 +302,7 @@
 <code class="sourceCode R"><span><span class="va">child_id</span> <span class="op">&lt;-</span> <span class="va">desc</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">desc</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Childhood asthma"</span><span class="op">]</span></span></code></pre></div>
 <p>Childhood asthma (4051466) is a descendant of Asthma (317009). A set that includes descendants will include both meanings unless you exclude one.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">parents</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.ancestors.html">ds.omop.concept.ancestors</a></span><span class="op">(</span><span class="va">child_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">parents</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.ancestors.html">ds.omop.concept.ancestors</a></span><span class="op">(</span><span class="va">child_id</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">parents</span><span class="op">[</span><span class="va">parents</span><span class="op">$</span><span class="va">direction</span> <span class="op">==</span> <span class="st">"ancestor"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"direction"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -325,7 +325,7 @@
 <p>A catalogue entry does not establish clinical use. Despite its name, <code>concept.prevalence()</code> returns protected <strong>person counts</strong> by default. A prevalence estimate would also need a defined population, period and denominator.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, metric <span class="op">=</span> <span class="st">"persons"</span>,</span>
-<span>  top_n <span class="op">=</span> <span class="fl">20</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  top_n <span class="op">=</span> <span class="fl">20</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">use</span><span class="op">[</span><span class="va">use</span><span class="op">$</span><span class="va">concept_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">asthma_id</span>, <span class="va">child_id</span>, <span class="va">bleeding_id</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -343,7 +343,7 @@
 <p>Only gastrointestinal haemorrhage appears in these top 20 results, with a band of 475–479 people. Neither asthma concept made this top list. Their absence is not evidence of zero use; the targeted locator below answers that question.</p>
 <p>Locate both IDs to check which tables and columns actually use them:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">asthma_id</span>, <span class="va">child_id</span><span class="op">)</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">asthma_id</span>, <span class="va">child_id</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">locations</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="va">conditions</span><span class="op">$</span><span class="va">concept_name</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">locations</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">conditions</span><span class="op">$</span><span class="va">concept_id</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">locations</span><span class="op">[</span><span class="va">locations</span><span class="op">$</span><span class="va">table_name</span> <span class="op">==</span> <span class="st">"condition_occurrence"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"table_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
@@ -383,7 +383,7 @@
 <span><span class="va">concept_file</span> <span class="op">&lt;-</span> <span class="st">"book-concepts.rds"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>asthma <span class="op">=</span> <span class="va">asthma</span><span class="op">)</span>, <span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">asthma</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; omop_concept_set : 317009</span></span>
+<pre><code><span><span class="co">#&gt; omop_concept_set : 317009 </span></span>
 <span><span class="co">#&gt;   includes: descendants</span></span></code></pre>
 <p>The printed definition includes the seed and requests its descendants. <code>book-concepts.rds</code> now stores that definition for reuse. Setting <code>descendants = FALSE</code> would select only the seed.</p>
 <p><strong>Exercise 1.</strong> Keep Asthma’s children but exclude the seed itself. Save the set and read it back. Does the saved definition preserve the exclusion?</p>
@@ -396,7 +396,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">saved_sets</span>, <span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span><span class="op">$</span><span class="va">children_only</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; omop_concept_set : 317009</span></span>
+<pre><code><span><span class="co">#&gt; omop_concept_set : 317009 </span></span>
 <span><span class="co">#&gt;   includes: descendants, exclusions</span></span></code></pre>
 <p>The reloaded definition still requests descendants and excludes 317009 itself. An excluded set could also include descendants if you wanted to remove an entire branch. This file contains definitions, not patient data.</p>
 </details>
@@ -406,7 +406,7 @@
 </h2>
 <p>Use <code>visit_concept_id</code> for the setting; <code>visit_type_concept_id</code> describes the record’s provenance. Discover the settings before using their IDs:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">visit_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Visit"</span>, domain <span class="op">=</span> <span class="st">"Visit"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">visit_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Visit"</span>, domain <span class="op">=</span> <span class="st">"Visit"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">visit_catalogue</span> <span class="op">&lt;-</span> <span class="va">visit_hits</span><span class="op">[</span><span class="va">visit_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Inpatient Visit"</span>, <span class="st">"Outpatient Visit"</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="va">visit_catalogue</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
@@ -434,7 +434,7 @@
 <span><span class="va">visit_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">visit_ids</span>, <span class="va">omop_concept_set</span><span class="op">)</span></span></code></pre></div>
 <p>Inpatient Visit is <strong>9201</strong> and Outpatient Visit is <strong>9202</strong>. Both exist in the vocabulary. Check their clinical use separately:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">visit_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">visit_ids</span><span class="op">)</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">visit_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">visit_ids</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">visit_use</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">visit_ids</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">visit_use</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">visit_ids</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">visit_use</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -458,11 +458,11 @@
 </h2>
 <p>Switch to the separate synthetic dataset described in <a href="book-00-start.html#the-resources-on-the-server">chapter 0</a>. Its local question and answer codes are teaching examples, not codes to copy into a clinical study.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.questionnaire"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.questionnaire"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">questionnaire</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  limit <span class="op">=</span> <span class="fl">100</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  limit <span class="op">=</span> <span class="fl">100</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">questionnaire</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -554,7 +554,7 @@
 <span><span class="va">cause_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span><span class="op">]</span>, <span class="va">omop_concept_set</span><span class="op">)</span></span></code></pre></div>
 <p>Education question <strong>900001</strong> selects observations; Secondary <strong>900101</strong> and University <strong>900102</strong> are its coded answers. Fever question <strong>900002</strong> uses Yes <strong>900301</strong> and No <strong>900302</strong>. The death causes are Myocardial infarction <strong>900201</strong> and Pneumonia <strong>900202</strong>. Visits use the Visit domain. Study medicine <strong>950001</strong> supports drug-history lessons; weight <strong>950002</strong>, with kilogram <strong>9529</strong>, supports numeric exercises. The default local question and cause codes have no external mapping or hierarchy.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">question_presence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"observation"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">question_presence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"observation"</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">question_presence</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -578,7 +578,7 @@
 <p>The person bands for education and fever both begin at 20, meaning 20–24 people. The public dataset has 24 respondents to each question. Later categorical tables can release those exact counts when their cells pass the table’s checks.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cause_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Myocardial infarction"</span>, <span class="st">"Pneumonia"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">cause_use</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">question_ids</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">cause_use</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">question_ids</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">cause_use</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"table_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -610,15 +610,41 @@
 <p><strong>Exercise 2.</strong> ATC classes are classification concepts. Can a standard-only search miss them even when they are present? Use the optional teaching catalogue.</p>
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.questionnaire_vocab"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.questionnaire_vocab"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">atc_default</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">atc_default</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">atc_default</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; NULL</span></span></code></pre>
+<table style="width:100%;" class="table">
+<colgroup>
+<col width="7%">
+<col width="9%">
+<col width="7%">
+<col width="9%">
+<col width="11%">
+<col width="11%">
+<col width="9%">
+<col width="11%">
+<col width="10%">
+<col width="10%">
+</colgroup>
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+<th align="left">domain_id</th>
+<th align="left">vocabulary_id</th>
+<th align="left">standard_concept</th>
+<th align="left">concept_class_id</th>
+<th align="left">concept_code</th>
+<th align="left">valid_start_date</th>
+<th align="left">valid_end_date</th>
+<th align="left">invalid_reason</th>
+</tr></thead>
+<tbody></tbody>
+</table>
 <p><code>NULL</code> means the search returned no matching concepts: the default asks for standard concepts (<code>S</code>). Request classification concepts (<code>C</code>) instead:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">atc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, standard <span class="op">=</span> <span class="st">"C"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">atc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, standard <span class="op">=</span> <span class="st">"C"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">atc</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -646,11 +672,11 @@
 <h2 id="find-haemoglobin-glucose-and-their-units-in-synthea">Find haemoglobin, glucose and their units in Synthea<a class="anchor" aria-label="anchor" href="#find-haemoglobin-glucose-and-their-units-in-synthea"></a>
 </h2>
 <p>Switch to the numeric resource. The vocabulary spells haemoglobin “Hemoglobin”. Select a precise test and specimen, rather than every name containing the word.</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lab_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">lab_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">lab_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -691,11 +717,11 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hb_id</span> <span class="op">&lt;-</span> <span class="va">lab_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">lab_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Hemoglobin [Mass/volume] in Blood"</span><span class="op">]</span></span></code></pre></div>
 <p>Choose <strong>3000963</strong>, Hemoglobin [Mass/volume] in Blood. A panel and a haemoglobin fraction are different measurements even though their names share the word.</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">glucose_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Glucose"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">glucose_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Glucose"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">glucose_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -741,13 +767,13 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">glucose_id</span> <span class="op">&lt;-</span> <span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Glucose [Mass/volume] in Blood"</span><span class="op">]</span></span>
 <span><span class="va">lab_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>haemoglobin <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">hb_id</span><span class="op">)</span>, glucose <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">glucose_id</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Blood glucose is <strong>3000483</strong>. Serum or Plasma glucose and urine glucose are separate concepts; do not combine all search hits without deciding which specimens and concentration measures answer your question.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">hb_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">units</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">units</span><span class="op">)</span> <span class="op">==</span> <span class="st">"value"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"unit_concept_id"</span></span>
 <span><span class="va">units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unit_concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -768,11 +794,11 @@
 </h3>
 <p>For Serum or Plasma glucose, the requested unit count lacks enough support. Keep the server’s explanation instead of treating an unavailable result as zero:</p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">serum_glucose_id</span> <span class="op">&lt;-</span> <span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">glucose_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span></span>
 <span>  <span class="st">"Glucose [Mass/volume] in Serum or Plasma"</span><span class="op">]</span></span>
 <span><span class="va">serum_glucose_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>,</span>
-<span>  concept_id <span class="op">=</span> <span class="va">serum_glucose_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  concept_id <span class="op">=</span> <span class="va">serum_glucose_id</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">serum_glucose_units</span><span class="op">$</span><span class="va">meta</span><span class="op">$</span><span class="va">warnings</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available."</span></span>
 <span><span class="co">#&gt; [2] "No complete disclosure-safe pooled value counts were available."</span></span></code></pre>
@@ -780,9 +806,9 @@
 <p>The aggregate is unavailable; this does not establish that the concept has no records. Use the separately selected Blood glucose for the next exercise.</p>
 <p><strong>Exercise 3.</strong> Check Blood glucose’s unit and add the lab and questionnaire sets to <code>book-concepts.rds</code> without discarding the saved asthma exclusions.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">glucose_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>,</span>
-<span>  concept_id <span class="op">=</span> <span class="va">glucose_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  concept_id <span class="op">=</span> <span class="va">glucose_id</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">glucose_units</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">glucose_units</span><span class="op">)</span> <span class="op">==</span> <span class="st">"value"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"unit_concept_id"</span></span>
 <span><span class="va">glucose_units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unit_concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -797,7 +823,7 @@
 <td align="right">225</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span><span class="op">$</span><span class="va">sets</span> <span class="op">&lt;-</span> <span class="va">lab_sets</span></span>
 <span><span class="va">saved_sets</span><span class="op">$</span><span class="va">visit_sets</span> <span class="op">&lt;-</span> <span class="va">visit_sets</span></span>
@@ -814,9 +840,9 @@
 <h2 id="find-measured-bmi-and-its-recorded-unit">Find measured BMI and its recorded unit<a class="anchor" aria-label="anchor" href="#find-measured-bmi-and-its-recorded-unit"></a>
 </h2>
 <p>Measured BMI is a recorded value, distinct from calculating it from height and weight.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bmi_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Body mass index"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>,</span>
-<span>  vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">bmi_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -837,11 +863,11 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bmi_id</span> <span class="op">&lt;-</span> <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"Body mass index (BMI) [Ratio]"</span><span class="op">]</span></span></code></pre></div>
 <p>Choose the standard LOINC measurement <strong>3038553</strong>, Body mass index (BMI) [Ratio]. The repeated-measures chapter uses this definition.</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmi_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">bmi_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bmi_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">bmi_id</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">bmi_use</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">&lt;-</span> <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">bmi_use</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">bmi_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">bmi_use</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n_records"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -859,9 +885,9 @@
 </tr></tbody>
 </table>
 <p>The bands begin at 435 records and 25 people, showing repeated measurements. Check the recorded unit before summarising those values:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bmi_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>,</span>
-<span>  concept_id <span class="op">=</span> <span class="va">bmi_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  concept_id <span class="op">=</span> <span class="va">bmi_id</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmi_units</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmi_units</span><span class="op">)</span> <span class="op">==</span> <span class="st">"value"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"unit_concept_id"</span></span>
 <span><span class="va">bmi_units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unit_concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -876,7 +902,7 @@
 <td align="right">435</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span><span class="op">$</span><span class="va">measured_bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">bmi_id</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span><span class="op">$</span><span class="va">bmi_units</span> <span class="op">&lt;-</span> <span class="va">bmi_units</span></span>

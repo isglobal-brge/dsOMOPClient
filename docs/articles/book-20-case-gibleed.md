@@ -35,9 +35,9 @@ people, so no person is counted twice when the sites are pooled.
 ## Find the drugs and outcome
 
 ``` r
-ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns)$pooled
-di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns)$pooled
-gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns)$pooled
+ce <- ds.omop.concept.search("celecoxib", domain = "Drug", datasources = two_conns)$pooled
+di <- ds.omop.concept.search("diclofenac", domain = "Drug", datasources = two_conns)$pooled
+gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", datasources = two_conns)$pooled
 rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")]
 ```
 
@@ -67,7 +67,7 @@ does not establish a descendant relationship, which is why only the seed
 appears below.
 
 ``` r
-ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns)$pooled
+ce_children <- ds.omop.concept.descendants(ceid, datasources = two_conns)$pooled
 ce_children[c("concept_id", "concept_name")]
 ```
 
@@ -76,8 +76,8 @@ ce_children[c("concept_id", "concept_name")]
 |     1118084 | celecoxib     |
 
 ``` r
-ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
-  conns = two_conns)$pooled
+ds.omop.concept.locate(c(ceid, diid, giid), type = "both",
+  datasources = two_conns)$pooled
 ```
 
 | concept\_id | table\_name           | concept\_column        | n\_records | n\_persons |
@@ -144,7 +144,7 @@ comparison <- omop_recipe(populations = list(users),
     omop_output("analysis", rows = "users", format = "joined", options = list(
       from = list(list(output = "baseline"), list(output = "survival")),
       how = "inner", cardinality = "one_to_one"))), publish = "analysis")
-recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns)
+recipe_execute(comparison, out = c(analysis = "D_comparison"), datasources = two_conns)
 ```
 
 The censor list and 365-day window define the estimand. Event = 0 means
@@ -174,7 +174,7 @@ ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
   month_difference = entry_month - birth_month, day_difference = entry_day - birth_day,
   age = entry_year - birth_year - ifelse(month_difference < 0 |
     (month_difference == 0 & day_difference < 0), 1L, 0L),
-  newobj = "D_comparison_model", conns = two_conns)
+  newobj = "D_comparison_model", datasources = two_conns)
 dsBaseClient::ds.table("D_comparison_model$zero_time",
   datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -203,7 +203,7 @@ making the study definition explicit.
 ``` r
 arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
   ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
-    newobj = paste0("D_arm", arm), conns = two_conns)
+    newobj = paste0("D_arm", arm), datasources = two_conns)
   aggregate <- function(column) dsBaseClient::ds.mean(paste0("D_arm", arm, "$", column),
     type = "combine", datasources = two_conns)$Global.Mean
   time <- aggregate("years"); event <- aggregate("event"); age <- aggregate("age")
@@ -283,7 +283,7 @@ Solution 2
 
 ``` r
 ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
-  newobj = "D_censor", conns = two_conns)
+  newobj = "D_censor", datasources = two_conns)
 dsBaseClient::ds.table("D_censor$early_censor",
   datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```

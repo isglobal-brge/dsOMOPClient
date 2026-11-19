@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-17-reproduce.Rmd" class="external-link"><code>vignettes/book-17-reproduce.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-17-reproduce.Rmd" class="external-link"><code>vignettes/book-17-reproduce.Rmd</code></a></small>
       <div class="d-none name"><code>book-17-reproduce.Rmd</code></div>
     </div>
 
@@ -107,8 +107,8 @@
 </h2>
 <p>Keep the vocabulary and source information returned by these connections. A record for another dataset would not document this study.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">vocabularies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.vocab.vocabularies.html">ds.omop.vocab.vocabularies</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span></span>
-<span><span class="va">sources</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cdm.source.html">ds.omop.cdm.source</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span></span>
+<code class="sourceCode R"><span><span class="va">vocabularies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.vocab.vocabularies.html">ds.omop.vocab.vocabularies</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span></span>
+<span><span class="va">sources</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cdm.source.html">ds.omop.cdm.source</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span></span>
 <span><span class="va">vocabulary_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">vocabularies</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">site</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="va">vocabularies</span><span class="op">[[</span><span class="va">site</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">[</span><span class="va">x</span><span class="op">$</span><span class="va">vocabulary_id</span> <span class="op">==</span> <span class="st">"Questionnaire"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"vocabulary_id"</span>, <span class="st">"vocabulary_version"</span><span class="op">)</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
@@ -173,7 +173,7 @@
 <span>  age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>,</span>
 <span>  death_period <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"death"</span>, <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"year"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">check</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_documented"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">check</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_documented"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">published</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
 <span><span class="va">published</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"semantic_type"</span>, <span class="st">"r_type"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -230,11 +230,11 @@
 <span>  <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Package <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">package_versions</span><span class="op">)</span>, Release <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">package_versions</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"client-packages.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"server-packages.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"server-packages.rds"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">record_dir</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "client-packages.csv" "codebook-site.rds"   "explanation.txt"</span></span>
-<span><span class="co">#&gt; [4] "plan-digest.txt"     "recipe.json"         "server-packages.rds"</span></span>
-<span><span class="co">#&gt; [7] "sources.rds"         "vocabularies.rds"</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; [1] "client-packages.csv" "codebook-site.rds"   "codebook-site2.rds" </span></span>
+<span><span class="co">#&gt; [4] "explanation.txt"     "plan-digest.txt"     "recipe.json"        </span></span>
+<span><span class="co">#&gt; [7] "server-packages.rds" "sources.rds"         "vocabularies.rds"</span></span></code></pre>
 <p>The filenames identify the definition, software and data sources needed to repeat the study. Matching digests establish matching rules; they cannot establish that a database has stayed unchanged.</p>
 </div>
 <div class="section level2">
@@ -242,12 +242,12 @@
 </h2>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">restored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_load.html">recipe_load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"recipe.json"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">second_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">restored</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_repeated"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site2"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">second_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">restored</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_repeated"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site2"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">second_result</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">record_dir</span>, <span class="st">"codebook-site2.rds"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_repeated$death_period"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site2"</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_repeated$death_period</span></span>
-<span><span class="co">#&gt; 2023 2024   NA</span></span>
+<span><span class="co">#&gt; 2023 2024   NA </span></span>
 <span><span class="co">#&gt;   18   18   12</span></span></code></pre>
 <p>The second site has 18 deaths in 2023, 18 in 2024, and 12 people without a death year. The counts describe its data; the saved recipe describes how those categories were obtained.</p>
 </div>
@@ -260,13 +260,13 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_documented$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_documented$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education                   NA</span></span>
+<span><span class="co">#&gt;  Secondary_education University_education                   NA </span></span>
 <span><span class="co">#&gt;                   12                   12                   24</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_repeated$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site2"</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_repeated$education</span></span>
-<span><span class="co">#&gt; University qualification                       NA</span></span>
+<span><span class="co">#&gt; University_qualification                       NA </span></span>
 <span><span class="co">#&gt;                       24                       24</span></span></code></pre>
 <p>Site has 12 Secondary and 12 University answers; site2 has 24 University answers. Both have 24 missing answers. The newer catalogue calls University education “University qualification”. Because these were separate executions, their labels were resolved separately; a joint execution reconciles them as shown in chapter 10.</p>
 </details><p><strong>2. Inspect an unsupported cohort rule.</strong> Circe JSON describes an OHDSI cohort. Does a successful strict import establish the intended clinical meaning?</p>
@@ -299,8 +299,7 @@
 <p>The check identifies structural problems in this example, so it is not ready for extraction. Attempt the strict import and read its refusal:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_import_circe.html">recipe_import_circe</a></span><span class="op">(</span><span class="va">circe_json</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Error: unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.</span></span></code></pre>
 <p><code>unsupported_circe_construct</code> identifies the unsupported <code>AdditionalCriteria</code> rule. Keep the complete cohort definition and implement that rule in a reviewed native recipe before extracting. A successful strict import means every construct had an adapter; you must still compare the translated population with the intended inclusion and exclusion rules. Never delete a scientific criterion merely to make an import succeed.</p>
 </details><p><strong>3. Read the actual calendar levels.</strong> Which years can the assigned death-period column represent, and are they ordered?</p>
 <details><p><summary>Solution 3</summary></p>
@@ -335,7 +334,7 @@
 <p>For a small successful example, the person-count analysis needs no settings:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">person_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:demo.person_count_by_gender"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span></span>
+<span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">[</span><span class="st">"site"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">person_counts</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gender_name"</span>, <span class="st">"n_persons"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -358,9 +357,8 @@
 <details><p><summary>Solution: keep the outcome-free observation period</summary></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:incidence.rate"</span>,</span>
-<span>  params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>clean_window <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required</span></span></code></pre>
+<span>  params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>clean_window <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required</span></span></code></pre>
 <p><code>unsupported_clean_window</code> means this analysis cannot implement the required clean period. Preserve continuous prior observation, the outcome-free period and the specified follow-up in a reviewed recipe. The <a href="book-07-populations.html">population lessons</a> and <a href="book-20-case-gibleed.html">drug comparison</a> show the relevant rules; setting the clean period to zero would change the scientific question.</p>
 </details>
 </div>

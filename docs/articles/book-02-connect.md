@@ -38,12 +38,12 @@ than a database handle.
 ## Use a handle explicitly
 
 ``` r
-ds.omop.table.stats("person", symbol = "omop", conns = conns)
+ds.omop.table.stats("person", symbol = "omop", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -51,6 +51,9 @@ ds.omop.table.stats("person", symbol = "omop", conns = conns)
     #>
     #> $persons
     #> [1] 2690
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The request goes to GiBleed through `omop`: its person count is in the
 2,690–2,694 band. Most dsOMOP calls default to `symbol = "omop"`, so you
@@ -64,14 +67,14 @@ Release the attached resource, then attach another one through the same
 login:
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -79,20 +82,23 @@ ds.omop.table.stats("person", conns = conns)
     #>
     #> $persons
     #> [1] 25
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The person band is now 25–29, containing Synthea27Nj’s 28 people. The
 handle is still called `omop` even though its database changed.
 Switching does not combine the two populations.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.gibleed", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.gibleed", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -100,6 +106,9 @@ ds.omop.table.stats("person", conns = conns)
     #>
     #> $persons
     #> [1] 2690
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The 2,690–2,694 band confirms that GiBleed is attached again. Choosing
 the resource explicitly prevents running a lab analysis against its
@@ -114,7 +123,7 @@ combine them?
 Solution
 
 ``` r
-ds.omop.connect(resource = "omop.synthea", symbol = "labs", conns = conns)
+ds.omop.connect(resource = "omop.synthea", symbol = "labs", datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
@@ -124,31 +133,37 @@ DSI::datashield.symbols(conns)
 `labs` and `omop` are two distinct handles in the same session.
 
 ``` r
-ds.omop.table.stats("person", stats = "persons", symbol = "omop", conns = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "omop", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $persons
     #> [1] 2690
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 ``` r
-ds.omop.table.stats("person", stats = "persons", symbol = "labs", conns = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "labs", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $persons
     #> [1] 25
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 ``` r
-ds.omop.disconnect(symbol = "labs", conns = conns)
+ds.omop.disconnect(symbol = "labs", datasources = conns)
 ```
 
 `omop` gives 2690 and `labs` gives 25. Each is a separate protected
@@ -163,11 +178,10 @@ table name or the handle name?
 Solution
 
 ``` r
-ds.omop.table.stats("person", symbol = "missing_handle", conns = conns)
+ds.omop.table.stats("person", symbol = "missing_handle", datasources = conns)
 ```
 
-    #> Error:
-    #> ! No OMOP session 'missing_handle'. Call ds.omop.connect() first.
+    #> Error: No OMOP session 'missing_handle'. Call ds.omop.connect() first.
 
 The message identifies a missing session handle. It says nothing about
 whether the database has a person table. Use `omop`, or attach a
@@ -176,7 +190,7 @@ resource under the name you intend to query.
 ## End the session
 
 ``` r
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 ```
 

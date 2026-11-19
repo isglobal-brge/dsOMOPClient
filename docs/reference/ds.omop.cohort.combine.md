@@ -14,7 +14,9 @@ ds.omop.cohort.combine(
   cohort_b,
   new_name = NULL,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  newobj = NULL,
+  datasources = NULL
 )
 ```
 
@@ -40,8 +42,7 @@ ds.omop.cohort.combine(
 
   - new\_name:
     
-    Character; TABLE name for the combined result. If `NULL` (the
-    default), an auto-generated name is used.
+    Deprecated alias of `newobj`.
 
   - symbol:
     
@@ -50,8 +51,21 @@ ds.omop.cohort.combine(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - newobj:
+    
+    Character; TABLE name for the combined result, as dsBaseClient
+    assigning functions call it. If `NULL` (the default), an
+    auto-generated name is used.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

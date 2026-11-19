@@ -16,7 +16,7 @@ ds.omop.dp.release(
   datasources = NULL,
   pool = TRUE,
   format = c("long", "wide", "vector", "raw"),
-  type = NULL
+  type = "both"
 )
 ```
 
@@ -34,12 +34,14 @@ ds.omop.dp.release(
 
   - datasources:
     
-    Named DataSHIELD connection list. `NULL` uses
-    `DSI::datashield.connections_find()`.
+    Named DataSHIELD connection list. `NULL` uses the connections of the
+    `"omop"` session, or `DSI::datashield.connections_find()` when there
+    is none.
 
   - pool:
     
-    Logical; pool the complete set of noisy site releases.
+    Deprecated alias of `type`: `TRUE` means `type = "both"`, `FALSE`
+    means `type = "split"`.
 
   - format:
     
@@ -50,9 +52,12 @@ ds.omop.dp.release(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, the legacy `pool` argument is preserved: `TRUE` means both
-    views and `FALSE` means split only.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. When the
+    releases cannot be pooled (incompatible contracts, repeated logical
+    sources, a non-additive statistic), `"both"` keeps the per-server
+    releases with `pooled = NULL` and `meta$pooling_reason`, and
+    `"combine"` stops with the reason. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

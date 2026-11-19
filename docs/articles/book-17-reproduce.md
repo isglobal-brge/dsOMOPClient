@@ -25,8 +25,8 @@ Keep the vocabulary and source information returned by these
 connections. A record for another dataset would not document this study.
 
 ``` r
-vocabularies <- ds.omop.vocab.vocabularies(conns = conns)$per_site
-sources <- ds.omop.cdm.source(conns = conns)$per_site
+vocabularies <- ds.omop.vocab.vocabularies(datasources = conns)$per_site
+sources <- ds.omop.cdm.source(datasources = conns)$per_site
 vocabulary_rows <- do.call(rbind, lapply(names(vocabularies), function(site) {
   x <- vocabularies[[site]]
   x <- x[x$vocabulary_id == "Questionnaire", c("vocabulary_id", "vocabulary_version"), drop = FALSE]
@@ -72,7 +72,7 @@ check <- omop_recipe(variables = list(education = education,
   age = omop_age_at("death"),
   death_period = omop_date("death", omop_date_spec(precision = "year"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns["site"])
+result <- recipe_execute(check, out = c(people = "D_documented"), datasources = conns["site"])
 published <- recipe_codebook(result)
 published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")]
 ```
@@ -109,13 +109,13 @@ package_versions <- vapply(c("dsOMOPClient", "DSI", "dsBaseClient"),
   function(p) as.character(packageVersion(p)), character(1))
 write.csv(data.frame(Package = names(package_versions), Release = unname(package_versions)),
   file.path(record_dir, "client-packages.csv"), row.names = FALSE)
-saveRDS(ds.omop.server.version(conns = conns), file.path(record_dir, "server-packages.rds"))
+saveRDS(ds.omop.server.version(datasources = conns), file.path(record_dir, "server-packages.rds"))
 list.files(record_dir)
 ```
 
-    #> [1] "client-packages.csv" "codebook-site.rds"   "explanation.txt"
-    #> [4] "plan-digest.txt"     "recipe.json"         "server-packages.rds"
-    #> [7] "sources.rds"         "vocabularies.rds"
+    #> [1] "client-packages.csv" "codebook-site.rds"   "codebook-site2.rds"
+    #> [4] "explanation.txt"     "plan-digest.txt"     "recipe.json"
+    #> [7] "server-packages.rds" "sources.rds"         "vocabularies.rds"
 
 The filenames identify the definition, software and data sources needed
 to repeat the study. Matching digests establish matching rules; they
@@ -125,7 +125,7 @@ cannot establish that a database has stayed unchanged.
 
 ``` r
 restored <- recipe_load(file.path(record_dir, "recipe.json"))
-second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
+second_result <- recipe_execute(restored, out = c(people = "D_repeated"), datasources = conns["site2"])
 saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
 dsBaseClient::ds.table("D_repeated$death_period",
   useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
@@ -152,7 +152,7 @@ dsBaseClient::ds.table("D_documented$education",
 ```
 
     #> D_documented$education
-    #>  Secondary education University education                   NA
+    #>  Secondary_education University_education                   NA
     #>                   12                   12                   24
 
 ``` r
@@ -161,7 +161,7 @@ dsBaseClient::ds.table("D_repeated$education",
 ```
 
     #> D_repeated$education
-    #> University qualification                       NA
+    #> University_qualification                       NA
     #>                       24                       24
 
 Site has 12 Secondary and 12 University answers; site2 has 24 University
@@ -195,8 +195,7 @@ ready for extraction. Attempt the strict import and read its refusal:
 recipe_import_circe(circe_json)
 ```
 
-    #> Error:
-    #> ! unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.
+    #> Error: unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.
 
 `unsupported_circe_construct` identifies the unsupported
 `AdditionalCriteria` rule. Keep the complete cohort definition and
@@ -240,7 +239,7 @@ settings:
 
 ``` r
 person_counts <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
-  conns = conns["site"])
+  datasources = conns["site"])
 person_counts$pooled[c("gender_name", "n_persons")]
 ```
 
@@ -265,11 +264,10 @@ Solution: keep the outcome-free observation period
 
 ``` r
 ds.omop.analysis.run("dsomop:incidence.rate",
-  params = list(clean_window = 365), conns = conns)
+  params = list(clean_window = 365), datasources = conns)
 ```
 
-    #> Error:
-    #> ! unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required
+    #> Error: unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required
 
 `unsupported_clean_window` means this analysis cannot implement the
 required clean period. Preserve continuous prior observation, the

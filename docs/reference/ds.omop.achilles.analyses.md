@@ -1,9 +1,10 @@
 # List available Achilles analyses
 
 Returns the catalog of Achilles analyses available on the connected
-servers, optionally filtered by clinical domain. Since the catalog is
-identical across servers (it is defined by the Achilles specification),
-the pooled result is taken from the first responding server.
+servers, optionally filtered by clinical domain. The catalog is defined
+by the Achilles specification, so the pooled result is the catalog every
+server returned identically; when the servers' catalogs differ, or a
+server is unavailable, `$pooled` is `NULL` with `meta$pooling_reason`.
 
 ## Usage
 
@@ -12,7 +13,8 @@ ds.omop.achilles.analyses(
   domain = NULL,
   symbol = "omop",
   conns = NULL,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -32,18 +34,25 @@ ds.omop.achilles.analyses(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. The
-    historical default is `"both"`.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `scope = "pooled"`. The pooled result is a
-data frame listing analysis IDs, names, and associated domains.
+A `dsomop_result`. Each `$per_site` entry and the pooled consensus are
+data frames listing analysis IDs, names, and associated domains.
 
 ## Examples
 

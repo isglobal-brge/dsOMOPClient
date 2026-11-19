@@ -13,7 +13,7 @@ executions."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ executions."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Combine two cohorts with set operations</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/cohort.R" class="external-link"><code>R/cohort.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/cohort.R" class="external-link"><code>R/cohort.R</code></a></small>
       <div class="d-none name"><code>ds.omop.cohort.combine.Rd</code></div>
     </div>
 
@@ -83,7 +83,9 @@ executions.</p>
 <span>  <span class="va">cohort_b</span>,</span>
 <span>  new_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -111,8 +113,7 @@ value returned by <code><a href="ds.omop.cohort.create.html">ds.omop.cohort.crea
 
 
 <dt id="arg-new-name">new_name<a class="anchor" aria-label="anchor" href="#arg-new-name"></a></dt>
-<dd><p>Character; TABLE name for the combined result. If
-<code>NULL</code> (the default), an auto-generated name is used.</p></dd>
+<dd><p>Deprecated alias of <code>newobj</code>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -121,8 +122,21 @@ was initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
+
+
+<dt id="arg-newobj">newobj<a class="anchor" aria-label="anchor" href="#arg-newobj"></a></dt>
+<dd><p>Character; TABLE name for the combined result, as
+dsBaseClient assigning functions call it. If <code>NULL</code> (the default),
+an auto-generated name is used.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">

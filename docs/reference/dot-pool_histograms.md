@@ -1,6 +1,10 @@
 # Pool histograms by bin-wise sum
 
-Pool histograms by bin-wise sum
+Bins are matched by their edges (`bin_start`, `bin_end`), the way date
+counts are matched by period: servers drop suppressed bins, so positions
+differ between sites. A bin absent or suppressed on a server is unknown
+there, never zero. Servers whose bins overlap other servers' bins
+without matching them use different edges and cannot be pooled.
 
 ## Usage
 

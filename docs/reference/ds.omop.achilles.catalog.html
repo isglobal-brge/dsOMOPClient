@@ -3,13 +3,15 @@
 If the achilles_analysis table exists, its contents are returned
 directly; otherwise, the server discovers available analyses by inspecting
 distinct analysis_id values in the achilles_results table.
-Since the catalog is identical across servers, the pooled result is taken
-from the first responding server."><meta property="og:description" content="Returns the full catalog of available Achilles analyses from the server.
+The pooled result is the catalog every server returned identically; when
+the servers' catalogs differ, or a server is unavailable, $pooled
+is NULL with meta$pooling_reason."><meta property="og:description" content="Returns the full catalog of available Achilles analyses from the server.
 If the achilles_analysis table exists, its contents are returned
 directly; otherwise, the server discovers available analyses by inspecting
 distinct analysis_id values in the achilles_results table.
-Since the catalog is identical across servers, the pooled result is taken
-from the first responding server."></head><body>
+The pooled result is the catalog every server returned identically; when
+the servers' catalogs differ, or a server is unavailable, $pooled
+is NULL with meta$pooling_reason."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +19,7 @@ from the first responding server."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +70,7 @@ from the first responding server."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Get Achilles analysis catalog</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/achilles.R" class="external-link"><code>R/achilles.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/achilles.R" class="external-link"><code>R/achilles.R</code></a></small>
       <div class="d-none name"><code>ds.omop.achilles.catalog.Rd</code></div>
     </div>
 
@@ -77,13 +79,19 @@ from the first responding server."></head><body>
 If the <code>achilles_analysis</code> table exists, its contents are returned
 directly; otherwise, the server discovers available analyses by inspecting
 distinct <code>analysis_id</code> values in the <code>achilles_results</code> table.
-Since the catalog is identical across servers, the pooled result is taken
-from the first responding server.</p>
+The pooled result is the catalog every server returned identically; when
+the servers' catalogs differ, or a server is unavailable, <code>$pooled</code>
+is <code>NULL</code> with <code>meta$pooling_reason</code>.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ds.omop.achilles.catalog</span><span class="op">(</span>symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="cn">NULL</span>, type <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ds.omop.achilles.catalog</span><span class="op">(</span></span>
+<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
+<span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -96,20 +104,27 @@ was initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional result view: <code>"split"</code>, <code>"combine"</code>, or
-<code>"both"</code>. The historical default is <code>"both"</code>.</p></dd>
+<dd><p>Result view: <code>"both"</code> (default), <code>"split"</code>, or
+<code>"combine"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dsomop_result</code> object with <code>scope = "pooled"</code>.
-  The pooled result is a data frame listing all available analysis IDs
-  and their descriptions.</p>
+    <p>A <code>dsomop_result</code>. Each <code>$per_site</code> entry and the
+  pooled consensus are data frames listing the available analysis IDs and
+  their descriptions.</p>
     </div>
 
     <div class="section level2">

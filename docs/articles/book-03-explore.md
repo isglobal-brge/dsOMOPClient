@@ -41,7 +41,7 @@ result.
 ## Separate what was observed from its value
 
 ``` r
-columns <- ds.omop.columns("observation", conns = conns)$site
+columns <- ds.omop.columns("observation", datasources = conns)$site
 subset(columns, column_name %in% c("observation_concept_id", "value_as_concept_id",
   "value_as_number", "value_as_string", "observation_date"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
@@ -62,12 +62,12 @@ coded value or answer, and `value_as_number` a numeric value.
 choosing its value field are separate decisions.
 
 ``` r
-ds.omop.table.stats("observation", conns = conns)
+ds.omop.table.stats("observation", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -75,6 +75,9 @@ ds.omop.table.stats("observation", conns = conns)
     #>
     #> $persons
     #> [1] 670
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The bands begin at 1,475 rows and 670 people: one person can contribute
 several observations. These represent 1,475–1,479 rows and 670–674
@@ -85,7 +88,7 @@ those answers.
 ## Find the visit date and setting
 
 ``` r
-columns <- ds.omop.columns("visit_occurrence", conns = conns)$site
+columns <- ds.omop.columns("visit_occurrence", datasources = conns)$site
 subset(columns, column_name %in% c("visit_start_date", "visit_end_date",
   "visit_concept_id", "visit_type_concept_id"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
@@ -104,12 +107,12 @@ describes its setting, such as inpatient or outpatient.
 setting field to select inpatient visits.
 
 ``` r
-ds.omop.table.stats("visit_occurrence", conns = conns)
+ds.omop.table.stats("visit_occurrence", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -117,6 +120,9 @@ ds.omop.table.stats("visit_occurrence", conns = conns)
     #>
     #> $persons
     #> [1] 890
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The bands are 1,035–1,039 visits and 890–894 people. Repeated visits
 explain why rows exceed people; a visit count is not a study sample
@@ -130,7 +136,7 @@ release a count of deaths.
 Solution
 
 ``` r
-columns <- ds.omop.columns("death", conns = conns)$site
+columns <- ds.omop.columns("death", datasources = conns)$site
 subset(columns, column_name %in% c("death_date", "cause_concept_id", "cause_source_value"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
@@ -146,12 +152,13 @@ original source code, for example an ICD code, and is blocked here. The
 date field’s existence does not establish that any deaths were recorded.
 
 ``` r
-ds.omop.table.stats("death", conns = conns)
+ds.omop.table.stats("death", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
+    #> Not pooled: No complete disclosure-safe pooled table statistics were available.
     #>
     #> $site
     #> list()
@@ -169,7 +176,7 @@ establish that somebody took the medicine every day?
 Solution
 
 ``` r
-columns <- ds.omop.columns("drug_exposure", conns = conns)$site
+columns <- ds.omop.columns("drug_exposure", datasources = conns)$site
 subset(columns, column_name %in% c("drug_exposure_start_date",
   "drug_exposure_end_date", "days_supply"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
@@ -194,12 +201,12 @@ guarantee that lab values can be analysed? Check the column itself.
 Solution
 
 ``` r
-ds.omop.table.stats("measurement", conns = conns)
+ds.omop.table.stats("measurement", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -207,17 +214,20 @@ ds.omop.table.stats("measurement", conns = conns)
     #>
     #> $persons
     #> [1] 2685
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The row band begins at 44,050. The public GiBleed data have exactly
 44,053 measurement rows; this analyst call rounds down to its band.
 
 ``` r
-ds.omop.column.stats("measurement", "value_as_number", conns = conns)
+ds.omop.column.stats("measurement", "value_as_number", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: split (per-server results)
     #>
     #> $site
     #> $n_total

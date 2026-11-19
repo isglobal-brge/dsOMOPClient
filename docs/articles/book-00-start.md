@@ -46,15 +46,15 @@ its request through it.
 ds.omop.client.version()
 ```
 
-    #> [1] "2.10.5"
+    #> [1] "2.10.9"
 
 ``` r
-ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+ds.omop.server.version(datasources = conns)[c("server", "published", "running", "ready")]
 ```
 
 | server | published | running | ready |
 | :----- | :-------- | :------ | :---- |
-| site   | 2.10.5    | 2.10.5  | TRUE  |
+| site   | 2.10.9    | 2.10.9  | TRUE  |
 
 The first line is the client package on your computer. `ready` confirms
 that the server’s installed dsOMOP and its available methods agree.
@@ -112,14 +112,14 @@ How can you tell that you are no longer querying GiBleed?
 Solution
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -127,6 +127,9 @@ ds.omop.table.stats("person", conns = conns)
     #>
     #> $persons
     #> [1] 25
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The person count is 25, meaning 25–29 people. That band contains
 Synthea27Nj’s 28 people and is far below GiBleed’s 2,694. Chapter 1
@@ -142,19 +145,19 @@ name.
 Solution
 
 ``` r
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 conns <- ds.omop.login("https://localhost:8443", user = "administrator",
   password = "password", resource = "omop.gibleed", server = "site")$conns
 ```
 
 ``` r
-ds.omop.table.stats("person", conns = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -162,6 +165,9 @@ ds.omop.table.stats("person", conns = conns)
     #>
     #> $persons
     #> [1] 2690
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 The count is back to the 2,690–2,694 band. Disconnect releases the
 resource; logout closes the DataSHIELD session. A new login starts a new

@@ -29,7 +29,7 @@ return per-server assignment confirmations."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,7 +80,7 @@ return per-server assignment confirmations."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Run a unified analysis catalog entry</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/analysis.R" class="external-link"><code>R/analysis.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/analysis.R" class="external-link"><code>R/analysis.R</code></a></small>
       <div class="d-none name"><code>ds.omop.analysis.run.Rd</code></div>
     </div>
 
@@ -112,7 +112,10 @@ return per-server assignment confirmations.</p>
 <span>  date_handling <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"both"</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  scope_combine <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -147,8 +150,9 @@ named <code>scope_table_&lt;n&gt;</code> argument, never through a generic
 
 
 <dt id="arg-combine">combine<a class="anchor" aria-label="anchor" href="#arg-combine"></a></dt>
-<dd><p>Character; how to fold multiple scope sources together:
-<code>"union"</code> (the default) or <code>"intersect"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>scope_combine</code>: how to fold
+multiple scope sources together, <code>"union"</code> (the default) or
+<code>"intersect"</code>.</p></dd>
 
 
 <dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
@@ -156,7 +160,8 @@ named <code>scope_table_&lt;n&gt;</code> argument, never through a generic
 pooling aggregate results across servers. <code>"strict"</code> (default)
 requires each pooled group on every server; <code>"pooled_only_ok"</code> pools
 only available disclosure-safe contributions. Kaplan-Meier curves still
-require every preceding risk-set bin because their values are cumulative.</p></dd>
+require every preceding risk-set bin because their values are cumulative.
+See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
@@ -182,8 +187,8 @@ initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
@@ -193,7 +198,30 @@ connections stored in the active session are used.</p></dd>
 returns only the combined result. The aliases <code>"b"</code>,
 <code>"splits"</code>/<code>"s"</code>, and <code>"combined"</code>/<code>"c"</code> are
 accepted. Combining is performed only from the server-owned pooling
-contract; no column-name heuristics are used.</p></dd>
+contract; no column-name heuristics are used. When the result cannot be
+pooled, <code>"both"</code> keeps the per-server frames with
+<code>pooled = NULL</code> and <code>meta$pooling_reason</code>, and
+<code>"combine"</code> stops with the reason.</p></dd>
+
+
+<dt id="arg-newobj">newobj<a class="anchor" aria-label="anchor" href="#arg-newobj"></a></dt>
+<dd><p>For assign-mode analyses, the name of the server-side object
+to create (it must not exist on any server). <code>NULL</code> (the default)
+generates a fresh name. Not used by aggregate analyses.</p></dd>
+
+
+<dt id="arg-scope-combine">scope_combine<a class="anchor" aria-label="anchor" href="#arg-scope-combine"></a></dt>
+<dd><p>Character; how to fold multiple scope sources
+(<code>cohort</code> and <code>tables</code>) into one population: <code>"union"</code>
+(the default) or <code>"intersect"</code> on the person key. Also accepted
+under its older name <code>combine</code>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -206,6 +234,9 @@ contract; no column-name heuristics are used.</p></dd>
   <code>plot = TRUE</code> and the entry ships a plot recipe, the built <code>ggplot</code>
   is attached as the <code>"plot"</code> attribute (and <code>meta$plot</code>).
   <code>meta$protection</code> holds each server's protection label and estimand.
+  <code>meta$pooling</code> names how the pooled result was formed;
+  <code>meta$pooling_contract</code> is the contract that governed it (for
+  protected releases, the one their <code>meta$release_pooling</code> selected).
   On dsOMOP 2.10.3, <code>"fixed_synopsis"</code> declares a bounded-vector
   epsilon and delta zero before exact support gates; <code>"realised_sticky"</code>
   is heuristic and declares neither. A <code>"mixed"</code> frame identifies its
@@ -280,7 +311,7 @@ ambiguous shorthand errors with the candidate ids.</p>
 <span><span class="va">res2</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.analysis.run</span><span class="op">(</span></span>
 <span>  <span class="va">entry</span>,</span>
 <span>  tables  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"my_cohort"</span>, <span class="st">"my_other_cohort"</span><span class="op">)</span>,</span>
-<span>  combine <span class="op">=</span> <span class="st">"intersect"</span></span>
+<span>  scope_combine <span class="op">=</span> <span class="st">"intersect"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Build the entry's client-side plot over the pooled, gate-passed data.</span></span>

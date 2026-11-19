@@ -1,11 +1,12 @@
 # Get a disclosure-safe numeric histogram
 
 Computes a binned histogram for a numeric column in an OMOP CDM table.
-When scope is `"pooled"`, a two-pass algorithm is used: the first pass
-collects p05/p95 ranges from each server to compute shared bin edges,
-and the second pass counts records per bin using those shared edges so
-that results are directly comparable and summable across servers. Bins
-with counts below the disclosure threshold are suppressed.
+For a pooled view (`type = "both"` or `"combine"`), a two-pass algorithm
+is used: the first pass collects p05/p95 ranges from each server to
+compute shared bin edges, and the second pass counts persons per bin
+using those shared edges so that results are directly comparable and
+summable across servers. Bins with counts below the disclosure threshold
+are left out by the server; pooled bins are matched by their edges.
 
 ## Usage
 
@@ -28,7 +29,8 @@ ds.omop.value.histogram(
   xlab = NULL,
   main = NULL,
   col = "#4C72B0",
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -75,11 +77,12 @@ ds.omop.value.histogram(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -87,7 +90,8 @@ ds.omop.value.histogram(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -97,8 +101,8 @@ ds.omop.value.histogram(
   - plot:
     
     Logical; if `TRUE`, draw a federation-wide bar chart of the pooled,
-    shared-edge bins (forces `scope = "pooled"`) and return the result
-    invisibly. Default `FALSE`.
+    shared-edge bins (the default split view becomes `"both"`) and
+    return the result invisibly. Default `FALSE`.
 
   - nbins:
     
@@ -111,15 +115,26 @@ ds.omop.value.histogram(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. A pooled
-    plot requires `"combine"` or `"both"`. When omitted, legacy `scope`
-    behaviour is preserved.
+    Result view: `"split"` (default), `"both"`, or `"combine"`. A pooled
+    plot requires `"combine"` or `"both"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of data frames
-with columns `bin_start`, `bin_end`, `count_value`), `$pooled` (combined
-histogram when pooled), and `$meta`.
+A `dsomop_result`. Each `$per_site` entry is a data frame with
+`bin_start`, `bin_end` and `count` (banded persons; bins below the
+threshold are left out). `$pooled` sums `count` per bin on the shared
+edges, matching bins by `bin_start` and `bin_end`; a bin missing on a
+server is not treated as zero. When the shared range cannot be formed,
+the per-server histograms (on each server's own edges) are still
+returned and `meta$pooling_reason` says why nothing was pooled.
 
 ## Examples
 

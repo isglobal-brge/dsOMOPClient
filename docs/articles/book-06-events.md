@@ -126,7 +126,7 @@ from R’s `all(logical(0))`, which is TRUE.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns)
+recipe_execute(reducers, out = c(people = "D_reducers"), datasources = conns)
 ```
 
 The columns are now in `D_reducers` on the server. Request one approved
@@ -271,7 +271,7 @@ often.
 ``` r
 recent <- omop_recipe(variables = list(last = omop_variable(event = measure,
   reducer = omop_reduce("last_value", window = lookback))))
-recipe_execute(recent, out = "D_recent", conns = conns)
+recipe_execute(recent, out = "D_recent", datasources = conns)
 recent_mean <- dsBaseClient::ds.mean("D_recent$last", type = "combine", datasources = conns)
 recent_missing <- dsBaseClient::ds.numNA("D_recent$last", datasources = conns)
 data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
@@ -299,7 +299,7 @@ tolerance; it need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns)
+recipe_execute(at_index, out = c(baseline = "D_at_index"), datasources = conns)
 ```
 
 The tolerance excludes later measurements. The shortcut uses
@@ -337,7 +337,7 @@ before the reducer runs. This example converts g/dL to g/L, multiplying
 by ten. These are the vocabulary names for the input and target units:
 
 ``` r
-units <- ds.omop.concept.lookup(c(8713L, 8636L), conns = conns)
+units <- ds.omop.concept.lookup(c(8713L, 8636L), datasources = conns)
 units$pooled[c("concept_id", "concept_name")]
 ```
 
@@ -363,7 +363,7 @@ across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(converted, out = c(people = "D_converted"), conns = conns)
+recipe_execute(converted, out = c(people = "D_converted"), datasources = conns)
 ```
 
 ``` r
@@ -398,7 +398,7 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns)
+recipe_execute(binned, out = c(output = "D_lab_bins"), datasources = conns)
 ```
 
 The band is an ordered factor directly on the server. Its order matters
@@ -410,7 +410,7 @@ bins_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
     #> D_lab_bins$band
-    #>       below 14 14 to below 15    15 or above             NA
+    #>       below_14 14_to_below_15    15_or_above             NA
     #>              9              9             10              0
 
 There are 9 people below 14, 9 from 14 to below 15, and 10 at or above
@@ -450,7 +450,7 @@ Solution
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns)
+recipe_execute(row_count, out = c(people = "D_row_count"), datasources = conns)
 dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
 ```
 
@@ -479,7 +479,7 @@ Solution
 
 ``` r
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns)
+recipe_execute(change_recipe, out = c(output = "D_event_change"), datasources = conns)
 dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
 ```
 

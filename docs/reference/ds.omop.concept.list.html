@@ -5,15 +5,23 @@ using OFFSET/LIMIT pagination (page size capped server-side at 1000). Unlike
 ds.omop.concept.search this returns the total matching count
 alongside the current page so callers can build pagination controls.
 Vocabulary reference data carries no patient information, so this reader is
-not disclosure-gated; the per-site pages are pooled by set union and the
-per-site total_count values are summed."><meta property="og:description" content="Pages through the OMOP concept catalog on each connected server,
+not disclosure-gated; the per-site pages are pooled by set union. The
+pooled total_count is the sum of the per-site totals, labelled as
+such: a concept present on several servers (shared vocabularies usually
+are) counts once per server, so it is an upper bound of the distinct
+concepts; total_count_max, the largest per-site total, is a lower
+bound."><meta property="og:description" content="Pages through the OMOP concept catalog on each connected server,
 filtered by domain, vocabulary, concept class, standard status and validity,
 using OFFSET/LIMIT pagination (page size capped server-side at 1000). Unlike
 ds.omop.concept.search this returns the total matching count
 alongside the current page so callers can build pagination controls.
 Vocabulary reference data carries no patient information, so this reader is
-not disclosure-gated; the per-site pages are pooled by set union and the
-per-site total_count values are summed."></head><body>
+not disclosure-gated; the per-site pages are pooled by set union. The
+pooled total_count is the sum of the per-site totals, labelled as
+such: a concept present on several servers (shared vocabularies usually
+are) counts once per server, so it is an upper bound of the distinct
+concepts; total_count_max, the largest per-site total, is a lower
+bound."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -21,7 +29,7 @@ per-site total_count values are summed."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +80,7 @@ per-site total_count values are summed."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Browse the concept catalog with pagination</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/vocabulary.R" class="external-link"><code>R/vocabulary.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/vocabulary.R" class="external-link"><code>R/vocabulary.R</code></a></small>
       <div class="d-none name"><code>ds.omop.concept.list.Rd</code></div>
     </div>
 
@@ -83,8 +91,12 @@ using OFFSET/LIMIT pagination (page size capped server-side at 1000). Unlike
 <code><a href="ds.omop.concept.search.html">ds.omop.concept.search</a></code> this returns the total matching count
 alongside the current page so callers can build pagination controls.
 Vocabulary reference data carries no patient information, so this reader is
-not disclosure-gated; the per-site pages are pooled by set union and the
-per-site <code>total_count</code> values are summed.</p>
+not disclosure-gated; the per-site pages are pooled by set union. The
+pooled <code>total_count</code> is the sum of the per-site totals, labelled as
+such: a concept present on several servers (shared vocabularies usually
+are) counts once per server, so it is an upper bound of the distinct
+concepts; <code>total_count_max</code>, the largest per-site total, is a lower
+bound.</p>
     </div>
 
     <div class="section level2">
@@ -100,7 +112,9 @@ per-site <code>total_count</code> values are summed.</p>
 <span>  order <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  execute <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  execute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -153,8 +167,8 @@ was initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-execute">execute<a class="anchor" aria-label="anchor" href="#arg-execute"></a></dt>
@@ -162,13 +176,28 @@ connections stored in the active session are used.</p></dd>
 <code>dsomop_result</code> containing only the reproducible R code without
 contacting the servers.</p></dd>
 
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Result view: <code>"both"</code> (default), <code>"split"</code>, or
+<code>"combine"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>dsomop_result</code>. <code>per_site</code> holds each server's
   <code>list(rows, total_count, offset, limit)</code>; <code>pooled</code> is a list with
-  <code>rows</code> (the de-duplicated union of the page rows) and
-  <code>total_count</code> (the summed per-site totals).</p>
+  <code>rows</code> (the de-duplicated union of the page rows),
+  <code>total_count</code> (the sum of the per-site totals, an upper bound of the
+  distinct concepts), <code>total_count_max</code> (the largest per-site total,
+  a lower bound), <code>total_count_basis</code> (that label), <code>offset</code>
+  and <code>limit</code>.</p>
     </div>
 
     <div class="section level2">

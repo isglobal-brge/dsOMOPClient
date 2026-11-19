@@ -37,7 +37,7 @@ conns <- ds.omop.login("https://localhost:8443", user = "administrator",
 ## Find a class and its descendants
 
 ``` r
-classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, conns = conns)$pooled
+classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, datasources = conns)$pooled
 classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 ```
 
@@ -48,7 +48,7 @@ classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 
 ``` r
 class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
-children <- ds.omop.concept.descendants(class_id, conns = conns)$pooled
+children <- ds.omop.concept.descendants(class_id, datasources = conns)$pooled
 children[c("concept_id", "concept_name")]
 ```
 
@@ -57,12 +57,12 @@ children[c("concept_id", "concept_name")]
 |      950001 | Questionnaire study medicine |
 
 ``` r
-ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled
+ds.omop.concept.prevalence("drug_exposure", type = "both", datasources = conns)$pooled
 ```
 
-| concept\_id | n\_persons | concept\_name                |
-| ----------: | ---------: | :--------------------------- |
-|      950001 |         35 | Questionnaire study medicine |
+| concept\_id | concept\_name                | n\_persons | n\_records |
+| ----------: | :--------------------------- | ---------: | ---------: |
+|      950001 | Questionnaire study medicine |         35 |         80 |
 
 ``` r
 class_set <- omop_concept_set(class_id, descendants = TRUE)
@@ -95,8 +95,8 @@ persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days"
 study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
   baseline = list(covered = covered, persistence = persistence,
     discontinued = omop_number_flag(persistence, "lt", 365)))
-recipe_execute(study, out = c(baseline = "D_supply"), conns = conns)
-ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns)
+recipe_execute(study, out = c(baseline = "D_supply"), datasources = conns)
+ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", datasources = conns)
 dsBaseClient::ds.summary("D_use$pdc", datasources = conns)
 ```
 
@@ -178,12 +178,12 @@ identifies celecoxib ingredient **1118084**. Check what its available
 exposure spans can support.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.gibleed", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.gibleed", datasources = conns)
 ```
 
 ``` r
-hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", conns = conns)$pooled
+hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", datasources = conns)$pooled
 hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -207,7 +207,7 @@ feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
   outputs = "baseline", require = list(followup = 364), baseline = list(
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
-recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns)
+recipe_execute(feasibility, out = c(baseline = "D_feasibility"), datasources = conns)
 dsBaseClient::ds.summary("D_feasibility$covered", datasources = conns)
 ```
 

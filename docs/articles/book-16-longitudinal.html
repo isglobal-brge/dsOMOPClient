@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-16-longitudinal.Rmd" class="external-link"><code>vignettes/book-16-longitudinal.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-16-longitudinal.Rmd" class="external-link"><code>vignettes/book-16-longitudinal.Rmd</code></a></small>
       <div class="d-none name"><code>book-16-longitudinal.Rmd</code></div>
     </div>
 
@@ -224,25 +224,25 @@
 <span><span class="va">visit_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"visits"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"long"</span>, sources <span class="op">=</span> <span class="st">"admission"</span>,</span>
 <span>    options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>columns_derived <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"days_from_index"</span>, <span class="st">"duration_days"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visit_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="st">"D_visit_long"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visit_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="st">"D_visit_long"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The long table remains private. Release the setting counts to describe its rows.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visit_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_visit_long$concept_id"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">visit_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_visit_long$concept_id</span></span>
-<span><span class="co">#&gt; Inpatient Visit              NA</span></span>
+<span><span class="co">#&gt; Inpatient_Visit              NA </span></span>
 <span><span class="co">#&gt;            1037               0</span></span></code></pre>
 <p>The table counts exactly 1,037 admission rows; chapter 4’s locator count was floored to the five-row band starting at 1,035. To count people separately, reduce each visitor’s records to a count and distinguish single from repeat visitors.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visits_per_person</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">visits</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  admissions <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">visits</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"count"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visits_per_person</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_visitors"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visits_per_person</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_visitors"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_visitors"</span>, pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">admissions</span> <span class="op">==</span> <span class="fl">1</span>,</span>
-<span>  <span class="st">"One admission"</span>, <span class="st">"Repeated admissions"</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_visit_patterns"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  <span class="st">"One admission"</span>, <span class="st">"Repeated admissions"</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_visit_patterns"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_visit_patterns$pattern"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_visit_patterns$pattern</span></span>
-<span><span class="co">#&gt;       One admission Repeated admissions                  NA</span></span>
+<span><span class="co">#&gt;       One admission Repeated admissions                  NA </span></span>
 <span><span class="co">#&gt;                 756                 134                   0</span></span></code></pre>
 <p>There are 890 visitors: 756 with one admission and 134 with repeated admissions. A long table does not guarantee repeated visits for every person. Inpatient Visit is concept <strong>9201</strong>, found in chapter 4.</p>
 <p>Summarise time since entry without fetching event rows.</p>
@@ -273,8 +273,8 @@
 <h2 id="irregular-measurements-define-windows-first">Irregular measurements: define windows first<a class="anchor" aria-label="anchor" href="#irregular-measurements-define-windows-first"></a>
 </h2>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, concepts <span class="op">=</span> <span class="fl">3000963L</span>, value <span class="op">=</span> <span class="st">"value_as_number"</span>,</span>
 <span>  unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"hb"</span><span class="op">)</span></span>
@@ -293,7 +293,7 @@
 <span>  last2 <span class="op">=</span> <span class="fu">window_value</span><span class="op">(</span><span class="st">"last_value"</span>, <span class="fl">1000</span>, <span class="fl">1999</span><span class="op">)</span>,</span>
 <span>  last3 <span class="op">=</span> <span class="fu">window_value</span><span class="op">(</span><span class="st">"last_value"</span>, <span class="fl">2000</span>, <span class="fl">2999</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"wide"</span>, rows <span class="op">=</span> <span class="st">"entry"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">windows</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>wide <span class="op">=</span> <span class="st">"D_windows"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">windows</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>wide <span class="op">=</span> <span class="st">"D_windows"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>No eligible nonmissing value gives <code>NA</code>. It never gives zero hemoglobin. Before analysing a period, count its missing values and summarise its first and last readings. The following loop repeats the same three explicit aggregate calls.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">window_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="kw">function</span><span class="op">(</span><span class="va">period</span><span class="op">)</span> <span class="op">{</span></span>
@@ -346,23 +346,23 @@
 <span>  missing1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">first1</span><span class="op">)</span>, <span class="st">"missing"</span>, <span class="st">"observed"</span><span class="op">)</span>,</span>
 <span>  missing2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">first2</span><span class="op">)</span>, <span class="st">"missing"</span>, <span class="st">"observed"</span><span class="op">)</span>,</span>
 <span>  missing3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">first3</span><span class="op">)</span>, <span class="st">"missing"</span>, <span class="st">"observed"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_missing"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_missing"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_missing$missing1"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_missing$missing1</span></span>
-<span><span class="co">#&gt; observed       NA</span></span>
+<span><span class="co">#&gt; observed       NA </span></span>
 <span><span class="co">#&gt;       28        0</span></span></code></pre>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_missing$missing2"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_missing$missing2</span></span>
-<span><span class="co">#&gt;  missing observed       NA</span></span>
+<span><span class="co">#&gt;  missing observed       NA </span></span>
 <span><span class="co">#&gt;       18       10        0</span></span></code></pre>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_missing$missing3"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_missing$missing3</span></span>
-<span><span class="co">#&gt;  missing observed       NA</span></span>
+<span><span class="co">#&gt;  missing observed       NA </span></span>
 <span><span class="co">#&gt;       13       15        0</span></span></code></pre>
 <p>The tables show 28, 10 and 15 observed people: therefore 0, 18 and 13 missing values. Do not carry a measurement forward without declaring how long it remains valid and what that assumption means.</p>
 </details>
@@ -381,10 +381,10 @@
 <span><span class="va">repeated_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">lab</span><span class="op">)</span>, populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">entry</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>measurements <span class="op">=</span> <span class="va">repeated_hb</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"wide"</span>, rows <span class="op">=</span> <span class="st">"entry"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">repeated_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">repeated_recipe</span>, out <span class="op">=</span> <span class="st">"D_timepoints"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">repeated_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">repeated_recipe</span>, out <span class="op">=</span> <span class="st">"D_timepoints"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_timepoints"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; [1] "row_id"                   "cohort_row_id"            "person_id"</span></span>
+<span><span class="co">#&gt; [1] "row_id"                   "cohort_row_id"            "person_id"               </span></span>
 <span><span class="co">#&gt; [4] "measurements_hb_baseline" "measurements_hb_year5"</span></span></code></pre>
 <p>The generated names retain the measurement and time-point names. <code>closest</code> is the default selection; <code>first</code> or <code>last</code> would choose differently within the inclusive tolerance. <code>reuse = FALSE</code> prevents an event from filling two points. The tolerance here is a teaching choice for irregular data, not a claim that a lab a year away represents a clinical five-year visit.</p>
 <p><strong>Check.</strong> Inspect the five-year column’s released summary and missing count.</p>
@@ -395,12 +395,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 12.59000 12.88000 13.25000 16.00000 16.75000 17.20000 17.29000 15.15333</span></span></code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_timepoints$measurements_hb_year5"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -455,7 +455,7 @@
 <span>  newobj <span class="op">=</span> <span class="st">"D_for_reshape"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $is.object.created</span></span>
 <span><span class="co">#&gt; [1] "A data object &lt;D_for_reshape&gt; has been created in all specified data sources"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $validity.check</span></span>
 <span><span class="co">#&gt; [1] "&lt;D_for_reshape&gt; appears valid in all sources"</span></span></code></pre>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
@@ -464,7 +464,7 @@
 <span>  newobj <span class="op">=</span> <span class="st">"D_reshaped"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $is.object.created</span></span>
 <span><span class="co">#&gt; [1] "A data object &lt;D_reshaped&gt; has been created in all specified data sources"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $validity.check</span></span>
 <span><span class="co">#&gt; [1] "&lt;D_reshaped&gt; appears valid in all sources"</span></span></code></pre>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
@@ -478,7 +478,7 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"panel"</span>, rows <span class="op">=</span> <span class="st">"entry"</span>, format <span class="op">=</span> <span class="st">"person_period"</span>,</span>
 <span>    options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">lab</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">1000L</span><span class="op">)</span>,</span>
 <span>      window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2999</span><span class="op">)</span>, analyses <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"count"</span>, <span class="st">"last"</span><span class="op">)</span>, representation <span class="op">=</span> <span class="st">"dense"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">panel</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="st">"D_panel"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">panel</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="st">"D_panel"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_panel"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"            "cohort_row_id"     "person_id"         "period_start_days"</span></span>
@@ -490,7 +490,7 @@
 <code class="sourceCode R"><span><span class="va">period_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_reshaped$period"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">period_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_reshaped$period</span></span>
-<span><span class="co">#&gt;  1  2  3 NA</span></span>
+<span><span class="co">#&gt;  1  2  3 NA </span></span>
 <span><span class="co">#&gt; 28 28 28  0</span></span></code></pre>
 <p>There are 28 rows in each period, including rows with missing measurements. That is 84 rows, still 28 people. A row-count increase is not a sample-size increase.</p>
 </details>
@@ -521,23 +521,23 @@
 <span>    <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"risk"</span>, rows <span class="op">=</span> <span class="st">"entry"</span>, format <span class="op">=</span> <span class="st">"joined"</span>,</span>
 <span>      options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"daily"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"ends"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>        how <span class="op">=</span> <span class="st">"left"</span>, cardinality <span class="op">=</span> <span class="st">"many_to_one"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, publish <span class="op">=</span> <span class="st">"risk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">hazard</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>risk <span class="op">=</span> <span class="st">"D_days"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">hazard</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>risk <span class="op">=</span> <span class="st">"D_days"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span></code></pre></div>
 <p>Remove days after the first repeat or death. A missing next-day value means “no subsequent lab found”, so retain observed days until another censor applies. We count an event on the death day if both dates coincide; state this tie rule.</p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_days"</span>, to_next <span class="op">=</span> <span class="va">next_day</span> <span class="op">-</span> <span class="va">period_start_days</span>,</span>
 <span>  to_death <span class="op">=</span> <span class="va">death_day</span> <span class="op">-</span> <span class="va">period_start_days</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_remaining"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_remaining"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_remaining"</span>,</span>
 <span>  expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">to_next</span><span class="op">)</span> <span class="op">|</span> <span class="va">to_next</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>  <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">to_death</span><span class="op">)</span> <span class="op">|</span> <span class="va">to_death</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_risk"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_risk"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_risk"</span>, event <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">hb_count</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  years <span class="op">=</span> <span class="va">period_start_days</span> <span class="op">/</span> <span class="fl">365.25</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_hazard"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_hazard"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
 <span><span class="va">hazard_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_hazard$event"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
 <span><span class="va">hazard_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_hazard$event</span></span>
-<span><span class="co">#&gt;     0     1    NA</span></span>
+<span><span class="co">#&gt;     0     1    NA </span></span>
 <span><span class="co">#&gt; 48535    25     0</span></span></code></pre>
 <p>Each row is one observed day at risk. More than one lab on that day is still one outcome. Time in years is a predictor; the outcome probability remains <strong>per day</strong>. The binomial GLM models log odds with a linear time trend. A study would assess that time specification and the assumption of noninformative censoring.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
@@ -606,28 +606,28 @@
 <span><span class="va">repeated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">bmi</span><span class="op">)</span>, populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">bmi_entry</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"long"</span>, rows <span class="op">=</span> <span class="st">"bmi_entry"</span>, format <span class="op">=</span> <span class="st">"long"</span>, sources <span class="op">=</span> <span class="st">"bmi"</span>,</span>
 <span>    options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>columns_derived <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"unit"</span>, <span class="st">"days_since_previous"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">repeated</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>long <span class="op">=</span> <span class="st">"D_long"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">repeated</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>long <span class="op">=</span> <span class="st">"D_long"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_long"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $north</span></span>
-<span><span class="co">#&gt;  [1] "row_id"                      "cohort_row_id"</span></span>
-<span><span class="co">#&gt;  [3] "person_id"                   "concept_id"</span></span>
-<span><span class="co">#&gt;  [5] "start_date"                  "end_date"</span></span>
-<span><span class="co">#&gt;  [7] "measurement_type_concept_id" "value_as_concept_id"</span></span>
-<span><span class="co">#&gt;  [9] "meas_event_field_concept_id" "days_since_previous"</span></span>
-<span><span class="co">#&gt; [11] "value"                       "unit_concept_id"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt;  [1] "row_id"                      "cohort_row_id"              </span></span>
+<span><span class="co">#&gt;  [3] "person_id"                   "concept_id"                 </span></span>
+<span><span class="co">#&gt;  [5] "start_date"                  "end_date"                   </span></span>
+<span><span class="co">#&gt;  [7] "measurement_type_concept_id" "value_as_concept_id"        </span></span>
+<span><span class="co">#&gt;  [9] "meas_event_field_concept_id" "days_since_previous"        </span></span>
+<span><span class="co">#&gt; [11] "value"                       "unit_concept_id"            </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $south</span></span>
-<span><span class="co">#&gt;  [1] "row_id"                      "cohort_row_id"</span></span>
-<span><span class="co">#&gt;  [3] "person_id"                   "concept_id"</span></span>
-<span><span class="co">#&gt;  [5] "start_date"                  "end_date"</span></span>
-<span><span class="co">#&gt;  [7] "measurement_type_concept_id" "value_as_concept_id"</span></span>
-<span><span class="co">#&gt;  [9] "meas_event_field_concept_id" "days_since_previous"</span></span>
+<span><span class="co">#&gt;  [1] "row_id"                      "cohort_row_id"              </span></span>
+<span><span class="co">#&gt;  [3] "person_id"                   "concept_id"                 </span></span>
+<span><span class="co">#&gt;  [5] "start_date"                  "end_date"                   </span></span>
+<span><span class="co">#&gt;  [7] "measurement_type_concept_id" "value_as_concept_id"        </span></span>
+<span><span class="co">#&gt;  [9] "meas_event_field_concept_id" "days_since_previous"        </span></span>
 <span><span class="co">#&gt; [11] "value"                       "unit_concept_id"</span></span></code></pre>
 <p><code>start_date</code> is days since first BMI under the default relative-date policy. The person key, all readings and their dates stay on the servers. Preserve actual time; coding visit numbers as equally spaced would misrepresent these records. Each person has exactly one indexed episode here, so <code>cohort_row_id</code> is the person-level grouping key for these models. With multiple episodes per person, use <code>person_id</code> to group repeated observations of the same person; <code>cohort_row_id</code> identifies an episode.</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_long"</span>, years <span class="op">=</span> <span class="va">start_date</span> <span class="op">/</span> <span class="fl">365.25</span>,</span>
 <span>  above_cutoff <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">value</span> <span class="op">&gt;=</span> <span class="fl">25</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_repeat"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_repeat"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
 <span><span class="va">repeat_groups</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.meanSdGp</span><span class="op">(</span><span class="st">"D_repeat$value"</span>, <span class="st">"D_repeat$above_cutoff"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Band <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 25"</span>, <span class="st">"25 or above"</span><span class="op">)</span>,</span>
@@ -752,15 +752,15 @@
 <tbody>
 <tr class="odd">
 <td align="left">north</td>
-<td align="right">-9.37</td>
+<td align="right">-9.38</td>
 <td align="right">1.28</td>
-<td align="right">17.31</td>
+<td align="right">17.32</td>
 </tr>
 <tr class="even">
 <td align="left">south</td>
 <td align="right">9.25</td>
 <td align="right">0.00</td>
-<td align="right">12.44</td>
+<td align="right">12.43</td>
 </tr>
 </tbody>
 </table>

@@ -7,7 +7,11 @@ server-owned pooling contract and combine complete disclosure-controlled
 frames through that contract; they never route through a same-named live
 analysis or a column-name pooling heuristic. Reviewed equality filters
 are applied server-side; selection, ordering, and the row limit are
-applied only after contractual pooling.
+applied only after contractual pooling. With `type = "both"`, a result
+that cannot be combined (no consistent contract, an incomplete
+federation, a capped table) still returns the per-server frames, with
+`pooled = NULL` and `meta$pooling_reason`; `type = "combine"` stops with
+the reason.
 
 ## Usage
 
@@ -23,7 +27,8 @@ ds.omop.ohdsi.results(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -55,11 +60,12 @@ ds.omop.ohdsi.results(
 
   - scope:
     
-    Character; `"per_site"` or `"pooled"`.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -67,12 +73,20 @@ ds.omop.ohdsi.results(
 
   - conns:
     
-    DSI connection object(s). If `NULL`, uses active session.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"split"` (default), `"both"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -85,7 +99,7 @@ if (FALSE) { # \dontrun{
 # Cohort diagnostics results per site
 cd <- ds.omop.ohdsi.results("index_event_breakdown")
 
-# Cohort counts pooled across servers
-cc <- ds.omop.ohdsi.results("cohort_count", scope = "pooled")
+# Cohort counts per server and pooled across servers
+cc <- ds.omop.ohdsi.results("cohort_count", type = "both")
 } # }
 ```

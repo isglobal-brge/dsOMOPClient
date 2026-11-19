@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-03-explore.Rmd" class="external-link"><code>vignettes/book-03-explore.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-03-explore.Rmd" class="external-link"><code>vignettes/book-03-explore.Rmd</code></a></small>
       <div class="d-none name"><code>book-03-explore.Rmd</code></div>
     </div>
 
@@ -162,7 +162,7 @@
 <h2 id="separate-what-was-observed-from-its-value">Separate what was observed from its value<a class="anchor" aria-label="anchor" href="#separate-what-was-observed-from-its-value"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
+<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"observation"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">columns</span>, <span class="va">column_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observation_concept_id"</span>, <span class="st">"value_as_concept_id"</span>,</span>
 <span>  <span class="st">"value_as_number"</span>, <span class="st">"value_as_string"</span>, <span class="st">"observation_date"</span><span class="op">)</span>,</span>
 <span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">column_name</span>, <span class="va">cdm_datatype</span>, <span class="va">is_date</span>, <span class="va">is_blocked</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -208,24 +208,27 @@
 </table>
 <p><code>observation_concept_id</code> identifies what was observed; in a questionnaire it identifies the question. <code>value_as_concept_id</code> holds a coded value or answer, and <code>value_as_number</code> a numeric value. <code>value_as_string</code> is blocked free text. Selecting the observation and choosing its value field are separate decisions.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"observation"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $rows</span></span>
 <span><span class="co">#&gt; [1] 1475</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 670</span></span></code></pre>
+<span><span class="co">#&gt; [1] 670</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pooled: the same as $site (one server)</span></span></code></pre>
 <p>The bands begin at 1,475 rows and 670 people: one person can contribute several observations. These represent 1,475–1,479 rows and 670–674 people. GiBleed’s observations describe allergies and histories, not education answers. The questionnaire chapters use a separate dataset for those answers.</p>
 </div>
 <div class="section level2">
 <h2 id="find-the-visit-date-and-setting">Find the visit date and setting<a class="anchor" aria-label="anchor" href="#find-the-visit-date-and-setting"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
+<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">columns</span>, <span class="va">column_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_start_date"</span>, <span class="st">"visit_end_date"</span>,</span>
 <span>  <span class="st">"visit_concept_id"</span>, <span class="st">"visit_type_concept_id"</span><span class="op">)</span>,</span>
 <span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">column_name</span>, <span class="va">cdm_datatype</span>, <span class="va">is_date</span>, <span class="va">is_blocked</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -265,17 +268,20 @@
 </table>
 <p><code>visit_start_date</code> is when the visit started. <code>visit_concept_id</code> describes its setting, such as inpatient or outpatient. <code>visit_type_concept_id</code> describes where the record came from; use the setting field to select inpatient visits.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $rows</span></span>
 <span><span class="co">#&gt; [1] 1035</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 890</span></span></code></pre>
+<span><span class="co">#&gt; [1] 890</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pooled: the same as $site (one server)</span></span></code></pre>
 <p>The bands are 1,035–1,039 visits and 890–894 people. Repeated visits explain why rows exceed people; a visit count is not a study sample size.</p>
 </div>
 <div class="section level2">
@@ -284,7 +290,7 @@
 <p>Find the coded cause and death date. Then check whether the server can release a count of deaths.</p>
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
+<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"death"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">columns</span>, <span class="va">column_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"death_date"</span>, <span class="st">"cause_concept_id"</span>, <span class="st">"cause_source_value"</span><span class="op">)</span>,</span>
 <span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">column_name</span>, <span class="va">cdm_datatype</span>, <span class="va">is_date</span>, <span class="va">is_blocked</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -318,11 +324,12 @@
 <p><code>cause_concept_id</code> is the coded cause. <code>cause_source_value</code> is the original source code, for example an ICD code, and is blocked here. The date field’s existence does not establish that any deaths were recorded.</p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; Not pooled: No complete disclosure-safe pooled table statistics were available.</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; list()</span></span></code></pre>
 <!-- expected-refusal:end -->
@@ -335,7 +342,7 @@
 <p>Find the drug exposure dates and supply duration. Does supply duration establish that somebody took the medicine every day?</p>
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
+<code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">columns</span>, <span class="va">column_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drug_exposure_start_date"</span>,</span>
 <span>  <span class="st">"drug_exposure_end_date"</span>, <span class="st">"days_supply"</span><span class="op">)</span>,</span>
 <span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">column_name</span>, <span class="va">cdm_datatype</span>, <span class="va">is_date</span>, <span class="va">is_blocked</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -376,40 +383,43 @@
 <p>Does the presence of a measurement table and a <code>value_as_number</code> column guarantee that lab values can be analysed? Check the column itself.</p>
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $rows</span></span>
 <span><span class="co">#&gt; [1] 44050</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 2685</span></span></code></pre>
+<span><span class="co">#&gt; [1] 2685</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pooled: the same as $site (one server)</span></span></code></pre>
 <p>The row band begins at 44,050. The public GiBleed data have exactly 44,053 measurement rows; this analyst call rounds down to its band.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.column.stats.html">ds.omop.column.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"value_as_number"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.column.stats.html">ds.omop.column.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"value_as_number"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: split (per-server results)</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $n_total</span></span>
 <span><span class="co">#&gt; [1] 44050</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $n_missing</span></span>
 <span><span class="co">#&gt; [1] 2685</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $n_distinct</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $n_persons</span></span>
 <span><span class="co">#&gt; [1] 2685</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mean</span></span>
 <span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre>
 <p><code>n_missing</code> equals <code>n_persons</code>, both 2,685 (the band 2,685–2,689). The same response reports <code>n_distinct = 0</code>: no distinct numeric values are available. The public GiBleed data contain no numeric lab values. Use Synthea27Nj for the lab lessons, and check the chosen lab and unit there before fitting a model.</p>

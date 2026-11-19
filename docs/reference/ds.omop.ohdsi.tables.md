@@ -6,7 +6,12 @@ servers, including tool identification and row counts.
 ## Usage
 
 ``` r
-ds.omop.ohdsi.tables(symbol = "omop", conns = NULL, type = NULL)
+ds.omop.ohdsi.tables(
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 ```
 
 ## Arguments
@@ -17,16 +22,26 @@ ds.omop.ohdsi.tables(symbol = "omop", conns = NULL, type = NULL)
 
   - conns:
     
-    DSI connection object(s). If `NULL`, uses active session.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. The
-    historical default is `"both"`.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object. Pooled is the union of catalogs.
+A `dsomop_result`. `$pooled` stacks the servers' catalogs with a
+`.server` column; it is `NULL` (with `meta$pooling_reason`) when a
+server is unavailable.
 
 ## Examples
 

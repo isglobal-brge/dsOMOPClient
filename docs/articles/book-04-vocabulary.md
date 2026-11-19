@@ -27,7 +27,7 @@ preferred OMOP targets. Classification concepts (`C`) group meanings;
 non-standard source codes may map to standard ones.
 
 ``` r
-hits <- ds.omop.concept.search("Asthma", conns = conns)$pooled
+hits <- ds.omop.concept.search("Asthma", datasources = conns)$pooled
 hits[c("concept_id", "concept_name", "domain_id", "vocabulary_id")]
 ```
 
@@ -43,7 +43,7 @@ specify which meaning you intend.
 
 ``` r
 conditions <- ds.omop.concept.search("Asthma", domain = "Condition",
-  vocabulary = "SNOMED", standard_only = TRUE, valid = TRUE, conns = conns)$pooled
+  vocabulary = "SNOMED", standard_only = TRUE, valid = TRUE, datasources = conns)$pooled
 conditions[c("concept_id", "concept_name", "standard_concept", "concept_class_id")]
 ```
 
@@ -65,7 +65,7 @@ state the intended kind of code; they have not yet selected any people.
 Look up the chosen ID to confirm its identity:
 
 ``` r
-asthma_info <- ds.omop.concept.lookup(asthma_id, conns = conns)$pooled
+asthma_info <- ds.omop.concept.lookup(asthma_id, datasources = conns)$pooled
 asthma_info
 ```
 
@@ -95,7 +95,7 @@ vocabulary:
 
 ``` r
 bleeding <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition",
-  conns = conns)$pooled
+  datasources = conns)$pooled
 bleeding[c("concept_id", "concept_name", "vocabulary_id", "standard_concept")]
 ```
 
@@ -112,7 +112,7 @@ touching it:
 
 ``` r
 mappings <- ds.omop.concept.relationships(bleeding_id,
-  relationship_id = "Maps to", conns = conns)$pooled
+  relationship_id = "Maps to", datasources = conns)$pooled
 mappings[c("concept_id", "related_concept_id", "related_concept_name",
   "relationship_id", "direction")]
 ```
@@ -127,7 +127,7 @@ explicitly:
 
 ``` r
 source_code <- ds.omop.concept.search(NULL, concept_id = 35208414L,
-  standard_only = FALSE, conns = conns)$pooled
+  standard_only = FALSE, datasources = conns)$pooled
 source_code[c("concept_id", "concept_name", "vocabulary_id",
   "concept_code", "standard_concept")]
 ```
@@ -147,7 +147,7 @@ Descendants are more specific meanings; ancestors are broader meanings.
 Inspect them before including a whole branch in your study.
 
 ``` r
-desc <- ds.omop.concept.descendants(asthma_id, include_self = FALSE, conns = conns)$pooled
+desc <- ds.omop.concept.descendants(asthma_id, include_self = FALSE, datasources = conns)$pooled
 desc[c("concept_id", "concept_name")]
 ```
 
@@ -164,7 +164,7 @@ that includes descendants will include both meanings unless you exclude
 one.
 
 ``` r
-parents <- ds.omop.concept.ancestors(child_id, conns = conns)$pooled
+parents <- ds.omop.concept.ancestors(child_id, datasources = conns)$pooled
 parents[parents$direction == "ancestor",
   c("concept_id", "concept_name", "direction")]
 ```
@@ -186,7 +186,7 @@ denominator.
 
 ``` r
 use <- ds.omop.concept.prevalence("condition_occurrence", metric = "persons",
-  top_n = 20, scope = "pooled", conns = conns)$pooled
+  top_n = 20, type = "both", datasources = conns)$pooled
 use[use$concept_id %in% c(asthma_id, child_id, bleeding_id),
   c("concept_id", "concept_name", "n_persons")]
 ```
@@ -203,7 +203,7 @@ answers that question.
 Locate both IDs to check which tables and columns actually use them:
 
 ``` r
-locations <- ds.omop.concept.locate(c(asthma_id, child_id), scope = "pooled", conns = conns)$pooled
+locations <- ds.omop.concept.locate(c(asthma_id, child_id), type = "both", datasources = conns)$pooled
 locations$concept_name <- conditions$concept_name[match(locations$concept_id, conditions$concept_id)]
 locations[locations$table_name == "condition_occurrence",
   c("concept_id", "concept_name", "table_name", "n_records", "n_persons")]
@@ -270,7 +270,7 @@ describes the record’s provenance. Discover the settings before using
 their IDs:
 
 ``` r
-visit_hits <- ds.omop.concept.search("Visit", domain = "Visit", conns = conns)$pooled
+visit_hits <- ds.omop.concept.search("Visit", domain = "Visit", datasources = conns)$pooled
 visit_catalogue <- visit_hits[visit_hits$concept_name %in%
   c("Inpatient Visit", "Outpatient Visit"), ]
 visit_catalogue[c("concept_id", "concept_name", "standard_concept")]
@@ -290,7 +290,7 @@ Inpatient Visit is **9201** and Outpatient Visit is **9202**. Both exist
 in the vocabulary. Check their clinical use separately:
 
 ``` r
-visit_use <- ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$pooled
+visit_use <- ds.omop.concept.locate(unname(visit_ids), type = "both", datasources = conns)$pooled
 visit_use$concept_name <- names(visit_ids)[match(visit_use$concept_id, visit_ids)]
 visit_use[c("concept_id", "concept_name", "n_records", "n_persons")]
 ```
@@ -312,13 +312,13 @@ Its local question and answer codes are teaching examples, not codes to
 copy into a clinical study.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.questionnaire", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.questionnaire", datasources = conns)
 ```
 
 ``` r
 questionnaire <- ds.omop.concept.search(NULL, standard_only = FALSE,
-  limit = 100, conns = conns)$pooled
+  limit = 100, datasources = conns)$pooled
 questionnaire[c("concept_id", "concept_name", "domain_id")]
 ```
 
@@ -356,7 +356,7 @@ exercises. The default local question and cause codes have no external
 mapping or hierarchy.
 
 ``` r
-question_presence <- ds.omop.concept.prevalence("observation", scope = "pooled", conns = conns)$pooled
+question_presence <- ds.omop.concept.prevalence("observation", type = "both", datasources = conns)$pooled
 question_presence[c("concept_id", "concept_name", "n_persons")]
 ```
 
@@ -372,7 +372,7 @@ the table’s checks.
 
 ``` r
 cause_use <- ds.omop.concept.locate(unname(question_ids[c("Myocardial infarction", "Pneumonia")]),
-  scope = "pooled", conns = conns)$pooled
+  type = "both", datasources = conns)$pooled
 cause_use$concept_name <- names(question_ids)[match(cause_use$concept_id, question_ids)]
 cause_use[c("concept_id", "concept_name", "table_name", "n_records", "n_persons")]
 ```
@@ -393,23 +393,24 @@ optional teaching catalogue.
 Solution
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.questionnaire_vocab", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.questionnaire_vocab", datasources = conns)
 ```
 
 ``` r
-atc_default <- ds.omop.concept.search(NULL, vocabulary = "ATC", conns = conns)$pooled
+atc_default <- ds.omop.concept.search(NULL, vocabulary = "ATC", datasources = conns)$pooled
 atc_default
 ```
 
-    #> NULL
+| concept\_id | concept\_name | domain\_id | vocabulary\_id | standard\_concept | concept\_class\_id | concept\_code | valid\_start\_date | valid\_end\_date | invalid\_reason |
+| ----------- | ------------- | ---------- | -------------- | ----------------- | ------------------ | ------------- | ------------------ | ---------------- | --------------- |
 
 `NULL` means the search returned no matching concepts: the default asks
 for standard concepts (`S`). Request classification concepts (`C`)
 instead:
 
 ``` r
-atc <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard = "C", conns = conns)$pooled
+atc <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard = "C", datasources = conns)$pooled
 atc[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -430,12 +431,12 @@ Switch to the numeric resource. The vocabulary spells haemoglobin
 name containing the word.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
 ```
 
 ``` r
-lab_hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
+lab_hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", datasources = conns)$pooled
 lab_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -456,7 +457,7 @@ haemoglobin fraction are different measurements even though their names
 share the word.
 
 ``` r
-glucose_hits <- ds.omop.concept.search("Glucose", domain = "Measurement", conns = conns)$pooled
+glucose_hits <- ds.omop.concept.search("Glucose", domain = "Measurement", datasources = conns)$pooled
 glucose_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -481,7 +482,7 @@ which specimens and concentration measures answer your question.
 
 ``` r
 units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
-  scope = "pooled", conns = conns)$pooled
+  type = "both", datasources = conns)$pooled
 names(units)[names(units) == "value"] <- "unit_concept_id"
 units[c("unit_concept_id", "concept_name", "n")]
 ```
@@ -504,7 +505,7 @@ unavailable result as zero:
 serum_glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name ==
   "Glucose [Mass/volume] in Serum or Plasma"]
 serum_glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = serum_glucose_id, scope = "pooled", conns = conns)
+  concept_id = serum_glucose_id, type = "both", datasources = conns)
 serum_glucose_units$meta$warnings
 ```
 
@@ -523,7 +524,7 @@ Solution
 
 ``` r
 glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = glucose_id, scope = "pooled", conns = conns)$pooled
+  concept_id = glucose_id, type = "both", datasources = conns)$pooled
 names(glucose_units)[names(glucose_units) == "value"] <- "unit_concept_id"
 glucose_units[c("unit_concept_id", "concept_name", "n")]
 ```
@@ -557,7 +558,7 @@ height and weight.
 
 ``` r
 bmi_hits <- ds.omop.concept.search("Body mass index", domain = "Measurement",
-  vocabulary = "LOINC", conns = conns)$pooled
+  vocabulary = "LOINC", datasources = conns)$pooled
 bmi_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -574,7 +575,7 @@ Choose the standard LOINC measurement **3038553**, Body mass index (BMI)
 \[Ratio\]. The repeated-measures chapter uses this definition.
 
 ``` r
-bmi_use <- ds.omop.concept.locate(bmi_id, scope = "pooled", conns = conns)$pooled
+bmi_use <- ds.omop.concept.locate(bmi_id, type = "both", datasources = conns)$pooled
 bmi_use$concept_name <- bmi_hits$concept_name[match(bmi_use$concept_id, bmi_hits$concept_id)]
 bmi_use[c("concept_id", "concept_name", "n_records", "n_persons")]
 ```
@@ -588,7 +589,7 @@ measurements. Check the recorded unit before summarising those values:
 
 ``` r
 bmi_units <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = bmi_id, scope = "pooled", conns = conns)$pooled
+  concept_id = bmi_id, type = "both", datasources = conns)$pooled
 names(bmi_units)[names(bmi_units) == "value"] <- "unit_concept_id"
 bmi_units[c("unit_concept_id", "concept_name", "n")]
 ```

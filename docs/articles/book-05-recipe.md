@@ -36,7 +36,7 @@ GiBleed asthma search to the questionnaire dataset. First look up its
 education question by concept:
 
 ``` r
-question <- ds.omop.concept.lookup(900001L, conns = conns)
+question <- ds.omop.concept.lookup(900001L, datasources = conns)
 question$pooled[c("concept_id", "concept_name")]
 ```
 
@@ -111,7 +111,7 @@ missing values**. Both variables read all recorded history because no
 time window restricts them.
 
 ``` r
-explained <- recipe_explain(people, conns = conns)
+explained <- recipe_explain(people, datasources = conns)
 writeLines(head(explained$text, 9))
 ```
 
@@ -134,7 +134,7 @@ these are not observed patient counts.
 ## Run: assign the result
 
 ``` r
-recipe_execute(people, out = c(people = "D_people"), conns = conns)
+recipe_execute(people, out = c(people = "D_people"), datasources = conns)
 ```
 
 Nothing comes back to you: the output named `people` is now `D_people`,
@@ -210,7 +210,7 @@ education_table_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
     #> D_people$education
-    #>  Secondary education University education
+    #>  Secondary_education University_education
     #>                   12                   12
 
 There are 12 people whose **latest** answer is Secondary education and
@@ -222,17 +222,27 @@ out the 24 missing values.
 ## Count causes
 
 ``` r
-ds.omop.table("D_people", "cause_of_death", conns = conns)
+ds.omop.table("D_people", "cause_of_death", datasources = conns)
 ```
 
+    #> Combined (all valid sites): cause_of_death
     #> D_people$cause_of_death
-    #> Myocardial infarction             Pneumonia
+    #> Myocardial_infarction             Pneumonia
     #>                    24                    12
+    #>
+    #> By site:
+    #>                        study
+    #> D_people$cause_of_death site
+    #>   Myocardial_infarction   24
+    #>   Pneumonia               12
 
 The table shows 24 myocardial infarctions and 12 pneumonias.
-`ds.omop.table()` is a shortcut that also retains categories with zero
-people. Missing causes are excluded here; the exercise below will
-include them. Absence of a death record is not proof of survival.
+`ds.omop.table()` returns the same object as dsBase’s `ds.table()`
+(counts and proportions for each site and combined), with the exact
+published labels and the categories that nobody has; printing shows the
+combined table and each site’s. Missing causes are excluded here; the
+exercise below will include them. Absence of a death record is not proof
+of survival.
 
 ## Give a question your own yes/no labels
 
@@ -255,7 +265,7 @@ become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(answers, out = c(people = "D_answers"), conns = conns)
+recipe_execute(answers, out = c(people = "D_answers"), datasources = conns)
 ```
 
 ``` r
@@ -285,16 +295,16 @@ first_education <- omop_variable(event = education_event,
   reducer = omop_reduce("first_value", value = "value_as_concept_id"))
 comparison <- omop_recipe(variables = list(first = first_education, last = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(comparison, out = c(people = "D_education_change"), conns = conns)
+recipe_execute(comparison, out = c(people = "D_education_change"), datasources = conns)
 dsBaseClient::ds.table(
   "D_education_change$first", "D_education_change$last", useNA = "no",
   datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-|                      | Secondary education | University education |
-| :------------------- | ------------------: | -------------------: |
-| Secondary education  |                   0 |                   12 |
-| University education |                  12 |                    0 |
+|                       | Secondary\_education | University\_education |
+| :-------------------- | -------------------: | --------------------: |
+| Secondary\_education  |                    0 |                    12 |
+| University\_education |                   12 |                     0 |
 
 Rows show first answers and columns show last answers. The off-diagonal
 cells show 12 people changing from Secondary to University and 12
@@ -313,7 +323,7 @@ dsBaseClient::ds.table("D_people$cause_of_death",
 ```
 
     #> D_people$cause_of_death
-    #> Myocardial infarction             Pneumonia                    NA
+    #> Myocardial_infarction             Pneumonia                    NA
     #>                    24                    12                    12
 
 The 24 myocardial infarctions, 12 pneumonias and 12 missing causes
@@ -334,8 +344,7 @@ source_cause <- omop_recipe(variables = list(cause = omop_variable(
 recipe_to_plan(source_cause)
 ```
 
-    #> Error:
-    #> ! Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: cause_source_value (variable 'cause' reducer value).
+    #> Error: Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: cause_source_value (variable 'cause' reducer value).
 
 The source-value field is blocked before execution. A new variable name
 does not change its protection; use `cause_concept_id` for the coded

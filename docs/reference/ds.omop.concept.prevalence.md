@@ -24,7 +24,8 @@ ds.omop.concept.prevalence(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -77,12 +78,13 @@ ds.omop.concept.prevalence(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type`: `"per_site"` means `type = "split"`,
+    `"pooled"` means `type = "both"`.
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) requires all servers to succeed,
-    `"pooled_only_ok"` allows partial results.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -90,7 +92,8 @@ ds.omop.concept.prevalence(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -99,15 +102,24 @@ ds.omop.concept.prevalence(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"split"` (default), `"both"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of data frames
-with columns `concept_id`, `concept_name`, `count_value`, etc.),
-`$pooled` (combined data frame when scope is `"pooled"`, otherwise
-NULL), and `$meta`.
+A `dsomop_result`. Each `$per_site` entry is a data frame with
+`concept_id`, `concept_name`, `n_persons` and `n_records` (banded), plus
+`source_table` for a global ranking. `$pooled` sums `n_persons` and
+`n_records` per concept (and source table) over the servers, ranks by
+`metric` and keeps the first `top_n`; a concept must be released by
+every server.
 
 ## Examples
 

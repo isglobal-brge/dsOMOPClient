@@ -13,7 +13,7 @@ server-side datasets."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ server-side datasets."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Preview aggregate stats for a recipe (without materializing)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/recipe.R" class="external-link"><code>R/recipe.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/recipe.R" class="external-link"><code>R/recipe.R</code></a></small>
       <div class="d-none name"><code>recipe_preview_stats.Rd</code></div>
     </div>
 
@@ -81,7 +81,9 @@ server-side datasets.</p>
 <span>  <span class="va">recipe</span>,</span>
 <span>  scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"per_site"</span>, <span class="st">"pooled"</span>, <span class="st">"both"</span><span class="op">)</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -94,8 +96,8 @@ server-side datasets.</p>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Character; <code>"per_site"</code>, <code>"pooled"</code>, or
-<code>"both"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>type</code>: <code>"per_site"</code> means
+<code>"split"</code>; <code>"pooled"</code> and <code>"both"</code> mean <code>"both"</code>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -104,12 +106,31 @@ server-side datasets.</p>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connections or <code>NULL</code> (uses active connections).</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
+
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Result view: <code>"both"</code> (default), <code>"split"</code>, or
+<code>"combine"</code>, as in <code><a href="ds.omop.table.stats.html">ds.omop.table.stats</a></code>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dsomop_result</code> with aggregate stats per table.</p>
+    <p>A <code>dsomop_result</code>. Each <code>$per_site</code> entry is one
+  server's data frame with one row per table referenced by the recipe
+  (<code>table</code>, banded <code>rows</code> and <code>persons</code>; <code>NA</code> where
+  the server suppressed or did not return a count). <code>$pooled</code> has the
+  same columns with the counts summed over the servers. The per-table
+  <code><a href="ds.omop.table.stats.html">ds.omop.table.stats()</a></code> results of earlier versions are kept in
+  <code>meta$by_table</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -119,7 +140,8 @@ server-side datasets.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="fu">recipe_preview_stats</span><span class="op">(</span><span class="va">recipe</span>, scope <span class="op">=</span> <span class="st">"pooled"</span><span class="op">)</span></span>
+<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="fu">recipe_preview_stats</span><span class="op">(</span><span class="va">recipe</span><span class="op">)</span></span>
+<span><span class="va">stats</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

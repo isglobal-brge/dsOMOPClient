@@ -16,7 +16,8 @@ ds.omop.drop_empty_levels(
   columns = NULL,
   newobj = paste0(x, "_model"),
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 ```
 
@@ -30,7 +31,9 @@ ds.omop.drop_empty_levels(
   - columns:
     
     Optional character vector of factor columns; by default every
-    published factor column.
+    published concept, category or calendar column (the columns the
+    servers reconciled; other factors, such as legacy age bands, are
+    left as they are).
 
   - newobj:
     
@@ -42,7 +45,12 @@ ds.omop.drop_empty_levels(
 
   - conns:
     
-    DSI connections; defaults to the session's connections.
+    Deprecated name of `datasources`.
+
+  - datasources:
+    
+    DSI connections, as in dsBaseClient; defaults to the session's
+    connections.
 
 ## Value
 

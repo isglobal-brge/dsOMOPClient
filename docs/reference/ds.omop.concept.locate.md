@@ -17,7 +17,8 @@ ds.omop.concept.locate(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -30,11 +31,12 @@ ds.omop.concept.locate(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -42,7 +44,8 @@ ds.omop.concept.locate(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -51,14 +54,22 @@ ds.omop.concept.locate(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of data frames
-with columns `concept_id`, `table_name`, `count_value`), `$pooled`
-(combined presence matrix when pooled), and `$meta`.
+A `dsomop_result`. Each `$per_site` entry is a data frame with
+`table_name`, `concept_column`, `concept_id`, `n_records` and
+`n_persons` (banded; tables below the threshold are left out). `$pooled`
+sums the counts per concept, table and column.
 
 ## Examples
 

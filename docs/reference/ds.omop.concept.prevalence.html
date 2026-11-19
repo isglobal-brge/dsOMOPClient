@@ -15,7 +15,7 @@ sums counts across servers and re-ranks."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@ sums counts across servers and re-ranks."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Get concept prevalence for a table</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/exploration.R" class="external-link"><code>R/exploration.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/exploration.R" class="external-link"><code>R/exploration.R</code></a></small>
       <div class="d-none name"><code>ds.omop.concept.prevalence.Rd</code></div>
     </div>
 
@@ -95,7 +95,8 @@ sums counts across servers and re-ranks.</p>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  execute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  type <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  type <span class="op">=</span> <span class="st">"split"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -151,12 +152,13 @@ Takes precedence over <code>cohort_table</code>.</p></dd>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Character; <code>"per_site"</code> (default) or <code>"pooled"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>type</code>: <code>"per_site"</code> means
+<code>type = "split"</code>, <code>"pooled"</code> means <code>type = "both"</code>.</p></dd>
 
 
 <dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
-<dd><p>Character; <code>"strict"</code> (default) requires all
-servers to succeed, <code>"pooled_only_ok"</code> allows partial results.</p></dd>
+<dd><p>Character; <code>"strict"</code> (default) or
+<code>"pooled_only_ok"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -164,7 +166,8 @@ servers to succeed, <code>"pooled_only_ok"</code> allows partial results.</p></d
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s) or NULL to use the session default.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-execute">execute<a class="anchor" aria-label="anchor" href="#arg-execute"></a></dt>
@@ -173,16 +176,26 @@ containing only the generated call code (default: <code>TRUE</code>).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional result view: <code>"split"</code>, <code>"combine"</code>, or
-<code>"both"</code>. When omitted, legacy <code>scope</code> behaviour is preserved.</p></dd>
+<dd><p>Result view: <code>"split"</code> (default), <code>"both"</code>, or
+<code>"combine"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dsomop_result</code> object with <code>$per_site</code> (named list
-  of data frames with columns <code>concept_id</code>, <code>concept_name</code>,
-  <code>count_value</code>, etc.), <code>$pooled</code> (combined data frame when
-  scope is <code>"pooled"</code>, otherwise NULL), and <code>$meta</code>.</p>
+    <p>A <code>dsomop_result</code>. Each <code>$per_site</code> entry is a data
+  frame with <code>concept_id</code>, <code>concept_name</code>, <code>n_persons</code> and
+  <code>n_records</code> (banded), plus <code>source_table</code> for a global
+  ranking. <code>$pooled</code> sums <code>n_persons</code> and <code>n_records</code> per
+  concept (and source table) over the servers, ranks by <code>metric</code>
+  and keeps the first <code>top_n</code>; a concept must be released by every
+  server.</p>
     </div>
 
     <div class="section level2">

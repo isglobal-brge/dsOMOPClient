@@ -7,7 +7,11 @@ validity, using OFFSET/LIMIT pagination (page size capped server-side at
 count alongside the current page so callers can build pagination
 controls. Vocabulary reference data carries no patient information, so
 this reader is not disclosure-gated; the per-site pages are pooled by
-set union and the per-site `total_count` values are summed.
+set union. The pooled `total_count` is the sum of the per-site totals,
+labelled as such: a concept present on several servers (shared
+vocabularies usually are) counts once per server, so it is an upper
+bound of the distinct concepts; `total_count_max`, the largest per-site
+total, is a lower bound.
 
 ## Usage
 
@@ -23,7 +27,9 @@ ds.omop.concept.list(
   order = NULL,
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -74,20 +80,34 @@ ds.omop.concept.list(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
     Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
     only the reproducible R code without contacting the servers.
 
+  - type:
+    
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
 ## Value
 
 A `dsomop_result`. `per_site` holds each server's `list(rows,
 total_count, offset, limit)`; `pooled` is a list with `rows` (the
-de-duplicated union of the page rows) and `total_count` (the summed
-per-site totals).
+de-duplicated union of the page rows), `total_count` (the sum of the
+per-site totals, an upper bound of the distinct concepts),
+`total_count_max` (the largest per-site total, a lower bound),
+`total_count_basis` (that label), `offset` and `limit`.
 
 ## Examples
 

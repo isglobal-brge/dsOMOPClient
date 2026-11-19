@@ -11,7 +11,7 @@ infers keys, count fields, rates, or statistics from column names."></head><body
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@ infers keys, count fields, rates, or statistics from column names."></head><body
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Pool query template results across servers</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/queries.R" class="external-link"><code>R/queries.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/queries.R" class="external-link"><code>R/queries.R</code></a></small>
       <div class="d-none name"><code>ds.omop.query.pool.Rd</code></div>
     </div>
 
@@ -80,7 +80,8 @@ infers keys, count fields, rates, or statistics from column names.</p>
 <span>  sensitive_fields <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  pool_strategy <span class="op">=</span> <span class="st">"sum"</span>,</span>
 <span>  policy <span class="op">=</span> <span class="st">"strict"</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span></span>
+<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
+<span>  pooling_policy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -107,14 +108,19 @@ analysis identity carried by <code>results</code>.</p></dd>
 
 
 <dt id="arg-policy">policy<a class="anchor" aria-label="anchor" href="#arg-policy"></a></dt>
-<dd><p>Character; suppression propagation policy. <code>"strict"</code>
-(the default) sets the pooled value to NA if any server suppressed the
-cell. <code>"pooled_only_ok"</code> sums only the non-suppressed values.</p></dd>
+<dd><p>Deprecated alias of <code>pooling_policy</code>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
 <dd><p>Character; the session symbol used when the OMOP connection
 was initialised (default: <code>"omop"</code>).</p></dd>
+
+
+<dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
+<dd><p>Character; suppression propagation policy.
+<code>"strict"</code> (the default) sets the pooled value to NA if any server
+suppressed the cell. <code>"pooled_only_ok"</code> sums only the
+non-suppressed values. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">

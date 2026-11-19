@@ -10,19 +10,28 @@ and nothing is missing; otherwise `advice` says what to change.
 ## Usage
 
 ``` r
-ds.omop.server.version(conns = NULL, symbol = "omop")
+ds.omop.server.version(conns = NULL, symbol = "omop", datasources = NULL)
 ```
 
 ## Arguments
 
   - conns:
     
-    DSI connections (default: the DSI default connections).
+    Deprecated alias of `datasources` (also accepted as the first
+    positional argument), kept for backward compatibility (a one-time
+    message names the new argument).
 
   - symbol:
     
     OMOP session symbol whose capability blocks (read by
     `ds.omop.connect`) are reported.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -60,6 +69,6 @@ executes a language-2 plan is its `recipe_language` block.
 ``` r
 if (FALSE) { # \dontrun{
 ds.omop.client.version()
-ds.omop.server.version(conns)
+ds.omop.server.version(datasources = conns)
 } # }
 ```

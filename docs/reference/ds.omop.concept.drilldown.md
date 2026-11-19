@@ -19,7 +19,8 @@ ds.omop.concept.drilldown(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -42,11 +43,12 @@ ds.omop.concept.drilldown(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -54,7 +56,8 @@ ds.omop.concept.drilldown(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -63,15 +66,29 @@ ds.omop.concept.drilldown(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"split"` (default), `"both"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of lists
-containing `summary`, `numeric`, `categorical`, `date_range`, and
-`missingness` components), `$pooled` (combined profile when pooled), and
-`$meta`.
+A `dsomop_result`. Each `$per_site` entry is a list with `summary`
+(`concept_id`, `concept_name`, banded `n_records` and `n_persons`,
+`records_per_person_mean`, `pct_persons_multi`), `numeric_summary`
+(`quantiles`, `histogram`), `categorical_values` (`value_as_concept_id`,
+`concept_name`, `n`), `date_range` (`column`, `min_month_safe`,
+`max_month_safe`, yearly `date_counts`) and `missingness`
+(`column_name`, `missing_rate`). `$pooled` has the same parts: counts,
+histogram bins, categorical values and yearly counts summed, the date
+range spanned, and the non-additive parts (quantiles,
+`pct_persons_multi`, and missing rates the servers return without
+counts) left `NULL` or `NA` with a warning.
 
 ## Examples
 

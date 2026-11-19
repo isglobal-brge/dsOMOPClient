@@ -27,7 +27,10 @@ ds.omop.analysis.run(
   date_handling = NULL,
   symbol = "omop",
   conns = NULL,
-  type = "both"
+  type = "both",
+  newobj = NULL,
+  scope_combine = NULL,
+  datasources = NULL
 )
 ```
 
@@ -61,8 +64,8 @@ ds.omop.analysis.run(
 
   - combine:
     
-    Character; how to fold multiple scope sources together: `"union"`
-    (the default) or `"intersect"`.
+    Deprecated alias of `scope_combine`: how to fold multiple scope
+    sources together, `"union"` (the default) or `"intersect"`.
 
   - pooling\_policy:
     
@@ -71,7 +74,8 @@ ds.omop.analysis.run(
     pooled group on every server; `"pooled_only_ok"` pools only
     available disclosure-safe contributions. Kaplan-Meier curves still
     require every preceding risk-set bin because their values are
-    cumulative.
+    cumulative. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - plot:
     
@@ -97,8 +101,8 @@ ds.omop.analysis.run(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
@@ -107,7 +111,30 @@ ds.omop.analysis.run(
     only per-server results, and `"combine"` returns only the combined
     result. The aliases `"b"`, `"splits"`/`"s"`, and `"combined"`/`"c"`
     are accepted. Combining is performed only from the server-owned
-    pooling contract; no column-name heuristics are used.
+    pooling contract; no column-name heuristics are used. When the
+    result cannot be pooled, `"both"` keeps the per-server frames with
+    `pooled = NULL` and `meta$pooling_reason`, and `"combine"` stops
+    with the reason.
+
+  - newobj:
+    
+    For assign-mode analyses, the name of the server-side object to
+    create (it must not exist on any server). `NULL` (the default)
+    generates a fresh name. Not used by aggregate analyses.
+
+  - scope\_combine:
+    
+    Character; how to fold multiple scope sources (`cohort` and
+    `tables`) into one population: `"union"` (the default) or
+    `"intersect"` on the person key. Also accepted under its older name
+    `combine`.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -118,16 +145,18 @@ per-server assignment confirmations (the data stays on the server) and
 the server-side symbol name is recorded in the result metadata. When
 `plot = TRUE` and the entry ships a plot recipe, the built `ggplot` is
 attached as the `"plot"` attribute (and `meta$plot`). `meta$protection`
-holds each server's protection label and estimand. On dsOMOP 2.10.3,
-`"fixed_synopsis"` declares a bounded-vector epsilon and delta zero
-before exact support gates; `"realised_sticky"` is heuristic and
-declares neither. A `"mixed"` frame identifies its standard and
-protected blocks without a frame-level epsilon or delta. No route claims
-an API-transcript guarantee. `"standard"`, `"standard_fallback"` and
-`"unavailable"` carry no protected guarantee. Older servers may return
-the legacy `"dp"` label under their own contract, with an upgrade
-warning. The server's `dsomop.tools.mode` (default `"auto"`) decides it
-per question.
+holds each server's protection label and estimand. `meta$pooling` names
+how the pooled result was formed; `meta$pooling_contract` is the
+contract that governed it (for protected releases, the one their
+`meta$release_pooling` selected). On dsOMOP 2.10.3, `"fixed_synopsis"`
+declares a bounded-vector epsilon and delta zero before exact support
+gates; `"realised_sticky"` is heuristic and declares neither. A
+`"mixed"` frame identifies its standard and protected blocks without a
+frame-level epsilon or delta. No route claims an API-transcript
+guarantee. `"standard"`, `"standard_fallback"` and `"unavailable"` carry
+no protected guarantee. Older servers may return the legacy `"dp"` label
+under their own contract, with an upgrade warning. The server's
+`dsomop.tools.mode` (default `"auto"`) decides it per question.
 
 ## Details
 
@@ -196,7 +225,7 @@ res$pooled
 res2 <- ds.omop.analysis.run(
   entry,
   tables  = c("my_cohort", "my_other_cohort"),
-  combine = "intersect"
+  scope_combine = "intersect"
 )
 
 # Build the entry's client-side plot over the pooled, gate-passed data.

@@ -17,7 +17,8 @@ ds.omop.safe.filter.value(
   concept_id = NULL,
   n_bins = 10L,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 ```
 
@@ -57,7 +58,15 @@ ds.omop.safe.filter.value(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

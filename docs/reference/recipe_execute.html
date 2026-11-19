@@ -15,7 +15,7 @@ auto-generated as D_&amp;lt;name&amp;gt;."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@ auto-generated as D_&amp;lt;name&amp;gt;."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Execute a recipe: compile to plan and run</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/recipe.R" class="external-link"><code>R/recipe.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/recipe.R" class="external-link"><code>R/recipe.R</code></a></small>
       <div class="d-none name"><code>recipe_execute.Rd</code></div>
     </div>
 
@@ -89,7 +89,10 @@ auto-generated as <code>D_&lt;name&gt;</code>.</p>
 <span>  cohort <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tables <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  combine <span class="op">=</span> <span class="st">"union"</span>,</span>
-<span>  on_small_site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"skip"</span><span class="op">)</span></span>
+<span>  on_small_site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"skip"</span><span class="op">)</span>,</span>
+<span>  scope_combine <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  small_categories <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"keep"</span>, <span class="st">"missing"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -113,7 +116,8 @@ output specifications.</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connections or <code>NULL</code> (uses active connections).</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-output-mode">output_mode<a class="anchor" aria-label="anchor" href="#arg-output-mode"></a></dt>
@@ -137,8 +141,7 @@ with <code>cohort</code>.</p></dd>
 
 
 <dt id="arg-combine">combine<a class="anchor" aria-label="anchor" href="#arg-combine"></a></dt>
-<dd><p>Character; how to fold the scope sources together:
-<code>"union"</code> (the default) or <code>"intersect"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>scope_combine</code>.</p></dd>
 
 
 <dt id="arg-on-small-site">on_small_site<a class="anchor" aria-label="anchor" href="#arg-on-small-site"></a></dt>
@@ -146,6 +149,25 @@ with <code>cohort</code>.</p></dd>
 passed to <code><a href="ds.omop.plan.execute.html">ds.omop.plan.execute</a></code>. Only insufficient final
 person support is skippable: skip keeps successful sites and returns
 <code>NULL</code> for sites whose publication fails final person support.</p></dd>
+
+
+<dt id="arg-scope-combine">scope_combine<a class="anchor" aria-label="anchor" href="#arg-scope-combine"></a></dt>
+<dd><p>Character; how to fold the scope sources together:
+<code>"union"</code> (the default) or <code>"intersect"</code>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-small-categories">small_categories<a class="anchor" aria-label="anchor" href="#arg-small-categories"></a></dt>
+<dd><p>Character; <code>"keep"</code> (the default) or
+<code>"missing"</code>: after publication, the values of categories held by
+fewer than <code>nfilter.tab</code> people at a site are missing there, in
+every published factor column (see <code><a href="ds.omop.plan.execute.html">ds.omop.plan.execute</a></code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -173,7 +195,7 @@ person support is skippable: skip keeps successful sites and returns
 <span><span class="fu">recipe_execute</span><span class="op">(</span><span class="va">recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>features_wide <span class="op">=</span> <span class="st">"D_features"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># Scope every population to a cohort intersected with a workspace table:</span></span>
 <span><span class="fu">recipe_execute</span><span class="op">(</span><span class="va">recipe</span>, cohort <span class="op">=</span> <span class="va">my_cohort</span>, tables <span class="op">=</span> <span class="st">"inclusion_set"</span>,</span>
-<span>               combine <span class="op">=</span> <span class="st">"intersect"</span><span class="op">)</span></span>
+<span>               scope_combine <span class="op">=</span> <span class="st">"intersect"</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

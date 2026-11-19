@@ -8,7 +8,12 @@ that have already been created in persistent storage.
 ## Usage
 
 ``` r
-ds.omop.cohort.list(symbol = "omop", conns = NULL)
+ds.omop.cohort.list(
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 ```
 
 ## Arguments
@@ -20,17 +25,33 @@ ds.omop.cohort.list(symbol = "omop", conns = NULL)
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - type:
+    
+    Result view: `"split"` (default) or `"both"`. Cohort catalogs are
+    site-specific: `"both"` returns `pooled = NULL` with
+    `meta$pooling_reason`, and `"combine"` stops before contacting the
+    servers.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-Named list (one entry per server) of data frames with cohort metadata.
+A `dsomop_result`. `$per_site` is the named list (one entry per server)
+of data frames with cohort metadata returned by earlier versions, and
+`res$<server>` or `res[["<server>"]]` still reaches one server's frame.
 Each row is a cohort at or above the server's `nfilter_subset`
 threshold; its reported size is BANDED to a multiple of `nfilter_band`
 (never the exact subject count). Sub-threshold cohorts are intentionally
-absent. Returns an empty list (or per-server empty data frames) when no
-cohort clears the threshold.
+absent; a server with no cohort above the threshold returns an empty
+data frame.
 
 ## Disclosure control
 

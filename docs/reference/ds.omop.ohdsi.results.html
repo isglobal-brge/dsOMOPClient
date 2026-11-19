@@ -6,14 +6,22 @@ pooling contract and combine complete disclosure-controlled frames through
 that contract; they never route through a same-named live analysis or a
 column-name pooling heuristic. Reviewed equality filters are applied
 server-side; selection, ordering, and the row limit are applied only after
-contractual pooling."><meta property="og:description" content="Reads rows from a pre-computed OHDSI result table with server-controlled
+contractual pooling. With type = &quot;both&quot;, a result that cannot be
+combined (no consistent contract, an incomplete federation, a capped
+table) still returns the per-server frames, with pooled = NULL and
+meta$pooling_reason; type = &quot;combine&quot; stops with the
+reason."><meta property="og:description" content="Reads rows from a pre-computed OHDSI result table with server-controlled
 disclosure. Split-only requests preserve that compatibility endpoint.
 Combined requests obtain the physical result table's closed, server-owned
 pooling contract and combine complete disclosure-controlled frames through
 that contract; they never route through a same-named live analysis or a
 column-name pooling heuristic. Reviewed equality filters are applied
 server-side; selection, ordering, and the row limit are applied only after
-contractual pooling."></head><body>
+contractual pooling. With type = &quot;both&quot;, a result that cannot be
+combined (no consistent contract, an incomplete federation, a capped
+table) still returns the per-server frames, with pooled = NULL and
+meta$pooling_reason; type = &quot;combine&quot; stops with the
+reason."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -21,7 +29,7 @@ contractual pooling."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +80,7 @@ contractual pooling."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Query an OHDSI result table</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/ohdsi_results.R" class="external-link"><code>R/ohdsi_results.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/ohdsi_results.R" class="external-link"><code>R/ohdsi_results.R</code></a></small>
       <div class="d-none name"><code>ds.omop.ohdsi.results.Rd</code></div>
     </div>
 
@@ -84,7 +92,11 @@ pooling contract and combine complete disclosure-controlled frames through
 that contract; they never route through a same-named live analysis or a
 column-name pooling heuristic. Reviewed equality filters are applied
 server-side; selection, ordering, and the row limit are applied only after
-contractual pooling.</p>
+contractual pooling. With <code>type = "both"</code>, a result that cannot be
+combined (no consistent contract, an incomplete federation, a capped
+table) still returns the per-server frames, with <code>pooled = NULL</code> and
+<code>meta$pooling_reason</code>; <code>type = "combine"</code> stops with the
+reason.</p>
     </div>
 
     <div class="section level2">
@@ -100,7 +112,8 @@ contractual pooling.</p>
 <span>  pooling_policy <span class="op">=</span> <span class="st">"strict"</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  type <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  type <span class="op">=</span> <span class="st">"split"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -133,12 +146,13 @@ contractual pooling.</p>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Character; <code>"per_site"</code> or <code>"pooled"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>type</code> (<code>"per_site"</code> or
+<code>"pooled"</code>).</p></dd>
 
 
 <dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
 <dd><p>Character; <code>"strict"</code> (default) or
-<code>"pooled_only_ok"</code>.</p></dd>
+<code>"pooled_only_ok"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -146,12 +160,20 @@ contractual pooling.</p>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code>, uses active session.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional result view: <code>"split"</code>, <code>"combine"</code>, or
-<code>"both"</code>. When omitted, legacy <code>scope</code> behaviour is preserved.</p></dd>
+<dd><p>Result view: <code>"split"</code> (default), <code>"both"</code>, or
+<code>"combine"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -165,8 +187,8 @@ contractual pooling.</p>
 <span><span class="co"># Cohort diagnostics results per site</span></span>
 <span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.ohdsi.results</span><span class="op">(</span><span class="st">"index_event_breakdown"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Cohort counts pooled across servers</span></span>
-<span><span class="va">cc</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.ohdsi.results</span><span class="op">(</span><span class="st">"cohort_count"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span><span class="op">)</span></span>
+<span><span class="co"># Cohort counts per server and pooled across servers</span></span>
+<span><span class="va">cc</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.ohdsi.results</span><span class="op">(</span><span class="st">"cohort_count"</span>, type <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

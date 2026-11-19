@@ -11,6 +11,9 @@ access patterns such as `result$server_a` instead of
 ``` r
 # S3 method for class 'dsomop_result'
 x$name
+
+# S3 method for class 'dsomop_result'
+x[[i, exact = TRUE]]
 ```
 
 ## Arguments
@@ -22,6 +25,14 @@ x$name
   - name:
     
     Character; the element name to access.
+
+  - i:
+    
+    Element name or position, as for `[[`.
+
+  - exact:
+    
+    Passed to `[[`.
 
 ## Value
 

@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-21-case-glucose.Rmd" class="external-link"><code>vignettes/book-21-case-glucose.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-21-case-glucose.Rmd" class="external-link"><code>vignettes/book-21-case-glucose.Rmd</code></a></small>
       <div class="d-none name"><code>book-21-case-glucose.Rmd</code></div>
     </div>
 
@@ -109,7 +109,7 @@
 <h2 id="choose-a-populated-measurement">Choose a populated measurement<a class="anchor" aria-label="anchor" href="#choose-a-populated-measurement"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Glucose"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Glucose"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -142,7 +142,7 @@
 </table>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">glucose_id</span> <span class="op">&lt;-</span> <span class="va">hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Glucose [Mass/volume] in Blood"</span><span class="op">]</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">glucose_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">glucose_id</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
@@ -161,7 +161,7 @@
 </table>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">glucose_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">value</th>
@@ -197,7 +197,7 @@
 <span>  followup_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">glucose</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_date"</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  target_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_change</a></span><span class="op">(</span><span class="va">glucose</span>, <span class="st">"time_to_threshold"</span>, threshold <span class="op">=</span> <span class="fl">95</span>, op <span class="op">=</span> <span class="st">"ge"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"measured"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">trajectory</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_glucose"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">trajectory</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_glucose"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span>, <span class="st">"change"</span>, <span class="st">"per_year"</span>, <span class="st">"followup_days"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span></span>
 <span>  <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.quantileMean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_glucose$"</span>, <span class="va">column</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -285,7 +285,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_glucose$control"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_glucose$control</span></span>
-<span><span class="co">#&gt;    below 90 90 or above          NA</span></span>
+<span><span class="co">#&gt;    below_90 90_or_above          NA </span></span>
 <span><span class="co">#&gt;           4           6           0</span></span></code></pre>
 <p>Four people are below 90 and six are at least 90 mg/dL. It is a presentation rule, not a diagnosis or treatment goal. More detailed categories may be withheld in a population this small.</p>
 <p>For a separate timing question, use the first <strong>observed</strong> glucose ≥95 mg/dL. In this tiny synthetic dataset, a 100 mg/dL rule would leave too few people for a released summary, so the lesson uses 95 mg/dL as a teaching threshold. In a real study the threshold comes from the protocol, and a withheld result is reported as withheld, not avoided by changing the cutoff.</p>
@@ -294,12 +294,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 10</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean</span></span>
+<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean </span></span>
 <span><span class="co">#&gt;  259.7  519.4  986.5 1169.0 2693.5 4769.8 5555.9 2101.5</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -344,17 +344,17 @@
 <details><p><summary>Solution 1</summary></p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_glucose"</span>, target_years <span class="op">=</span> <span class="va">target_days</span> <span class="op">/</span> <span class="fl">365.25</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_glucose_years"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_glucose_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 10</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;         5%        10%        25%        50%        75%        90%        95%       Mean</span></span>
+<span><span class="co">#&gt;         5%        10%        25%        50%        75%        90%        95%       Mean </span></span>
 <span><span class="co">#&gt;  0.7110198  1.4220397  2.7008898  3.2005476  7.3744011 13.0590007 15.2112252  5.7535934</span></span></code></pre>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -365,17 +365,17 @@
 <details><p><summary>Solution 2</summary></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_glucose"</span>, difference <span class="op">=</span> <span class="va">last</span> <span class="op">-</span> <span class="va">first</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_difference"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_difference"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_difference$difference"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 10</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;      5%     10%     25%     50%     75%     90%     95%    Mean</span></span>
+<span><span class="co">#&gt;      5%     10%     25%     50%     75%     90%     95%    Mean </span></span>
 <span><span class="co">#&gt; -25.715 -23.330 -15.275   9.050  18.900  23.130  25.965   2.580</span></span></code></pre>
 <p>The difference agrees with native change because both calculate last minus first. All ten people have later readings, so the complete-case populations also coincide. It describes only two endpoints; intermediate values can rise and fall. The slope uses those intermediate observations but still assumes a straight line.</p>
 </details>

@@ -1,11 +1,10 @@
 # Get missingness rates for columns
 
-Computes the proportion and count of NULL/missing values for each column
-(or a subset of columns) in an OMOP CDM table. This is essential for
-data quality assessment, helping identify columns with high missingness
-that may affect downstream analyses. Results are disclosure-controlled;
-columns where the non-null count falls below the threshold are
-suppressed.
+Computes the proportion of NULL/missing values for each column (or a
+subset of columns) in an OMOP CDM table. For person tables a person is
+missing a column when none of their records carries a value. Results are
+disclosure-controlled: a rate whose missing or non-missing group is
+below the threshold is `NA`.
 
 ## Usage
 
@@ -19,7 +18,8 @@ ds.omop.missingness(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -43,11 +43,13 @@ ds.omop.missingness(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type`: `"per_site"` means `type = "split"`,
+    `"pooled"` means `type = "both"`.
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -55,7 +57,8 @@ ds.omop.missingness(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -64,14 +67,24 @@ ds.omop.missingness(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"split"` (default), `"both"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of data frames
-with columns `column_name`, `total_count`, `null_count`, `missing_pct`),
-`$pooled` (combined missingness when pooled), and `$meta`.
+A `dsomop_result`. Each `$per_site` entry is a data frame with
+`column_name` and `missing_rate`; dsOMOP 2.10.9 servers add the banded
+counts behind the rate, `n_total` and `n_missing`. `$pooled` has
+`column_name`, `n_total`, `n_missing` and `missing_rate` = summed
+`n_missing` / summed `n_total`. Older servers return rates only; their
+results are not pooled and `meta$pooling_reason` says so.
 
 ## Examples
 
@@ -79,7 +92,8 @@ with columns `column_name`, `total_count`, `null_count`, `missing_pct`),
 if (FALSE) { # \dontrun{
 miss <- ds.omop.missingness("measurement",
                              columns = c("value_as_number",
-                                         "value_as_concept_id"))
-miss$per_site$server1
+                                         "value_as_concept_id"),
+                             type = "both")
+miss$pooled
 } # }
 ```

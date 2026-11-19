@@ -17,7 +17,7 @@ ds.omop.querylibrary.sticky.release(
   datasources = NULL,
   pool = TRUE,
   format = c("long", "wide", "vector", "raw"),
-  type = NULL,
+  type = "both",
   symbol = "omop"
 )
 ```
@@ -38,13 +38,16 @@ ds.omop.querylibrary.sticky.release(
 
   - datasources:
     
-    Named DataSHIELD connection list. `NULL` uses active connections.
+    Named DataSHIELD connection list. `NULL` uses the connections of the
+    OMOP session `symbol`, or `DSI::datashield.connections_find()` when
+    there is none.
 
   - pool:
     
-    Pool compatible releases across sites. For `bounded_distinct`,
-    pooling is the sum of site-local cardinalities, not a cross-site set
-    union; use `FALSE` for site-specific estimates.
+    Deprecated alias of `type` (`TRUE` means `"both"`, `FALSE` means
+    `"split"`). For `bounded_distinct`, pooling is the sum of site-local
+    cardinalities, not a cross-site set union; use `type = "split"` for
+    site-specific estimates.
 
   - format:
     
@@ -52,8 +55,8 @@ ds.omop.querylibrary.sticky.release(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, the legacy `pool` argument is preserved.
+    Result view: `"both"` (default), `"split"`, or `"combine"`, passed
+    to `ds.omop.dp.release`.
 
   - symbol:
     

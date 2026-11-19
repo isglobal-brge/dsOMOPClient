@@ -3,14 +3,22 @@
 Returns full metadata for a single catalog entry: its parameter specs,
 compute kind, disclosure spec, and scoping capabilities. Use it to
 discover an entry's parameters and to check whether it accepts
-cohort/table scoping before running it. Execution requires identical
-metadata from every server; a mixed-version or partially unavailable
-federation fails closed.
+cohort/table scoping before running it. The pooled view is the metadata
+every server returned identically; otherwise `$pooled` is `NULL` with
+`meta$pooling_reason`. Execution requires identical metadata from every
+server; a mixed-version or partially unavailable federation fails closed
+in `ds.omop.analysis.run`.
 
 ## Usage
 
 ``` r
-ds.omop.analysis.get(name, symbol = "omop", conns = NULL, type = "both")
+ds.omop.analysis.get(
+  name,
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 ```
 
 ## Arguments
@@ -29,24 +37,32 @@ ds.omop.analysis.get(name, symbol = "omop", conns = NULL, type = "both")
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
     Result view: `"both"` (default), `"split"`, or `"combine"`;
-    dsBaseClient-style aliases are accepted. A split view can inspect
-    nodes whose metadata differ; combined views require equality.
+    dsBaseClient-style aliases are accepted. A pooled view requires
+    equal metadata. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `scope = "pooled"`. The pooled element is
-a named list with the entry's `name`, `description`, `domain`, `mode`,
-`params`, `compute_kind`, `disclosure`, `scope`, `adapter`, and the
-inert client-side `plot` recipe (`NULL` when the entry ships none).
-External packs also expose their pinned package/version and closed
-output contract, so federated execution can require exact metadata
-equality across nodes.
+A `dsomop_result` object. The pooled element is a named list with the
+entry's `name`, `description`, `domain`, `mode`, `params`,
+`compute_kind`, `disclosure`, `scope`, `adapter`, and the inert
+client-side `plot` recipe (`NULL` when the entry ships none). External
+packs also expose their pinned package/version and closed output
+contract, so federated execution can require exact metadata equality
+across nodes.
 
 ## See also
 

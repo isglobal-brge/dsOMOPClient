@@ -37,6 +37,7 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/news/index.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/Ops.omop_param.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/as.data.frame.dsomop_result.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/as.table.dsomop_table.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/cash-.dsomop_result.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/dot-analysis_domain_code.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/dot-analysis_filter_concepts.html</loc></url>
@@ -268,6 +269,7 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.release.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.status.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.drop_empty_levels.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.drop_small_categories.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.filter.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.joins.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.login.html</loc></url>
@@ -321,6 +323,7 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.vocab.classes.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.vocab.domains.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.vocab.vocabularies.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_result.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/index.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop.date_handling.html</loc></url>

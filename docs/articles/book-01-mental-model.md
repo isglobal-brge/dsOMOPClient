@@ -25,7 +25,7 @@ questionnaire answers. A *concept* is a coded meaning, such as a
 diagnosis. Its vocabulary supplies a name.
 
 ``` r
-tables <- ds.omop.tables(conns = conns)$site
+tables <- ds.omop.tables(datasources = conns)$site
 tables[tables$table_name %in% c("person", "visit_occurrence",
   "condition_occurrence", "drug_exposure", "measurement", "observation", "death"),
   c("table_name", "has_person_id")]
@@ -67,12 +67,12 @@ list.
 ## Send a question to the data
 
 ``` r
-ds.omop.table.stats("person", conns = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -80,6 +80,9 @@ ds.omop.table.stats("person", conns = conns)
     #>
     #> $persons
     #> [1] 2690
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 `2690` is the lower end of a five-person band: 2690–2694 people. This
 endpoint rounds down to a multiple of five by default; it has not told
@@ -109,12 +112,12 @@ person contribute more than one visit?
 Solution
 
 ``` r
-ds.omop.table.stats("visit_occurrence", conns = conns)
+ds.omop.table.stats("visit_occurrence", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
     #>
     #> $site
     #> $rows
@@ -122,6 +125,9 @@ ds.omop.table.stats("visit_occurrence", conns = conns)
     #>
     #> $persons
     #> [1] 890
+    #>
+    #>
+    #> $pooled: the same as $site (one server)
 
 There are 1,035–1,039 visit rows from 890–894 people. Even allowing for
 banding, there are more visits than people: some people have repeated
@@ -135,12 +141,13 @@ establish that nobody died?
 Solution
 
 ``` r
-ds.omop.table.stats("death", conns = conns)
+ds.omop.table.stats("death", datasources = conns)
 ```
 
     #> <dsomop_result>
     #> Servers: site
-    #> Scope: per_site
+    #> Type: both (per-server and pooled results)
+    #> Not pooled: No complete disclosure-safe pooled table statistics were available.
     #>
     #> $site
     #> list()

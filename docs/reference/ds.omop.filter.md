@@ -27,7 +27,8 @@ ds.omop.filter(
   newobj = NULL,
   symbol = "omop",
   conns = NULL,
-  expr = NULL
+  expr = NULL,
+  datasources = NULL
 )
 ```
 
@@ -64,13 +65,20 @@ ds.omop.filter(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - expr:
     
     (2.10.3) A predicate from `omop_where` (instead of
     `var`/`op`/`value`).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

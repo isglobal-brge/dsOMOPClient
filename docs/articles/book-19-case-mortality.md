@@ -31,7 +31,7 @@ conns <- ds.omop.login("https://localhost:8443", user = "administrator",
 ## Find the causes
 
 ``` r
-catalogue <- ds.omop.concept.lookup(c(900201L, 900202L), conns = conns)$pooled
+catalogue <- ds.omop.concept.lookup(c(900201L, 900202L), datasources = conns)$pooled
 catalogue[c("concept_id", "concept_name", "domain_id")]
 ```
 
@@ -41,13 +41,13 @@ catalogue[c("concept_id", "concept_name", "domain_id")]
 |      900202 | Pneumonia             | Condition  |
 
 ``` r
-ds.omop.concept.prevalence("death", scope = "pooled", conns = conns)$pooled
+ds.omop.concept.prevalence("death", type = "both", datasources = conns)$pooled
 ```
 
-| concept\_id | n\_persons | concept\_name         |
-| ----------: | ---------: | :-------------------- |
-|      900201 |         20 | Myocardial infarction |
-|      900202 |         10 | Pneumonia             |
+| concept\_id | concept\_name         | n\_persons | n\_records |
+| ----------: | :-------------------- | ---------: | ---------: |
+|      900201 | Myocardial infarction |         20 |         20 |
+|      900202 | Pneumonia             |         10 |         10 |
 
 ``` r
 mi <- omop_event("death", 900201L)
@@ -77,15 +77,15 @@ period_recipe <- function(start, days) {
     mi = omop_variable(event = mi, reducer = omop_reduce("binary", window = window)),
     pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary", window = window))))
 }
-recipe_execute(period_recipe("2024-01-01", 366), out = "D_2024", conns = conns)
+recipe_execute(period_recipe("2024-01-01", 366), out = "D_2024", datasources = conns)
 ds.omop.filter("D_2024", expr = omop_where(is.na(death_days) | death_days >= 0),
-  newobj = "D_alive_2024", conns = conns)
+  newobj = "D_alive_2024", datasources = conns)
 ds.omop.mutate("D_alive_2024", potential_days = coalesce(death_days, 366),
   risk_days = ifelse(potential_days > 366, 366, potential_days),
   age_group = ifelse(is.na(age), "Missing", ifelse(age < 40, "under 40", "40 and over")),
   cause = ifelse(mi == 1, "Myocardial infarction",
     ifelse(pneumonia == 1, "Pneumonia", "Neither selected cause")),
-  newobj = "D_risk_2024", conns = conns)
+  newobj = "D_risk_2024", datasources = conns)
 ```
 
 Remove people already dead before January 1. A survivor contributes 366
@@ -182,13 +182,13 @@ teaching example, not an estimate for a clinical population.
 ``` r
 sex_rates <- do.call(rbind, lapply(c("F", "M"), function(label) {
   ds.omop.filter("D_risk_2024", var = "sex", op = "==", value = label,
-    newobj = paste0("D_sex_", label), conns = conns)
+    newobj = paste0("D_sex_", label), datasources = conns)
   released_rates(paste0("D_sex_", label), if (label == "F") "Female" else "Male", 2024)
 }))
 age_rates <- do.call(rbind, lapply(c("under 40", "40 and over", "Missing"), function(label) {
   object <- paste0("D_age_", match(label, c("under 40", "40 and over", "Missing")))
   ds.omop.filter("D_risk_2024", var = "age_group", op = "==", value = label,
-    newobj = object, conns = conns)
+    newobj = object, datasources = conns)
   released_rates(object, label, 2024)
 }))
 sex_rates
@@ -232,12 +232,12 @@ same number of deaths imply the same rate?
 Solution 1
 
 ``` r
-recipe_execute(period_recipe("2023-01-01", 365), out = "D_2023", conns = conns)
+recipe_execute(period_recipe("2023-01-01", 365), out = "D_2023", datasources = conns)
 ds.omop.filter("D_2023", expr = omop_where(is.na(death_days) | death_days >= 0),
-  newobj = "D_alive_2023", conns = conns)
+  newobj = "D_alive_2023", datasources = conns)
 ds.omop.mutate("D_alive_2023", potential_days = coalesce(death_days, 365),
   risk_days = ifelse(potential_days > 365, 365, potential_days),
-  newobj = "D_risk_2023", conns = conns)
+  newobj = "D_risk_2023", datasources = conns)
 rates_2023 <- released_rates("D_risk_2023", "All", 2023)
 rbind(rates_2023, rates_2024)
 ```

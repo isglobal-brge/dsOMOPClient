@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-18-capstone.Rmd" class="external-link"><code>vignettes/book-18-capstone.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-18-capstone.Rmd" class="external-link"><code>vignettes/book-18-capstone.Rmd</code></a></small>
       <div class="d-none name"><code>book-18-capstone.Rmd</code></div>
     </div>
 
@@ -105,7 +105,7 @@
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">catalogue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">900001L</span>, <span class="fl">900002L</span>, <span class="fl">900101L</span>, <span class="fl">900102L</span>,</span>
-<span>  <span class="fl">900201L</span>, <span class="fl">900202L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  <span class="fl">900201L</span>, <span class="fl">900202L</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">catalogue</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -180,7 +180,7 @@
 <span>  visit_year <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="va">first_visit</span>, <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"year"</span>, representation <span class="op">=</span> <span class="st">"number"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">capstone</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="va">variables</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">capstone</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_capstone"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">capstone</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_capstone"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The table stays on the server with a pseudonymous person key. Exact visit dates remain private; we use month and quarter categories for calendar counts.</p>
 </div>
 <div class="section level2">
@@ -190,7 +190,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_capstone$age_at_death"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_capstone$age_at_death</span></span>
-<span><span class="co">#&gt; 32 33 42 43 NA</span></span>
+<span><span class="co">#&gt; 32 33 42 43 NA </span></span>
 <span><span class="co">#&gt;  6  6  6  6 24</span></span></code></pre>
 <p>Ages 32, 33, 42 and 43 each occur six times. The 24 missing ages combine 12 deaths with incomplete birth dates and 12 survivors. Missing age is not a fifth age band.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -198,12 +198,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean</span></span>
+<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean </span></span>
 <span><span class="co">#&gt;   29   29   29   34   39   39   39   34</span></span></code></pre>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_capstone$age_at_first_visit"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -218,26 +218,26 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_capstone$education"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_capstone$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education              Missing                   NA</span></span>
+<span><span class="co">#&gt;  Secondary_education University_education              Missing                   NA </span></span>
 <span><span class="co">#&gt;                   12                   12                   24                    0</span></span></code></pre>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_capstone$fever"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_capstone$fever</span></span>
-<span><span class="co">#&gt; Yes  No  NA</span></span>
+<span><span class="co">#&gt; Yes  No  NA </span></span>
 <span><span class="co">#&gt;  12  12  24</span></span></code></pre>
 <p>Education has 12 Secondary, 12 University and 24 Missing answers. Fever has 12 Yes, 12 No and 24 missing answers. No is an observed response; it is not a substitute for missingness.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_capstone$visit_month"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_capstone$visit_month</span></span>
-<span><span class="co">#&gt; 2020-03 2020-06 2020-07      NA</span></span>
+<span><span class="co">#&gt; 2020-03 2020-06 2020-07      NA </span></span>
 <span><span class="co">#&gt;      12      12      12      12</span></span></code></pre>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_capstone$visit_quarter"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_capstone$visit_quarter</span></span>
-<span><span class="co">#&gt; 2020-Q1 2020-Q2 2020-Q3      NA</span></span>
+<span><span class="co">#&gt; 2020-Q1 2020-Q2 2020-Q3      NA </span></span>
 <span><span class="co">#&gt;      12      12      12      12</span></span></code></pre>
 <p>March, June and July each contain 12 first visits, with 12 people lacking a visit. They fall in three different quarters, so changing precision leaves these counts unchanged. In other data, several months may merge into one quarter.</p>
 </div>
@@ -251,13 +251,13 @@
 <table class="table">
 <thead><tr class="header">
 <th align="left"></th>
-<th align="right">under 40</th>
-<th align="right">40 and over</th>
+<th align="right">under_40</th>
+<th align="right">40_and_over</th>
 <th align="right">NA</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">Myocardial infarction</td>
+<td align="left">Myocardial_infarction</td>
 <td align="right">0</td>
 <td align="right">12</td>
 <td align="right">12</td>
@@ -288,11 +288,11 @@
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span>,</span>
 <span>    window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fl">0</span>, anchor <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>, which <span class="op">=</span> <span class="st">"first"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">restricted</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="va">before_death</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">restricted</span>, out <span class="op">=</span> <span class="st">"D_before_death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">restricted</span>, out <span class="op">=</span> <span class="st">"D_before_death"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_before_death$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_before_death$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education                   NA</span></span>
+<span><span class="co">#&gt;  Secondary_education University_education                   NA </span></span>
 <span><span class="co">#&gt;                   12                   12                   24</span></span></code></pre>
 <p>The counts remain 12 Secondary, 12 University and 24 missing: all observed answers preceded death. This exercise uses the raw education variable without the category specification, so missing answers have the raw <code>NA</code> label instead of the main table’s “Missing”. A survivor has no death anchor, so this definition cannot supply an answer for that person. The unchanged totals do not make the window irrelevant.</p>
 </details><p><strong>2. Use year as a number.</strong> Find the mean first-visit year and its denominator. Then check how its type differs from the exact date and month category.</p>
@@ -302,12 +302,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean</span></span>
+<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean </span></span>
 <span><span class="co">#&gt; 2020 2020 2020 2020 2020 2020 2020 2020</span></span></code></pre>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span></span>

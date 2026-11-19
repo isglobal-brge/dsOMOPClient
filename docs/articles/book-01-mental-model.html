@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-01-mental-model.Rmd" class="external-link"><code>vignettes/book-01-mental-model.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-01-mental-model.Rmd" class="external-link"><code>vignettes/book-01-mental-model.Rmd</code></a></small>
       <div class="d-none name"><code>book-01-mental-model.Rmd</code></div>
     </div>
 
@@ -109,7 +109,7 @@
 </h2>
 <p>OMOP is a common data model (CDM): a shared set of tables and column meanings. <code>person</code> describes people; <code>visit_occurrence</code> describes visits; <code>observation</code> holds other observations, which can include questionnaire answers. A <em>concept</em> is a coded meaning, such as a diagnosis. Its vocabulary supplies a name.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tables</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.tables.html">ds.omop.tables</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
+<code class="sourceCode R"><span><span class="va">tables</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.tables.html">ds.omop.tables</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
 <span><span class="va">tables</span><span class="op">[</span><span class="va">tables</span><span class="op">$</span><span class="va">table_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"person"</span>, <span class="st">"visit_occurrence"</span>,</span>
 <span>  <span class="st">"condition_occurrence"</span>, <span class="st">"drug_exposure"</span>, <span class="st">"measurement"</span>, <span class="st">"observation"</span>, <span class="st">"death"</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"table_name"</span>, <span class="st">"has_person_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
@@ -165,17 +165,20 @@
 <h2 id="send-a-question-to-the-data">Send a question to the data<a class="anchor" aria-label="anchor" href="#send-a-question-to-the-data"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $rows</span></span>
 <span><span class="co">#&gt; [1] 2690</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 2690</span></span></code></pre>
+<span><span class="co">#&gt; [1] 2690</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pooled: the same as $site (one server)</span></span></code></pre>
 <p><code>2690</code> is the lower end of a five-person band: 2690–2694 people. This endpoint rounds down to a multiple of five by default; it has not told you the exact count. For the person table, each row is one person, so the two bands agree.</p>
 <div class="book-flow" role="img" aria-label="Requests go to the server; private rows stay there; checked summaries return.">
 <div>
@@ -198,17 +201,20 @@
 <p>Request the visit count and the number of people with visits. Can one person contribute more than one visit?</p>
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $rows</span></span>
 <span><span class="co">#&gt; [1] 1035</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 890</span></span></code></pre>
+<span><span class="co">#&gt; [1] 890</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pooled: the same as $site (one server)</span></span></code></pre>
 <p>There are 1,035–1,039 visit rows from 890–894 people. Even allowing for banding, there are more visits than people: some people have repeated visits. These are summaries, not a list of who attended.</p>
 </details>
 </div>
@@ -219,11 +225,12 @@
 <details><p><summary>Solution</summary></p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
 <span><span class="co">#&gt; Servers: site</span></span>
-<span><span class="co">#&gt; Scope: per_site</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Type: both (per-server and pooled results)</span></span>
+<span><span class="co">#&gt; Not pooled: No complete disclosure-safe pooled table statistics were available.</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; list()</span></span></code></pre>
 <!-- expected-refusal:end -->

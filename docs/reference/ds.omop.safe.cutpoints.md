@@ -18,7 +18,8 @@ ds.omop.safe.cutpoints(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -46,9 +47,7 @@ ds.omop.safe.cutpoints(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`. Cutpoints are
-    inherently per-site; pooled scope is accepted but the pooled slot
-    will be NULL.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - symbol:
     
@@ -57,7 +56,8 @@ ds.omop.safe.cutpoints(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -66,15 +66,25 @@ ds.omop.safe.cutpoints(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"split"` (default) or `"both"`. Cutpoints are
+    site-specific: `"both"` returns `pooled = NULL` with
+    `meta$pooling_reason`, and `"combine"` stops before contacting the
+    servers. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
 A `dsomop_result` object with `$per_site` (named list where each element
 contains public `breaks`, banded `counts`, a session `contract`, and
 clipping/grid metadata), `$pooled` (always NULL for cutpoints), and
-`$meta` (list with `call_code` and `scope`).
+`$meta`.
 
 ## Examples
 

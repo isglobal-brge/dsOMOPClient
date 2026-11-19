@@ -30,7 +30,8 @@ ds.omop.crosstab(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -81,13 +82,16 @@ ds.omop.crosstab(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type`: `"per_site"` means `type = "split"`,
+    `"pooled"` means `type = "both"`.
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"`. Under
-    `strict`, a cell absent or suppressed on any site is suppressed in
-    the pooled table.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. Under both
+    policies a cell absent or suppressed on any contributing server is
+    `NA` in the pooled table; `"pooled_only_ok"` only leaves out servers
+    whose whole cross-tab was suppressed or empty. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -95,7 +99,8 @@ ds.omop.crosstab(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -104,14 +109,24 @@ ds.omop.crosstab(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of server
-cross-tab objects), `$pooled` (cell-wise summed table when pooled), and
-`$meta`.
+A `dsomop_result`. Each `$per_site` entry is the server's cross-tab:
+`row_col`, `col_col`, `count_mode`, `row_levels`, `col_levels` and
+`counts` (banded matrix, `NA` = suppressed), or for a stratified call
+`stratified = TRUE`, `stratify_by` and `strata` (one such slice per
+level). `$pooled` has the same shape with cell-wise sums and a
+`suppressed` flag.
 
 ## Cross-tab is descriptive, not inferential
 
@@ -126,8 +141,7 @@ are disclosure-unsafe and lose utility on small data.
 
 ``` r
 if (FALSE) { # \dontrun{
-ct <- ds.omop.crosstab("person", "gender_concept_id", "race_concept_id",
-                       scope = "pooled")
+ct <- ds.omop.crosstab("person", "gender_concept_id", "race_concept_id")
 ct$pooled$counts
 } # }
 ```

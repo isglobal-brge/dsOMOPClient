@@ -23,7 +23,9 @@ ds.omop.plan.execute(
   symbol = "omop",
   conns = NULL,
   output_mode = "memory",
-  on_small_site = c("error", "skip")
+  on_small_site = c("error", "skip"),
+  datasources = NULL,
+  small_categories = c("keep", "missing")
 )
 ```
 
@@ -63,8 +65,8 @@ ds.omop.plan.execute(
 
   - conns:
     
-    DSI connection object(s). If `NULL`, uses the connections stored in
-    the session.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - output\_mode:
     
@@ -84,6 +86,24 @@ ds.omop.plan.execute(
     any site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere
     with one warning, and `on_small_site` does not change that call; a
     language-2 plan is refused before assignment.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - small\_categories:
+    
+    Character; `"keep"` (the default) publishes the outputs as computed.
+    `"missing"` then makes, at each site, the values of categories held
+    by fewer than `nfilter.tab` people missing in every published factor
+    column, with secondary suppression (see
+    `ds.omop.drop_small_categories`), so that dsBase's `ds.table()` and
+    `ds.summary()` accept those columns. Levels, labels and the codebook
+    stay as published. In-memory outputs only; every server needs dsOMOP
+    2.10.9.
 
 ## Value
 

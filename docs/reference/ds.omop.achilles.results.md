@@ -2,10 +2,10 @@
 
 Queries the `achilles_results` table on each connected server for the
 specified analysis IDs. These are pre-computed count-based statistics
-(e.g., person counts by gender, condition frequency). When `scope =
-"pooled"`, counts are summed across servers with suppression
-propagation: if any server suppressed a cell (NA), the pooled cell is
-also set to NA to prevent disclosure.
+(e.g., person counts by gender, condition frequency). By default (as
+`ds.table` does) the result has both views: counts are summed across
+servers with suppression propagation, and a stratum suppressed or absent
+on any server is left out of the pooled table.
 
 ## Usage
 
@@ -17,7 +17,8 @@ ds.omop.achilles.results(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -31,15 +32,15 @@ ds.omop.achilles.results(
 
   - scope:
     
-    Character; `"per_site"` returns each server's results separately,
-    `"pooled"` additionally aggregates counts across servers.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`).
 
   - pooling\_policy:
     
-    Character; controls how suppressed (NA) cells are handled during
-    pooling. `"strict"` (the default) sets the pooled value to NA if any
-    server suppressed the cell. `"pooled_only_ok"` sums only the
-    non-suppressed values.
+    Character; `"strict"` (the default) leaves out a stratum absent on
+    any server; `"pooled_only_ok"` sums the strata the servers returned.
+    A stratum suppressed (NA) on any server is left out under both
+    policies. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -48,8 +49,8 @@ ds.omop.achilles.results(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -58,8 +59,15 @@ ds.omop.achilles.results(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`. When
-    omitted, legacy `scope` behaviour is preserved.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -72,12 +80,12 @@ aggregated data frame.
 
 ``` r
 if (FALSE) { # \dontrun{
-# Get total person count (analysis 1) pooled across servers
-res <- ds.omop.achilles.results(analysis_ids = 1, scope = "pooled")
+# Total person count (analysis 1) per server and pooled
+res <- ds.omop.achilles.results(analysis_ids = 1)
 res$pooled
 
-# Get gender breakdown per site
-gender <- ds.omop.achilles.results(analysis_ids = 2)
+# Gender breakdown per site only
+gender <- ds.omop.achilles.results(analysis_ids = 2, type = "split")
 gender$per_site
 } # }
 ```

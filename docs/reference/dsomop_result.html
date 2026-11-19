@@ -15,7 +15,7 @@ and any pooling warnings."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@ and any pooling warnings."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Create a dsomop_result object</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/result.R" class="external-link"><code>R/result.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/result.R" class="external-link"><code>R/result.R</code></a></small>
       <div class="d-none name"><code>dsomop_result.Rd</code></div>
     </div>
 
@@ -105,7 +105,10 @@ and any pooling warnings.</p>
 <code>"both"</code>),
 <code>pooling_policy</code> (character; <code>"strict"</code> or
 <code>"pooled_only_ok"</code>),
-<code>warnings</code> (character vector of pooling warnings).</p></dd>
+<code>warnings</code> (character vector of pooling warnings). Further
+elements, such as <code>pooling</code> (method and estimand of the pooled
+result) and <code>pooling_reason</code> (why no pooled result was formed),
+are kept as given.</p></dd>
 
 </dl></div>
     <div class="section level2">

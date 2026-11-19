@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-14-labs.Rmd" class="external-link"><code>vignettes/book-14-labs.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-14-labs.Rmd" class="external-link"><code>vignettes/book-14-labs.Rmd</code></a></small>
       <div class="d-none name"><code>book-14-labs.Rmd</code></div>
     </div>
 
@@ -104,7 +104,7 @@
 <h2 id="find-haemoglobin-and-its-unit">Find haemoglobin and its unit<a class="anchor" aria-label="anchor" href="#find-haemoglobin-and-its-unit"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -148,7 +148,7 @@
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lab_id</span> <span class="op">&lt;-</span> <span class="va">hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Hemoglobin [Mass/volume] in Blood"</span><span class="op">]</span></span>
 <span><span class="va">units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">lab_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -176,7 +176,7 @@
 <span><span class="va">values</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>first <span class="op">=</span> <span class="va">first</span>, last <span class="op">=</span> <span class="va">last</span>, mean <span class="op">=</span> <span class="va">average</span>,</span>
 <span>  minimum <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">lab</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"min"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  maximum <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">lab</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"max"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">values</span>, out <span class="op">=</span> <span class="st">"D_labs"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">values</span>, out <span class="op">=</span> <span class="st">"D_labs"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">reducer_means</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span>, <span class="st">"mean"</span>, <span class="st">"minimum"</span>, <span class="st">"maximum"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_labs$"</span>, <span class="va">column</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Reducer <span class="op">=</span> <span class="va">column</span>, Mean_g_dl <span class="op">=</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span>,</span>
@@ -235,7 +235,7 @@
 <span>    labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 14.5"</span>, <span class="st">"14.5 or above"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  last_group <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_bins</a></span><span class="op">(</span><span class="va">last</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="fl">14.5</span>, <span class="cn">Inf</span><span class="op">)</span>,</span>
 <span>    labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 14.5"</span>, <span class="st">"14.5 or above"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">grouped</span>, out <span class="op">=</span> <span class="st">"D_groups"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">grouped</span>, out <span class="op">=</span> <span class="st">"D_groups"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">groups</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.meanSdGp</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_groups$"</span>, <span class="va">column</span><span class="op">)</span>,</span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_groups$"</span>, <span class="va">column</span>, <span class="st">"_group"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
@@ -287,17 +287,17 @@
 <code class="sourceCode R"><span><span class="va">indexed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">lab</span>, offset <span class="op">=</span> <span class="fl">7L</span><span class="op">)</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>at_index <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">lab_id</span>,</span>
 <span>    tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">7</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">indexed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_index"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">indexed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_index"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_index$at_index"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean</span></span>
+<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean </span></span>
 <span><span class="co">#&gt; 11.810 12.480 12.975 13.700 15.425 16.190 16.855 14.150</span></span></code></pre>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_index$at_index"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -312,17 +312,17 @@
 <span>    <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_spec</a></span><span class="op">(</span>transform <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_transform</a></span><span class="op">(</span><span class="st">"affine"</span>, factor <span class="op">=</span> <span class="fl">365</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  target_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_change</a></span><span class="op">(</span><span class="va">lab</span>, <span class="st">"time_to_threshold"</span>, threshold <span class="op">=</span> <span class="fl">14</span>,</span>
 <span>    op <span class="op">=</span> <span class="st">"ge"</span>, reference <span class="op">=</span> <span class="st">"first"</span>, time_unit <span class="op">=</span> <span class="st">"days"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">changes</span>, out <span class="op">=</span> <span class="st">"D_change"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">changes</span>, out <span class="op">=</span> <span class="st">"D_change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean</span></span>
+<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean </span></span>
 <span><span class="co">#&gt; -2.940 -2.580 -1.400  1.600  2.400  3.200  3.760  1.016</span></span></code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -333,14 +333,14 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;          5%         10%         25%         50%         75%         90%         95%</span></span>
-<span><span class="co">#&gt; -0.26315218 -0.22388661 -0.05065106  0.08067385  0.15150943  0.28608626  0.40257901</span></span>
-<span><span class="co">#&gt;        Mean</span></span>
+<span><span class="co">#&gt;          5%         10%         25%         50%         75%         90%         95% </span></span>
+<span><span class="co">#&gt; -0.26315218 -0.22388661 -0.05065106  0.08067385  0.15150943  0.28608626  0.40257901 </span></span>
+<span><span class="co">#&gt;        Mean </span></span>
 <span><span class="co">#&gt;  0.05215555</span></span></code></pre>
 <p>There are 25 valid changes and three missing: single-reading people do not have observed change. Mean change is 1.016 g/dL. The median slope is about 0.081 g/dL per 365 days. Neither statistic implies the same change for every person, and a linear slope does not forecast a person’s next reading.</p>
 </div>
@@ -361,7 +361,7 @@
 <span>  converted_band <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number</a></span><span class="op">(</span><span class="va">average</span>, <span class="va">presentation</span><span class="op">)</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_category</a></span><span class="op">(</span><span class="va">average</span>, range <span class="op">=</span> <span class="st">"thresholds"</span>, thresholds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">14</span>, <span class="fl">15</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  high <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_flag</a></span><span class="op">(</span><span class="va">average</span>, <span class="st">"ge"</span>, <span class="fl">15</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">flags</span>, out <span class="op">=</span> <span class="st">"D_flags"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">flags</span>, out <span class="op">=</span> <span class="st">"D_flags"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">band_means</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.meanSdGp</span><span class="op">(</span><span class="st">"D_flags$mean"</span>, <span class="st">"D_flags$band"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Band <span class="op">=</span> <span class="va">band_labels</span>, People <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">band_means</span><span class="op">$</span><span class="va">Nvalid_gp</span><span class="op">)</span>,</span>
@@ -394,7 +394,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_flags$converted_band"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_flags$converted_band</span></span>
-<span><span class="co">#&gt;        below 140 140 to below 150     150 or above               NA</span></span>
+<span><span class="co">#&gt;        below_140 140_to_below_150     150_or_above               NA </span></span>
 <span><span class="co">#&gt;                9                9               10                0</span></span></code></pre>
 <p>Both presentations give category counts 9, 9 and 10 here. The within-band means are 13.341, 14.325 and 15.607 g/dL: each person contributes their all-history mean once to their band. Bins are left-closed: 14 belongs to the middle bin and 15 to the upper bin. The bands are an ordered factor. In a model, R reports linear/quadratic terms (<code>.L</code>, <code>.Q</code>) instead of one coefficient per band. The fitted values are the same, but read the coefficients accordingly.</p>
 <p>The equal counts do not mean rounding can never change a category. Consider a public example near the boundary:</p>
@@ -423,13 +423,13 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_flags$control"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_flags$control</span></span>
-<span><span class="co">#&gt;    low normal   high     NA</span></span>
+<span><span class="co">#&gt;    low normal   high     NA </span></span>
 <span><span class="co">#&gt;      9      9     10      0</span></span></code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_flags$high"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_flags$high</span></span>
-<span><span class="co">#&gt;  0  1 NA</span></span>
+<span><span class="co">#&gt;  0  1 NA </span></span>
 <span><span class="co">#&gt; 18 10  0</span></span></code></pre>
 <p>The high flag is one for 10 people. The category thresholds define low &lt;14, normal 14–15 <strong>inclusive</strong>, and high &gt;15, whereas the flag uses ≥15. Thus a value exactly 15 would be normal in the category but high in the flag. Synthea has no haemoglobin reference bounds; missing bounds cannot establish normality.</p>
 </div>
@@ -449,7 +449,7 @@
 <span>  last <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">lab</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  followup_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">lab</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_date"</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  mean <span class="op">=</span> <span class="va">average</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">followup</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_pool"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">followup</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_pool"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span></span>
 <span><span class="va">pooled_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.mean</span><span class="op">(</span><span class="st">"D_pool$mean"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
 <span><span class="va">pooled_mean</span></span></code></pre></div>
 <table class="table">
@@ -471,7 +471,7 @@
 <p>The pooled mean remains 14.467 g/dL across 28 people. Each nonmissing person receives equal weight; opening two connections to the same people would double-count them.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.quantileMean</span><span class="op">(</span><span class="st">"D_pool$mean"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<pre><code><span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 13.02050 13.29000 13.85104 14.28917 15.30625 15.72500 15.91000 14.46679</span></span></code></pre>
 <p>These are weighted averages of site quantiles, not exact quantiles of all people combined. The mean always agrees with the pooled mean because this function weights site means by their nonmissing N.</p>
 </div>
@@ -484,30 +484,30 @@
 <pre><code><span><span class="co">#&gt; $north</span></span>
 <span><span class="co">#&gt; $north$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $north$length</span></span>
 <span><span class="co">#&gt; [1] 14</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $north$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
-<span><span class="co">#&gt; 4056.500 4081.000 4340.000 5565.000 5853.500 5957.000 6100.500 5112.818</span></span>
-<span><span class="co">#&gt;</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
+<span><span class="co">#&gt; 4056.500 4081.000 4340.000 5565.000 5853.500 5957.000 6100.500 5112.818 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $south</span></span>
 <span><span class="co">#&gt; $south$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $south$length</span></span>
 <span><span class="co">#&gt; [1] 14</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $south$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;      5%     10%     25%     50%     75%     90%     95%    Mean</span></span>
+<span><span class="co">#&gt;      5%     10%     25%     50%     75%     90%     95%    Mean </span></span>
 <span><span class="co">#&gt; 2177.00 2636.90 4630.50 5565.00 5570.25 6108.90 6284.95 5012.00</span></span></code></pre>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_pool$followup_days"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $north</span></span>
 <span><span class="co">#&gt; [1] 3</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $south</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
@@ -542,17 +542,17 @@
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">logged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>log_mean <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number</a></span><span class="op">(</span><span class="va">average</span>,</span>
 <span>  <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_spec</a></span><span class="op">(</span>transform <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_transform</a></span><span class="op">(</span><span class="st">"log"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">logged</span>, out <span class="op">=</span> <span class="st">"D_log"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">logged</span>, out <span class="op">=</span> <span class="st">"D_log"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_log$log_mean"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 2.557554 2.576166 2.623579 2.661968 2.730164 2.753634 2.767809 2.669345</span></span></code></pre>
 <p>The median is about 2.662, the log of the median person mean, 14.325. Reduction precedes the transform: log of a mean generally differs from mean of logs.</p>
 </details><p><strong>2. Interpret observed attainment.</strong> Summarise days until the first observed haemoglobin ≥14. How do zero and missing differ?</p>
@@ -562,12 +562,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt;    0.000    0.000    0.000  185.500 2192.750 3052.000 4166.750 1274.808</span></span></code></pre>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_change$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -581,17 +581,17 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"rounded"</span><span class="op">)</span>,</span>
 <span>    number_columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rounded <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_column</a></span><span class="op">(</span><span class="st">"mean"</span>,</span>
 <span>      number_spec <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_spec</a></span><span class="op">(</span>rounding <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_round</a></span><span class="op">(</span><span class="st">"decimals"</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">copy</span>, out <span class="op">=</span> <span class="st">"D_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">copy</span>, out <span class="op">=</span> <span class="st">"D_copy"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_copy$rounded"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 12.90500 13.17000 13.77500 14.30000 15.32500 15.69000 15.96500 14.45714</span></span></code></pre>
 <p>The overall rounded mean is 14.457 g/dL. Each person’s copy has one decimal, but averaging those values can produce more decimals. The original mean remains available for analysis; rounding does not add measurement precision.</p>
 </details>

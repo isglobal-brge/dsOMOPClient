@@ -13,7 +13,7 @@ whether it is a concept ID column or a date column."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ whether it is a concept ID column or a date column."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>List columns in a table</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/dictionary.R" class="external-link"><code>R/dictionary.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/dictionary.R" class="external-link"><code>R/dictionary.R</code></a></small>
       <div class="d-none name"><code>ds.omop.columns.Rd</code></div>
     </div>
 
@@ -77,7 +77,13 @@ whether it is a concept ID column or a date column.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ds.omop.columns</span><span class="op">(</span><span class="va">table</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ds.omop.columns</span><span class="op">(</span></span>
+<span>  <span class="va">table</span>,</span>
+<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
+<span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -94,14 +100,31 @@ whether it is a concept ID column or a date column.</p>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s) or NULL to use the session default.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
+
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Result view: <code>"both"</code> (default), <code>"split"</code>, or
+<code>"combine"</code>. The pooled view lists the columns present on every
+server. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list (one element per server) of data frames with
-  column metadata such as <code>column_name</code>, <code>data_type</code>,
-  <code>is_nullable</code>, <code>is_concept</code>, and <code>is_date</code>.</p>
+    <p>A <code>dsomop_result</code>. <code>$per_site</code> is the named list (one
+  data frame per server, with <code>column_name</code>, <code>data_type</code>,
+  <code>is_nullable</code>, <code>is_concept</code>, <code>is_date</code>, ...) returned by
+  earlier versions, and <code>res$&lt;server&gt;</code> still reaches one server's
+  frame. <code>$pooled</code> holds the rows of the columns present on every
+  server.</p>
     </div>
 
     <div class="section level2">
@@ -109,6 +132,7 @@ whether it is a concept ID column or a date column.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
 <span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.columns</span><span class="op">(</span><span class="st">"condition_occurrence"</span><span class="op">)</span></span>
 <span><span class="va">cols</span><span class="op">$</span><span class="va">server1</span></span>
+<span><span class="va">cols</span><span class="op">$</span><span class="va">pooled</span><span class="op">$</span><span class="va">column_name</span>   <span class="co"># columns present everywhere</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

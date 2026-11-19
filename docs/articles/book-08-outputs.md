@@ -84,7 +84,7 @@ entry or before. Age is completed age at the first visit.
 ## Wide: named columns
 
 ``` r
-wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns)
+wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_wide", datasources = conns)
 ```
 
@@ -108,7 +108,7 @@ long <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns)
+recipe_execute(long, out = c(long = "D_fmt_long"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_long", datasources = conns)
 ```
 
@@ -129,7 +129,7 @@ dsBaseClient::ds.table("D_fmt_long$concept_id",
 ```
 
     #> D_fmt_long$concept_id
-    #>  Inpatient Visit Outpatient Visit
+    #>  Inpatient_Visit Outpatient_Visit
     #>               13             1722
 
 The 13 inpatient and 1,722 outpatient visits sum to 1,735 records. These
@@ -145,7 +145,7 @@ table. Native typed variables preserve their declared values.
 features <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("features", rows = "visitors", type = "features"))
-recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns)
+recipe_execute(features, out = c(features = "D_fmt_features"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_features", datasources = conns)
 ```
 
@@ -172,7 +172,7 @@ baseline_variables <- list(
 baseline <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = baseline_variables,
   outputs = omop_output("baseline", rows = "visitors", type = "baseline"))
-recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns)
+recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_baseline", datasources = conns)
 ```
 
@@ -199,7 +199,7 @@ panel <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns)
+recipe_execute(panel, out = c(panel = "D_fmt_panel"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_panel", datasources = conns)
 ```
 
@@ -246,7 +246,7 @@ temporal <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
-temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns)
+temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
@@ -285,7 +285,7 @@ survival <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns)
+recipe_execute(survival, out = c(survival = "D_fmt_survival"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_survival", datasources = conns)
 ```
 
@@ -346,7 +346,7 @@ intervals <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("intervals", rows = "visitors", format = "intervals",
   options = list(sources = list(spans), window = omop_window(0, NULL))))
-recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns)
+recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_intervals", datasources = conns)
 ```
 
@@ -371,7 +371,7 @@ sparse <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
-sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns)
+sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
@@ -411,7 +411,7 @@ independently of its measurements.
 membership <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("membership", rows = "visitors", format = "membership"))
-recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns)
+recipe_execute(membership, out = c(membership = "D_fmt_membership"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_membership", datasources = conns)
 ```
 
@@ -437,7 +437,7 @@ dictionary <- omop_recipe(events = list(visits), populations = list(visitors),
   counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
     options = list(source_outputs = "counts"))), publish = "dictionary")
-recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns)
+recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_dictionary", datasources = conns)
 ```
 
@@ -474,7 +474,7 @@ private intermediate steps and do not each need a separately published
 symbol.
 
 ``` r
-joined_result <- recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns)
+joined_result <- recipe_execute(joined, out = c(joined = "D_fmt_joined"), datasources = conns)
 dsBaseClient::ds.dim("D_fmt_joined", datasources = conns)
 ```
 

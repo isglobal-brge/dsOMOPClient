@@ -30,8 +30,8 @@ Search weight and height separately and inspect their standard status.
 Select an exact name, not the first search hit.
 
 ``` r
-weight_hits <- ds.omop.concept.search("Body weight", domain = "Measurement", conns = conns)$pooled
-height_hits <- ds.omop.concept.search("Body height", domain = "Measurement", conns = conns)$pooled
+weight_hits <- ds.omop.concept.search("Body weight", domain = "Measurement", datasources = conns)$pooled
+height_hits <- ds.omop.concept.search("Body height", domain = "Measurement", datasources = conns)$pooled
 rbind(weight_hits, height_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
@@ -51,9 +51,9 @@ exact name avoids mixing measurements with similar wording.
 
 ``` r
 weight_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = weight_id,
-  scope = "pooled", conns = conns)$pooled
+  type = "both", datasources = conns)$pooled
 height_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = height_id,
-  scope = "pooled", conns = conns)$pooled
+  type = "both", datasources = conns)$pooled
 weight_units[c("value", "concept_name", "n")]
 ```
 
@@ -101,7 +101,7 @@ height_m <- omop_number(height, omop_number_spec(unit =
 bmi <- omop_formula_bmi(weight_kg, height_m)
 body <- omop_study(weight_event, outputs = "baseline",
   baseline = list(weight = weight, height = height, bmi = bmi))
-recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns)
+recipe_execute(body, out = c(baseline = "D_formula_body"), datasources = conns)
 dsBaseClient::ds.summary("D_formula_body$bmi", datasources = conns)
 ```
 
@@ -131,7 +131,7 @@ Solution 1
 body_rounded <- omop_study(weight_event, outputs = "baseline",
   baseline = list(bmi = bmi, rounded = omop_number(bmi,
     omop_number_spec(rounding = omop_number_round("decimals", 1)))))
-recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns)
+recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), datasources = conns)
 dsBaseClient::ds.summary("D_formula_rounded$rounded", datasources = conns)
 ```
 
@@ -157,8 +157,8 @@ approximate MAP formula is (SBP + 2 × DBP) / 3; it is a derived
 estimate, not a separately measured pressure.
 
 ``` r
-sbp_hits <- ds.omop.concept.search("Systolic blood pressure", domain = "Measurement", conns = conns)$pooled
-dbp_hits <- ds.omop.concept.search("Diastolic blood pressure", domain = "Measurement", conns = conns)$pooled
+sbp_hits <- ds.omop.concept.search("Systolic blood pressure", domain = "Measurement", datasources = conns)$pooled
+dbp_hits <- ds.omop.concept.search("Diastolic blood pressure", domain = "Measurement", datasources = conns)$pooled
 rbind(sbp_hits, dbp_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
@@ -178,7 +178,7 @@ sbp_id <- sbp_hits$concept_id[trimws(sbp_hits$concept_name) == "Systolic blood p
 dbp_id <- dbp_hits$concept_id[trimws(dbp_hits$concept_name) == "Diastolic blood pressure"]
 pressure_units <- lapply(c(Systolic = sbp_id, Diastolic = dbp_id), function(id)
   ds.omop.value.counts("measurement", "unit_concept_id", concept_id = id,
-    scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
+    type = "both", datasources = conns)$pooled[c("value", "concept_name", "n")])
 do.call(rbind, pressure_units)
 ```
 
@@ -201,7 +201,7 @@ dbp_mmhg <- omop_number(dbp, omop_number_spec(unit =
 map <- omop_formula_map(sbp_mmhg, dbp_mmhg)
 ratio <- omop_formula_ratio(sbp_mmhg, dbp_mmhg, unit = "1")
 pressure <- omop_study(sbp_event, outputs = "baseline", baseline = list(map = map, ratio = ratio))
-recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns)
+recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), datasources = conns)
 dsBaseClient::ds.summary("D_formula_pressure$map", datasources = conns)
 ```
 
@@ -258,7 +258,7 @@ availability from observed use:
 
 ``` r
 creatinine_hits <- ds.omop.concept.search("Creatinine", domain = "Measurement",
-  vocabulary = "LOINC", conns = conns)$pooled
+  vocabulary = "LOINC", datasources = conns)$pooled
 creatinine_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -272,7 +272,7 @@ creatinine_hits[c("concept_id", "concept_name", "standard_concept")]
 serum_id <- creatinine_hits$concept_id[trimws(creatinine_hits$concept_name) ==
   "Creatinine [Mass/volume] in Serum or Plasma"]
 serum_set <- omop_concept_set(serum_id)
-serum_locations <- ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)
+serum_locations <- ds.omop.concept.locate(serum_id, type = "both", datasources = conns)
 serum_locations$per_site[[1]]
 ```
 
@@ -314,7 +314,7 @@ episodes <- omop_population("weights", index = omop_index(weight_event, select =
 collapsed <- omop_recipe(populations = list(episodes), variables = list(weight = weight),
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "first_episode"))
-recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns)
+recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), datasources = conns)
 dsBaseClient::ds.summary("D_collapsed_weights$weight", datasources = conns)
 ```
 
@@ -342,7 +342,7 @@ Compare the last eligible episode with the first one.
 last_episode <- omop_recipe(populations = list(episodes), variables = list(weight = weight),
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "last_episode"))
-recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns)
+recipe_execute(last_episode, out = c(people = "D_last_weights"), datasources = conns)
 dsBaseClient::ds.summary("D_last_weights$weight", datasources = conns)
 ```
 
@@ -372,14 +372,14 @@ birth dates remain incomplete so that missing age still produces missing
 eGFR.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.questionnaire_formulas", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.questionnaire_formulas", datasources = conns)
 ```
 
 ``` r
 formula_hits <- ds.omop.concept.search("Teaching standardized serum creatinine",
-  domain = "Measurement", conns = conns)$pooled
-sex_hits <- ds.omop.concept.search(NULL, domain = "Gender", conns = conns)$pooled
+  domain = "Measurement", datasources = conns)$pooled
+sex_hits <- ds.omop.concept.search(NULL, domain = "Gender", datasources = conns)$pooled
 rbind(formula_hits, sex_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
@@ -394,7 +394,7 @@ formula_id <- formula_hits$concept_id
 formula_set <- omop_concept_set(formula_id)
 
 ds.omop.value.counts("measurement", "unit_concept_id", concept_id = formula_id,
-  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")]
+  type = "both", datasources = conns)$pooled[c("value", "concept_name", "n")]
 ```
 
 | value | concept\_name           |  n |
@@ -430,7 +430,7 @@ egfr_recipe <- omop_recipe(
   populations = omop_population("measurements", index = omop_index(serum_event)),
   variables = list(egfr = egfr),
   outputs = omop_output("people", rows = "measurements", format = "wide"))
-egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", conns = conns)
+egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", datasources = conns)
 dsBaseClient::ds.summary("D_egfr$egfr", datasources = conns)
 ```
 
@@ -490,7 +490,7 @@ people have no weight. Synthea weights have no same-day duplicates, so
 they cannot demonstrate this difference.
 
 ``` r
-weight_info <- ds.omop.concept.lookup(c(950002L, 9529L), conns = conns)$pooled
+weight_info <- ds.omop.concept.lookup(c(950002L, 9529L), datasources = conns)$pooled
 weight_info[c("concept_id", "concept_name")]
 ```
 
@@ -507,7 +507,7 @@ rows <- omop_number_rows(omop_event("measurement", 950002L, unit = omop_unit(952
 daily <- omop_recipe(variables = list(
   daily_mean = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "mean"),
   daily_max = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "max")))
-recipe_execute(daily, out = "D_daily", conns = conns)
+recipe_execute(daily, out = "D_daily", datasources = conns)
 dsBaseClient::ds.mean("D_daily$daily_mean", datasources = conns)$Mean.by.Study
 ```
 

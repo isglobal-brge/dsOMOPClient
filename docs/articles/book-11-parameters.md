@@ -60,8 +60,7 @@ concept set. Compilation refuses an unbound template:
 recipe_to_plan(template)
 ```
 
-    #> Error:
-    #> ! Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().
+    #> Error: Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().
 
 The error names `setting` and asks you to bind it. The template defines
 how to select people, but has not yet chosen which visit setting starts
@@ -84,7 +83,7 @@ Inpatient Visit is **9201**. These select setting, not the record’s
 provenance type.
 
 ``` r
-recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns)
+recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), datasources = conns)
 dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
 ```
 
@@ -151,7 +150,7 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns)
+recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), datasources = conns)
 ```
 
 ``` r
@@ -206,7 +205,7 @@ Look up the four inputs so that their names and IDs are visible
 together:
 
 ``` r
-body_concepts <- ds.omop.concept.lookup(c(3025315L, 3036277L, 9529L, 8582L), conns = conns)
+body_concepts <- ds.omop.concept.lookup(c(3025315L, 3036277L, 9529L, 8582L), datasources = conns)
 body_concepts$pooled[c("concept_id", "concept_name")]
 ```
 
@@ -231,7 +230,7 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-recipe_execute(body, out = c(baseline = "D_body"), conns = conns)
+recipe_execute(body, out = c(baseline = "D_body"), datasources = conns)
 ```
 
 These are synthetic Synthea measurements, including children. Calculated
@@ -241,7 +240,7 @@ BMI is a numeric teaching example, not an adult clinical classification.
 
 ``` r
 ds.omop.mutate("D_body", height_m = height_cm / 100,
-  bmi = weight_kg / (height_m * height_m), newobj = "D_bmi", conns = conns)
+  bmi = weight_kg / (height_m * height_m), newobj = "D_bmi", datasources = conns)
 dsBaseClient::ds.summary("D_bmi$bmi", datasources = conns)
 ```
 
@@ -289,7 +288,7 @@ outside the range remain missing.
 ``` r
 ds.omop.mutate("D_bmi", age_group = cut(age, c(0, 18, 121),
   labels = c("under 18", "18 to 120"), right = FALSE),
-  newobj = "D_grouped", conns = conns)
+  newobj = "D_grouped", datasources = conns)
 age_counts <- dsBaseClient::ds.table("D_grouped$age_group",
   useNA = "always", datasources = conns)
 age_counts$output.list$TABLES.COMBINED_all.sources_counts
@@ -312,7 +311,7 @@ Solution — an age recode
 
 ``` r
 ds.omop.mutate("D_grouped", adult = ifelse(age >= 18, "yes", "no"),
-  newobj = "D_adults", conns = conns)
+  newobj = "D_adults", datasources = conns)
 adult_counts <- dsBaseClient::ds.table("D_adults$adult", useNA = "always",
   datasources = conns)
 adult_counts$output.list$TABLES.COMBINED_all.sources_counts
@@ -329,7 +328,7 @@ match the 18-to-120 band; the 14 under-18s become “no”.
 
 ``` r
 ds.omop.mutate("D_bmi", span_days = last_date - first_date,
-  newobj = "D_span", conns = conns)
+  newobj = "D_span", datasources = conns)
 dsBaseClient::ds.summary("D_span$span_days", datasources = conns)
 ```
 
@@ -356,7 +355,7 @@ Solution — convert a duration
 
 ``` r
 ds.omop.mutate("D_span", span_years = span_days / 365,
-  newobj = "D_years", conns = conns)
+  newobj = "D_years", datasources = conns)
 dsBaseClient::ds.summary("D_years$span_years", datasources = conns)
 ```
 
@@ -386,7 +385,7 @@ study needs it.
 ds.omop.mutate("D_bmi", life_stage = case_when(
   is.na(age) ~ "unknown", age < 5 ~ "young child",
   age < 18 ~ "older child", .default = "adult"),
-  newobj = "D_stage", conns = conns)
+  newobj = "D_stage", datasources = conns)
 stage_counts <- dsBaseClient::ds.table("D_stage$life_stage",
   useNA = "always", datasources = conns)
 stage_counts$output.list$TABLES.COMBINED_all.sources_counts
@@ -407,7 +406,7 @@ To recode a derived text category, combine both child labels as follows:
 ds.omop.mutate("D_stage", adult = case_when(
   life_stage %in% c("young child", "older child") ~ "no",
   life_stage == "unknown" ~ NA,
-  .default = "yes"), newobj = "D_recoded", conns = conns)
+  .default = "yes"), newobj = "D_recoded", datasources = conns)
 recode_counts <- dsBaseClient::ds.table("D_recoded$adult", useNA = "always",
   datasources = conns)
 recode_counts$output.list$TABLES.COMBINED_all.sources_counts
@@ -430,7 +429,7 @@ place”.
 ``` r
 ds.omop.mutate("D_bmi", height_m = height_cm / 100,
   bmi = weight_kg / (height_m * height_m), bmi_copy = bmi,
-  newobj = "D_bmi", conns = conns)
+  newobj = "D_bmi", datasources = conns)
 before_columns <- dsBaseClient::ds.colnames("D_bmi", datasources = conns)
 before_bmi <- dsBaseClient::ds.mean("D_bmi$bmi", type = "combine", datasources = conns)
 setdiff(before_columns$site, bmi_columns$site)
@@ -447,11 +446,10 @@ checks that behaviour.
 The following failures are intentional. First try an unknown function:
 
 ``` r
-ds.omop.mutate("D_bmi", bmi = sqrt(bmi), newobj = "D_bmi", conns = conns)
+ds.omop.mutate("D_bmi", bmi = sqrt(bmi), newobj = "D_bmi", datasources = conns)
 ```
 
-    #> Error:
-    #> ! ds.omop.mutate(): 'sqrt' is not part of the mutation grammar (+ - * /, conditions, ifelse, case_when, coalesce, cut, as.Date).
+    #> Error: ds.omop.mutate(): 'sqrt' is not part of the mutation grammar (+ - * /, conditions, ifelse, case_when, coalesce, cut, as.Date).
 
 `sqrt` is outside the closed grammar and is refused by the client before
 a request can alter the table. Use supported arithmetic or a documented
@@ -462,22 +460,20 @@ reference:
 
 ``` r
 ds.omop.mutate("D_bmi", copied = person_id,
-  newobj = "D_key_copy", conns = conns)
+  newobj = "D_key_copy", datasources = conns)
 ```
 
-    #> Error:
-    #> ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error: OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
 
 The message refuses the protected person key. Next, a class-1 source
 name is refused even as the name of a new column:
 
 ``` r
 ds.omop.mutate("D_bmi", person_source_value = "label",
-  newobj = "D_blocked_copy", conns = conns)
+  newobj = "D_blocked_copy", datasources = conns)
 ```
 
-    #> Error:
-    #> ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: 'person_source_value' is a blocked (class-1) column name; choose another name; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error: OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: 'person_source_value' is a blocked (class-1) column name; choose another name; There are some DataSHIELD errors, list them with datashield.errors().
 
 This is a blocked source/assignment name, not a request to alter its
 protection. Use descriptive study-variable names for allowed derived
@@ -488,11 +484,10 @@ overwrite in the same in-place call. The whole request must fail:
 
 ``` r
 ds.omop.mutate("D_bmi", bmi = bmi + 1, person_id = "replacement",
-  newobj = "D_bmi", conns = conns)
+  newobj = "D_bmi", datasources = conns)
 ```
 
-    #> Error:
-    #> ! OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()
+    #> Error: OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()
 
 The protected-identifier message applies to person, episode and set keys
 and any columns marked protected by the server. It prohibits both reads
@@ -523,7 +518,7 @@ person.
 
 ``` r
 ds.omop.filter("D_bmi", expr = omop_where(age >= 18),
-  newobj = "D_adult_bmi", conns = conns)
+  newobj = "D_adult_bmi", datasources = conns)
 dsBaseClient::ds.summary("D_adult_bmi$bmi", datasources = conns)
 ```
 
@@ -555,7 +550,7 @@ A text-category predicate can select the same adults:
 
 ``` r
 ds.omop.filter("D_stage", expr = omop_where(life_stage == "adult"),
-  newobj = "D_working_age", conns = conns)
+  newobj = "D_working_age", datasources = conns)
 dsBaseClient::ds.summary("D_working_age$bmi", datasources = conns)
 ```
 
@@ -583,7 +578,7 @@ Solution
 
 ``` r
 inpatient <- recipe_bind(template, setting = 9201L)
-recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns)
+recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), datasources = conns)
 inpatient_mean <- dsBaseClient::ds.mean("D_param_inpatient$prior_visits",
   type = "combine", datasources = conns)
 inpatient_mean$Global.Mean

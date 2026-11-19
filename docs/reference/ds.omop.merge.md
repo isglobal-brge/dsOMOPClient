@@ -17,7 +17,9 @@ ds.omop.merge(
   type = "inner",
   newobj = NULL,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  join = NULL,
+  datasources = NULL
 )
 ```
 
@@ -42,7 +44,8 @@ ds.omop.merge(
 
   - type:
     
-    Character; `"inner"` (default) or `"left"`.
+    Deprecated alias of `join` (kept in its position, so positional
+    calls keep working).
 
   - newobj:
     
@@ -56,8 +59,21 @@ ds.omop.merge(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - join:
+    
+    Character; the join type, `"inner"` (default) or `"left"`. It
+    replaces `type`, which elsewhere in the package names the result
+    view.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
@@ -71,6 +87,6 @@ Invisibly, the name of the created server-side symbol (`newobj`).
 
 ``` r
 if (FALSE) { # \dontrun{
-joined <- ds.omop.merge("cohort_a", "cohort_b", type = "left")
+joined <- ds.omop.merge("cohort_a", "cohort_b", join = "left")
 } # }
 ```

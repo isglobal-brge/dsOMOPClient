@@ -17,7 +17,10 @@ recipe_execute(
   cohort = NULL,
   tables = NULL,
   combine = "union",
-  on_small_site = c("error", "skip")
+  on_small_site = c("error", "skip"),
+  scope_combine = NULL,
+  datasources = NULL,
+  small_categories = c("keep", "missing")
 )
 ```
 
@@ -39,7 +42,8 @@ recipe_execute(
 
   - conns:
     
-    DSI connections or `NULL` (uses active connections).
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - output\_mode:
     
@@ -63,8 +67,7 @@ recipe_execute(
 
   - combine:
     
-    Character; how to fold the scope sources together: `"union"` (the
-    default) or `"intersect"`.
+    Deprecated alias of `scope_combine`.
 
   - on\_small\_site:
     
@@ -72,6 +75,25 @@ recipe_execute(
     `ds.omop.plan.execute`. Only insufficient final person support is
     skippable: skip keeps successful sites and returns `NULL` for sites
     whose publication fails final person support.
+
+  - scope\_combine:
+    
+    Character; how to fold the scope sources together: `"union"` (the
+    default) or `"intersect"`.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - small\_categories:
+    
+    Character; `"keep"` (the default) or `"missing"`: after publication,
+    the values of categories held by fewer than `nfilter.tab` people at
+    a site are missing there, in every published factor column (see
+    `ds.omop.plan.execute`).
 
 ## Value
 
@@ -98,6 +120,6 @@ recipe_execute(recipe, output_mode = "staged")
 recipe_execute(recipe, out = c(features_wide = "D_features"))
 # Scope every population to a cohort intersected with a workspace table:
 recipe_execute(recipe, cohort = my_cohort, tables = "inclusion_set",
-               combine = "intersect")
+               scope_combine = "intersect")
 } # }
 ```

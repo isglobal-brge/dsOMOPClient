@@ -31,7 +31,9 @@ dsomop_result(per_site, pooled = NULL, meta = list())
     `"pooled"`), `type` (character; `"split"`, `"combine"`, or
     `"both"`), `pooling_policy` (character; `"strict"` or
     `"pooled_only_ok"`), `warnings` (character vector of pooling
-    warnings).
+    warnings). Further elements, such as `pooling` (method and estimand
+    of the pooled result) and `pooling_reason` (why no pooled result was
+    formed), are kept as given.
 
 ## Value
 

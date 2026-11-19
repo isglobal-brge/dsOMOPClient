@@ -21,7 +21,7 @@ conns <- ds.omop.login("https://localhost:8443", user = "administrator",
 ## Find haemoglobin and its unit
 
 ``` r
-hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", datasources = conns)$pooled
 hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -36,7 +36,7 @@ hits[c("concept_id", "concept_name", "standard_concept")]
 ``` r
 lab_id <- hits$concept_id[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood"]
 units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = lab_id,
-  scope = "pooled", conns = conns)$pooled
+  type = "both", datasources = conns)$pooled
 units[c("value", "concept_name", "n")]
 ```
 
@@ -65,7 +65,7 @@ average <- omop_variable(event = lab, reducer = omop_reduce("mean"))
 values <- omop_recipe(variables = list(first = first, last = last, mean = average,
   minimum = omop_variable(event = lab, reducer = omop_reduce("min")),
   maximum = omop_variable(event = lab, reducer = omop_reduce("max"))))
-recipe_execute(values, out = "D_labs", conns = conns)
+recipe_execute(values, out = "D_labs", datasources = conns)
 reducer_means <- do.call(rbind, lapply(c("first", "last", "mean", "minimum", "maximum"), function(column) {
   x <- dsBaseClient::ds.mean(paste0("D_labs$", column), type = "combine", datasources = conns)$Global.Mean
   data.frame(Reducer = column, Mean_g_dl = x[1, "EstimatedMean"],
@@ -103,7 +103,7 @@ grouped <- omop_recipe(variables = list(first = first, last = last,
     labels = c("below 14.5", "14.5 or above")),
   last_group = omop_number_bins(last, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-recipe_execute(grouped, out = "D_groups", conns = conns)
+recipe_execute(grouped, out = "D_groups", datasources = conns)
 comparison <- lapply(c("first", "last"), function(column) {
   groups <- dsBaseClient::ds.meanSdGp(paste0("D_groups$", column),
     paste0("D_groups$", column, "_group"), type = "combine", datasources = conns)
@@ -135,7 +135,7 @@ reading can still differ from the first.
 indexed <- omop_study(omop_index(lab, offset = 7L), outputs = "baseline",
   baseline = list(at_index = omop_value_at_index("measurement", lab_id,
     tolerance = c(-7, 0), unit = omop_unit(8713L))))
-recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns)
+recipe_execute(indexed, out = c(baseline = "D_index"), datasources = conns)
 dsBaseClient::ds.summary("D_index$at_index", datasources = conns)
 ```
 
@@ -174,7 +174,7 @@ changes <- omop_recipe(variables = list(
     omop_number_spec(transform = omop_number_transform("affine", factor = 365))),
   target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
     op = "ge", reference = "first", time_unit = "days")))
-recipe_execute(changes, out = "D_change", conns = conns)
+recipe_execute(changes, out = "D_change", datasources = conns)
 dsBaseClient::ds.summary("D_change$change", datasources = conns)
 ```
 
@@ -241,7 +241,7 @@ flags <- omop_recipe(variables = list(mean = average,
   converted_band = omop_number(average, presentation),
   control = omop_number_category(average, range = "thresholds", thresholds = c(14, 15)),
   high = omop_number_flag(average, "ge", 15)))
-recipe_execute(flags, out = "D_flags", conns = conns)
+recipe_execute(flags, out = "D_flags", datasources = conns)
 band_means <- dsBaseClient::ds.meanSdGp("D_flags$mean", "D_flags$band",
   type = "combine", datasources = conns)
 data.frame(Band = band_labels, People = as.numeric(band_means$Nvalid_gp),
@@ -260,7 +260,7 @@ dsBaseClient::ds.table("D_flags$converted_band",
 ```
 
     #> D_flags$converted_band
-    #>        below 140 140 to below 150     150 or above               NA
+    #>        below_140 140_to_below_150     150_or_above               NA
     #>                9                9               10                0
 
 Both presentations give category counts 9, 9 and 10 here. The
@@ -336,7 +336,7 @@ followup <- omop_study(lab, outputs = "baseline", baseline = list(
   last = omop_variable(event = lab, reducer = omop_reduce("last_value", window = omop_window(1, NULL))),
   followup_days = omop_variable(event = lab, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   mean = average))
-recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "pair")
+recipe_execute(followup, out = c(baseline = "D_pool"), datasources = two_conns, symbol = "pair")
 pooled_mean <- dsBaseClient::ds.mean("D_pool$mean", type = "combine", datasources = two_conns)$Global.Mean
 pooled_mean
 ```
@@ -434,7 +434,7 @@ Solution 1
 ``` r
 logged <- omop_recipe(variables = list(log_mean = omop_number(average,
   omop_number_spec(transform = omop_number_transform("log")))))
-recipe_execute(logged, out = "D_log", conns = conns)
+recipe_execute(logged, out = "D_log", datasources = conns)
 dsBaseClient::ds.summary("D_log$log_mean", datasources = conns)
 ```
 
@@ -497,7 +497,7 @@ copy <- omop_recipe(variables = list(mean = average),
   outputs = omop_output("people", format = "wide", columns = c("mean", "rounded"),
     number_columns = list(rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
-recipe_execute(copy, out = "D_copy", conns = conns)
+recipe_execute(copy, out = "D_copy", datasources = conns)
 dsBaseClient::ds.summary("D_copy$rounded", datasources = conns)
 ```
 

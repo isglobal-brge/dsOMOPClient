@@ -2,8 +2,9 @@
 
 Returns row counts and person counts for the specified OMOP CDM table.
 Results are disclosure-controlled on the server side (counts below the
-minimum cell threshold are suppressed) and returned per-site with
-optional pooled totals that sum counts across servers.
+minimum cell threshold are suppressed, surviving counts are banded) and
+returned per server and, by default, pooled (summed) across servers, as
+`ds.dim` does.
 
 ## Usage
 
@@ -16,7 +17,8 @@ ds.omop.table.stats(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 ```
 
@@ -29,18 +31,19 @@ ds.omop.table.stats(
 
   - stats:
     
-    Character vector; which statistics to compute. Supported values are
-    `"rows"` (total row count) and `"persons"` (distinct person count).
-    Default: `c("rows", "persons")`.
+    Character vector; which statistics to compute: `"rows"` (total row
+    count), `"persons"` (distinct person count) and `"date_range"`
+    (first and last supported month). Default: `c("rows", "persons")`.
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`.
+    Deprecated alias of `type`: `"per_site"` means `type = "split"`,
+    `"pooled"` means `type = "both"`.
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) requires all servers to succeed,
-    `"pooled_only_ok"` allows partial results.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -48,7 +51,8 @@ ds.omop.table.stats(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - execute:
     
@@ -57,15 +61,23 @@ ds.omop.table.stats(
 
   - type:
     
-    Optional result view: `"split"`, `"combine"`, or `"both"`; aliases
-    follow dsBaseClient conventions. When omitted, legacy `scope`
-    behaviour is preserved.
+    Result view: `"both"` (default), `"split"`, or `"combine"`. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A `dsomop_result` object with `$per_site` (named list of data frames
-with columns `statistic` and `value`), `$pooled` (combined statistics
-when pooled), and `$meta`.
+A `dsomop_result`. Each `$per_site` entry is a list with the banded
+`rows` and `persons` counts (a count the server suppressed is absent)
+and, when requested, `date_range` (`column`, `min_month`, `max_month`).
+`$pooled` has the same fields: counts summed over the servers and the
+date range spanning them.
 
 ## Examples
 
@@ -73,8 +85,8 @@ when pooled), and `$meta`.
 if (FALSE) { # \dontrun{
 result <- ds.omop.table.stats("condition_occurrence")
 result$per_site$server1
+result$pooled$persons
 
-pooled <- ds.omop.table.stats("drug_exposure", scope = "pooled")
-pooled$pooled
+ds.omop.table.stats("drug_exposure", type = "split")
 } # }
 ```

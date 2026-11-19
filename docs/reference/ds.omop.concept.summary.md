@@ -35,7 +35,8 @@ ds.omop.concept.summary(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 ```
 
@@ -60,16 +61,17 @@ ds.omop.concept.summary(
 
   - scope:
     
-    Character; `"per_site"` (default) or `"pooled"`. Passed through to
-    the underlying calls.
+    Deprecated alias of `type` (`"per_site"` or `"pooled"`), passed
+    through to the underlying calls.
 
   - pooling\_policy:
     
-    Character; `"strict"` (default) or `"pooled_only_ok"` (Best Effort).
-    Passed through to the underlying value-counts, column-stats and
-    quantile calls so that, when pooled, categories/values present on
-    only some sites are summed across the available sites rather than
-    suppressed.
+    Character; `"strict"` (default) or `"pooled_only_ok"`, passed
+    through to the underlying value-counts, column-stats and quantile
+    calls. Value counts keep only values released by every server under
+    both policies; `"pooled_only_ok"` lets the column statistics pool
+    the servers that returned them. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
   - symbol:
     
@@ -77,13 +79,20 @@ ds.omop.concept.summary(
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
-    Optional result view propagated to every aggregate component:
-    `"split"`, `"combine"`, or `"both"`. When omitted, legacy `scope`
-    behaviour is preserved.
+    Result view propagated to every component: `"split"` (default) or
+    `"both"`. The quantiles are never pooled.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

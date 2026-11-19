@@ -15,7 +15,7 @@ result is deliberately kept per-server and is not merged."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@ result is deliberately kept per-server and is not merged."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Get the CDM source description from each server</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/vocabulary.R" class="external-link"><code>R/vocabulary.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/vocabulary.R" class="external-link"><code>R/vocabulary.R</code></a></small>
       <div class="d-none name"><code>ds.omop.cdm.source.Rd</code></div>
     </div>
 
@@ -80,7 +80,13 @@ result is deliberately kept <strong>per-server</strong> and is not merged.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ds.omop.cdm.source</span><span class="op">(</span>symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="cn">NULL</span>, execute <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ds.omop.cdm.source</span><span class="op">(</span></span>
+<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
+<span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  execute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"split"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -93,8 +99,8 @@ was initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-execute">execute<a class="anchor" aria-label="anchor" href="#arg-execute"></a></dt>
@@ -102,10 +108,24 @@ connections stored in the active session are used.</p></dd>
 <code>dsomop_result</code> containing only the reproducible R code without
 contacting the servers.</p></dd>
 
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Result view: <code>"split"</code> (default) or <code>"both"</code>. Data
+source descriptions are site-specific: <code>"both"</code> returns
+<code>pooled = NULL</code> with <code>meta$pooling_reason</code>, and
+<code>"combine"</code> stops before contacting the servers.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dsomop_result</code> with <code>scope = "per_site"</code>. Each server's
+    <p>A <code>dsomop_result</code> (per-server view). Each server's
   result is its <code>cdm_source</code> data frame (empty if the table is absent).
   <code>pooled</code> is <code>NULL</code> by design.</p>
     </div>

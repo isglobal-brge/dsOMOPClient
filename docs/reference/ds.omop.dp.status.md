@@ -7,19 +7,30 @@ requested node must provide a well-formed status.
 ## Usage
 
 ``` r
-ds.omop.dp.status(datasources = NULL)
+ds.omop.dp.status(datasources = NULL, type = "split")
 ```
 
 ## Arguments
 
   - datasources:
     
-    Named DataSHIELD connection list. `NULL` uses
-    `DSI::datashield.connections_find()`.
+    Named DataSHIELD connection list. `NULL` uses the connections of the
+    `"omop"` session, or `DSI::datashield.connections_find()` when there
+    is none.
+
+  - type:
+    
+    Result view: `"split"` (default) or `"both"`. DP status is reported
+    per server: `"both"` returns `pooled = NULL` with
+    `meta$pooling_reason`, and `"combine"` stops. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-An `omop_dp_status` named list of per-server DP status records.
+A `dsomop_result`. `$per_site` is the `omop_dp_status` named list of
+per-server DP status records returned by earlier versions (with its
+`unpatched` attribute and print method), and `res$<server>` still
+reaches one server's record.
 
 ## Details
 
@@ -83,5 +94,8 @@ preflight rejects repeated `noise_domain_id` or server-owned logical
 ## Examples
 
 ``` r
-if (FALSE) ds.omop.dp.status() # \dontrun{}
+if (FALSE) { # \dontrun{
+status <- ds.omop.dp.status()
+status$per_site
+} # }
 ```

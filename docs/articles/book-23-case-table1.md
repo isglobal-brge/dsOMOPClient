@@ -30,7 +30,7 @@ two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrat
 ## Confirm the measurement and units at both sites
 
 ``` r
-hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = two_conns)$pooled
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", datasources = two_conns)$pooled
 selected <- hits[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood", ]
 selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
@@ -42,7 +42,7 @@ selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ``` r
 hb_id <- selected$concept_id
 unit_counts <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
-  conns = two_conns)$per_site
+  datasources = two_conns)$per_site
 do.call(rbind, lapply(names(unit_counts), function(site)
   data.frame(Site = site, unit_counts[[site]][c("value", "concept_name", "n")])))
 ```
@@ -79,7 +79,7 @@ characterise <- omop_study(hb, outputs = "baseline", baseline = list(
     labels = c("under 18", "adult")),
   haemoglobin = omop_value_at_index("measurement", hb_set,
     tolerance = c(-90, 0), unit = omop_unit(8713L))))
-result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), conns = two_conns)
+result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), datasources = two_conns)
 columns <- recipe_codebook(result)[[1]]$columns
 age_column <- match("age_band", columns$name)
 data.frame(Age_group = columns$levels[[age_column]]$labels)
@@ -87,14 +87,15 @@ data.frame(Age_group = columns$levels[[age_column]]$labels)
 
 | Age\_group |
 | :--------- |
-| under 18   |
+| under\_18  |
 | adult      |
 
-Both sites use the declared age groups under 18 and adult, including any
-unused level. The same definition and index are required for comparable
-columns. The 90-day lookback cannot add earlier haemoglobin here because
-entry is the first haemoglobin; its selected value is the baseline
-reading itself.
+Both sites use the declared age groups under 18 and adult (published as
+`under_18` and `adult`, labels that every dsBase function can carry),
+including any unused level. The same definition and index are required
+for comparable columns. The 90-day lookback cannot add earlier
+haemoglobin here because entry is the first haemoglobin; its selected
+value is the baseline reading itself.
 
 ## Assemble the descriptive table from released aggregates
 
@@ -122,7 +123,7 @@ describe <- function(connections) {
     `Age missing, n` = as.character(age[1, "Nmissing"]),
     `Female, n (%)` = cell(sex[["F"]]), `Male, n (%)` = cell(sex[["M"]]),
     `Sex missing, n (%)` = cell(sex[["NA"]]),
-    `Under 18, n (%)` = cell(bands[["under 18"]]), `Adult, n (%)` = cell(bands[["adult"]]),
+    `Under 18, n (%)` = cell(bands[["under_18"]]), `Adult, n (%)` = cell(bands[["adult"]]),
     `Age group missing, n (%)` = cell(bands[["NA"]]),
     `Baseline haemoglobin, g/dL: mean (SD)` = numeric_text(lab, variance("haemoglobin")),
     `Haemoglobin missing, n` = as.character(lab[1, "Nmissing"]))
@@ -171,9 +172,9 @@ Solution 1
 all_history <- omop_study(hb, outputs = "baseline", baseline = list(
   baseline = omop_value_at_index("measurement", hb_set, tolerance = c(0, 0), unit = omop_unit(8713L)),
   history = omop_variable(event = hb, reducer = omop_reduce("mean"))))
-recipe_execute(all_history, out = c(baseline = "D_history"), conns = two_conns)
+recipe_execute(all_history, out = c(baseline = "D_history"), datasources = two_conns)
 ds.omop.mutate("D_history", difference = history - baseline,
-  newobj = "D_history_difference", conns = two_conns)
+  newobj = "D_history_difference", datasources = two_conns)
 dsBaseClient::ds.mean("D_history_difference$difference", type = "combine", datasources = two_conns)$Global.Mean
 ```
 
@@ -196,16 +197,16 @@ bands <- omop_study(hb, outputs = "baseline", baseline = list(
   band = omop_number_bins(omop_value_at_index("measurement", hb_set,
     tolerance = c(0, 0), unit = omop_unit(8713L)),
     breaks = c(-Inf, 14, Inf), labels = c("below 14", "14 or above"))))
-recipe_execute(bands, out = c(baseline = "D_baseline_bands"), conns = two_conns)
+recipe_execute(bands, out = c(baseline = "D_baseline_bands"), datasources = two_conns)
 dsBaseClient::ds.table("D_baseline_bands$band",
   datasources = two_conns)$output.list$TABLE_rvar.by.study_counts
 ```
 
-|             | north | south |
-| :---------- | ----: | ----: |
-| below 14    |     8 |     7 |
-| 14 or above |     6 |     7 |
-| NA          |     0 |     0 |
+|               | north | south |
+| :------------ | ----: | ----: |
+| below\_14     |     8 |     7 |
+| 14\_or\_above |     6 |     7 |
+| NA            |     0 |     0 |
 
 Both sites use the same boundary and labels. Counts depend on their
 people; sharing a definition makes comparison meaningful without forcing

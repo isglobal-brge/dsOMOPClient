@@ -22,7 +22,9 @@ ds.omop.meta.effect_estimate(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  type = "both"
+  type = "both",
+  scope_combine = NULL,
+  datasources = NULL
 )
 ```
 
@@ -52,8 +54,7 @@ ds.omop.meta.effect_estimate(
 
   - combine:
     
-    Character; `"union"` (default) or `"intersect"` for multi-source
-    scope folding.
+    Deprecated alias of `scope_combine`.
 
   - pooling\_policy:
     
@@ -65,12 +66,25 @@ ds.omop.meta.effect_estimate(
 
   - conns:
     
-    DSI connection object(s) or `NULL` to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
 
   - type:
     
     Result view: `"both"` (default), `"split"`, or `"combine"`; see
     `ds.omop.analysis.run`.
+
+  - scope\_combine:
+    
+    Character; `"union"` (default) or `"intersect"` for multi-source
+    scope folding.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

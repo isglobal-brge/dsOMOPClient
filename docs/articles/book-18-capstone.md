@@ -20,7 +20,7 @@ conns <- ds.omop.login("https://localhost:8443", user = "administrator",
 
 ``` r
 catalogue <- ds.omop.concept.lookup(c(900001L, 900002L, 900101L, 900102L,
-  900201L, 900202L), conns = conns)$pooled
+  900201L, 900202L), datasources = conns)$pooled
 catalogue[c("concept_id", "concept_name", "domain_id")]
 ```
 
@@ -80,7 +80,7 @@ variables <- list(
   visit_year = omop_date(first_visit, omop_date_spec(precision = "year", representation = "number")))
 capstone <- omop_recipe(variables = variables,
   outputs = omop_output("people", format = "wide", grain = "person"))
-result <- recipe_execute(capstone, out = c(people = "D_capstone"), conns = conns)
+result <- recipe_execute(capstone, out = c(people = "D_capstone"), datasources = conns)
 ```
 
 The table stays on the server with a pseudonymous person key. Exact
@@ -136,7 +136,7 @@ dsBaseClient::ds.table("D_capstone$education",
 ```
 
     #> D_capstone$education
-    #>  Secondary education University education              Missing                   NA
+    #>  Secondary_education University_education              Missing                   NA
     #>                   12                   12                   24                    0
 
 ``` r
@@ -183,11 +183,11 @@ dsBaseClient::ds.table("D_capstone$cause",
   datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-|                       | under 40 | 40 and over | NA |
-| :-------------------- | -------: | ----------: | -: |
-| Myocardial infarction |        0 |          12 | 12 |
-| Pneumonia             |       12 |           0 |  0 |
-| NA                    |        0 |           0 | 12 |
+|                        | under\_40 | 40\_and\_over | NA |
+| :--------------------- | --------: | ------------: | -: |
+| Myocardial\_infarction |         0 |            12 | 12 |
+| Pneumonia              |        12 |             0 |  0 |
+| NA                     |         0 |             0 | 12 |
 
 The 12 pneumonia deaths are under 40. Of 24 myocardial-infarction
 deaths, 12 are 40 or over and 12 have missing age. The 12 survivors have
@@ -208,13 +208,13 @@ before_death <- omop_variable(event = education_event,
   reducer = omop_reduce("last_value", value = "value_as_concept_id",
     window = omop_window(NULL, 0, anchor = omop_anchor(omop_event("death"), which = "first"))))
 restricted <- omop_recipe(variables = list(education = before_death))
-recipe_execute(restricted, out = "D_before_death", conns = conns)
+recipe_execute(restricted, out = "D_before_death", datasources = conns)
 dsBaseClient::ds.table("D_before_death$education",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
     #> D_before_death$education
-    #>  Secondary education University education                   NA
+    #>  Secondary_education University_education                   NA
     #>                   12                   12                   24
 
 The counts remain 12 Secondary, 12 University and 24 missing: all

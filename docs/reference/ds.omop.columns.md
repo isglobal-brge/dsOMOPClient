@@ -8,7 +8,13 @@ is a concept ID column or a date column.
 ## Usage
 
 ``` r
-ds.omop.columns(table, symbol = "omop", conns = NULL)
+ds.omop.columns(
+  table,
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 ```
 
 ## Arguments
@@ -24,13 +30,29 @@ ds.omop.columns(table, symbol = "omop", conns = NULL)
 
   - conns:
     
-    DSI connection object(s) or NULL to use the session default.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - type:
+    
+    Result view: `"both"` (default), `"split"`, or `"combine"`. The
+    pooled view lists the columns present on every server. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A named list (one element per server) of data frames with column
-metadata such as `column_name`, `data_type`, `is_nullable`,
-`is_concept`, and `is_date`.
+A `dsomop_result`. `$per_site` is the named list (one data frame per
+server, with `column_name`, `data_type`, `is_nullable`, `is_concept`,
+`is_date`, ...) returned by earlier versions, and `res$<server>` still
+reaches one server's frame. `$pooled` holds the rows of the columns
+present on every server.
 
 ## Examples
 
@@ -38,5 +60,6 @@ metadata such as `column_name`, `data_type`, `is_nullable`,
 if (FALSE) { # \dontrun{
 cols <- ds.omop.columns("condition_occurrence")
 cols$server1
+cols$pooled$column_name   # columns present everywhere
 } # }
 ```

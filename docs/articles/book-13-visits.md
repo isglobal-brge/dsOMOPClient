@@ -26,7 +26,7 @@ visit <- omop_event("visit_occurrence")
 visit_study <- omop_study(visit, outputs = "baseline", baseline = list(
   first_days = omop_first_date("visit_occurrence"),
   last_days = omop_last_date("visit_occurrence")))
-recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns)
+recipe_execute(visit_study, out = c(baseline = "D_visit_study"), datasources = conns)
 dsBaseClient::ds.summary("D_visit_study$last_days", datasources = conns)
 ```
 
@@ -68,7 +68,7 @@ precision.
 months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   omop_date_spec(precision = "month", level_range = c("2020-03-01", "2020-07-31")))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(months, out = c(people = "D_months"), conns = conns)
+recipe_execute(months, out = c(people = "D_months"), datasources = conns)
 dsBaseClient::ds.table("D_months$visit_month",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -87,7 +87,7 @@ Chapter 4 found **9201, Inpatient Visit**, and **9202, Outpatient
 Visit**. Check their names before selecting them:
 
 ``` r
-settings <- ds.omop.concept.lookup(c(9201L, 9202L), conns = conns)$pooled
+settings <- ds.omop.concept.lookup(c(9201L, 9202L), datasources = conns)$pooled
 settings[c("concept_id", "concept_name", "domain_id")]
 ```
 
@@ -113,19 +113,19 @@ long_visits <- omop_recipe(
   events = list(visits = omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")),
   outputs = omop_output("visits", format = "long", sources = "visits"),
   date_spec = omop_date_spec(precision = "month"))
-recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns)
+recipe_execute(long_visits, out = c(visits = "D_visits"), datasources = conns)
 dsBaseClient::ds.table("D_visits$start_date",
   "D_visits$concept_id", useNA = "no",
   datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-|         | Inpatient Visit | Outpatient Visit |
-| :------ | --------------: | ---------------: |
-| 2020-03 |               0 |               12 |
-| 2020-06 |               0 |               12 |
-| 2020-07 |               0 |               12 |
-| 2021-03 |              12 |                0 |
-| 2023-10 |              12 |                0 |
+|         | Inpatient\_Visit | Outpatient\_Visit |
+| :------ | ---------------: | ----------------: |
+| 2020-03 |                0 |                12 |
+| 2020-06 |                0 |                12 |
+| 2020-07 |                0 |                12 |
+| 2021-03 |               12 |                 0 |
+| 2023-10 |               12 |                 0 |
 
 The table counts 24 inpatient and 36 outpatient visits: 60 records from
 36 visitors. The outpatient visits are in March, June and July 2020;
@@ -142,7 +142,7 @@ Solution 1
 ``` r
 counts <- omop_recipe(variables = list(visits = omop_variable(event = visit,
   reducer = omop_reduce("count"))))
-recipe_execute(counts, out = "D_visit_counts", conns = conns)
+recipe_execute(counts, out = "D_visit_counts", datasources = conns)
 dsBaseClient::ds.table("D_visit_counts$visits",
   datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -163,7 +163,7 @@ Solution 2
 last_visit <- omop_anchor(visit, which = "last")
 quarters <- omop_recipe(variables = list(last_quarter = omop_date(last_visit,
   omop_date_spec(precision = "quarter"))))
-recipe_execute(quarters, out = "D_quarters", conns = conns)
+recipe_execute(quarters, out = "D_quarters", datasources = conns)
 dsBaseClient::ds.table("D_quarters$last_quarter",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```

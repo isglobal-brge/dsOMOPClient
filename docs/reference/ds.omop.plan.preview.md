@@ -17,7 +17,13 @@ contract used by execution.
 ## Usage
 
 ``` r
-ds.omop.plan.preview(plan, symbol = "omop", conns = NULL)
+ds.omop.plan.preview(
+  plan,
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 ```
 
 ## Arguments
@@ -33,17 +39,33 @@ ds.omop.plan.preview(plan, symbol = "omop", conns = NULL)
 
   - conns:
     
-    DSI connection object(s). If `NULL`, uses the connections stored in
-    the session.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - type:
+    
+    Result view: `"split"` (default) or `"both"`. Previews are per
+    server: `"both"` returns `pooled = NULL` with `meta$pooling_reason`,
+    and `"combine"` stops before contacting the servers. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 
-A named list (one element per server). Each server's result holds
-`$validation` (see `ds.omop.plan.validate`), `$band_width` (the
-count-banding granularity), and `$outputs`, a per-output list with
-`columns`, `missing_columns`, `n_persons` (banded when available),
-`n_persons_available`, `n_persons_unavailable_reason`,
-`n_persons_banded`, `disclosive`, and `representation`.
+A `dsomop_result` whose `$per_site` is the named list (one element per
+server) returned by earlier versions; `res$<server>` still reaches one
+server's payload. Each server's result holds `$validation` (see
+`ds.omop.plan.validate`), `$band_width` (the count-banding granularity),
+and `$outputs`, a per-output list with `columns`, `missing_columns`,
+`n_persons` (banded when available), `n_persons_available`,
+`n_persons_unavailable_reason`, `n_persons_banded`, `disclosive`, and
+`representation`.
 
 ## Details
 

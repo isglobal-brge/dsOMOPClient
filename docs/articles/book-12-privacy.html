@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-12-privacy.Rmd" class="external-link"><code>vignettes/book-12-privacy.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-12-privacy.Rmd" class="external-link"><code>vignettes/book-12-privacy.Rmd</code></a></small>
       <div class="d-none name"><code>book-12-privacy.Rmd</code></div>
     </div>
 
@@ -141,7 +141,7 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">private</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"2024-06-01"</span><span class="op">)</span>, sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">private</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">private</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The reply names <code>D_private</code>, the server table holding age and sex. Exact completed age stays beside the source data; the table is available for approved analysis calls in your DataSHIELD session.</p>
 <div class="book-flow" role="img" aria-label="Your recipe goes to the server; private rows stay there; checked summaries return to you.">
 <div>
@@ -165,12 +165,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean</span></span>
+<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean </span></span>
 <span><span class="co">#&gt;   34   34   34   43   49   49   49   42</span></span></code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_private$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -209,9 +209,8 @@
 <p>Intermediate calculations may contain small populations privately. The gate is at final publication; a joined result’s private inputs do not need separate published symbols. A standalone filter produces a final object and is gated. Here we intentionally request a subset with no qualifying rows:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_private"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;</span> <span class="fl">200L</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_too_small"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<span>  newobj <span class="op">=</span> <span class="st">"D_too_small"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <p>The refusal reports the policy boundary without providing the small private count. The previous <code>D_private</code> object remains available. Empty and undersized results share this protection; do not interpret the diagnostic as a patient count.</p>
 </div>
 <div class="section level2">
@@ -225,8 +224,7 @@
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">blocked</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Error: Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).</span></span></code></pre>
 <p>This definition is refused before execution. Use the reviewed coded answer <code>value_as_concept_id</code> and translated categories when it answers the question, as in <a href="book-10-harmonise.html">chapter 10</a>. Free text is not needed for that analysis.</p>
 </div>
 <div class="section level2">
@@ -236,7 +234,7 @@
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">date_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visit_date <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"first_visit"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">date_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private_date"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">date_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private_date"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_private_date"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "person_id"  "visit_date"</span></span></code></pre>
@@ -247,9 +245,8 @@
 </h2>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_private"</span>, copied <span class="op">=</span> <span class="va">person_id</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<span>  newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <p>The server needs keys to align rows and joins; an analyst mutation cannot copy, rewrite or filter them. Use the declared population and join operations instead.</p>
 </div>
 <div class="section level2">
@@ -264,9 +261,8 @@
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_private"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">==</span> <span class="fl">43</span> <span class="op">&amp;</span> <span class="va">sex</span> <span class="op">==</span> <span class="st">"F"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_small_group"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<span>  newobj <span class="op">=</span> <span class="st">"D_small_group"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <p>The four-person group is below <code>nfilter.subset = 5</code>, so it is refused just as the empty group was. The message does not disclose the small count; here the count was known from the public teaching data. In a real study, retain a scientifically justified larger population or report that the intended analysis cannot be released.</p>
 </details>
 </div>
@@ -283,9 +279,161 @@
 </details>
 </div>
 <div class="section level2">
+<h2 id="tables-when-some-categories-have-very-few-people">Tables when some categories have very few people<a class="anchor" aria-label="anchor" href="#tables-when-some-categories-have-very-few-people"></a>
+</h2>
+<p>A table is released only when every category it shows at a site holds at least <code>nfilter.tab = 3</code> people there. Otherwise <code>ds.table()</code> refuses the whole table and <code>ds.summary()</code> answers “INVALID object!”. The two GiBleed sites hold a few rare conditions; log in to them as a second analysis:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rare_conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, <span class="fl">2</span><span class="op">)</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, server <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"north"</span>, <span class="st">"south"</span><span class="op">)</span>,</span>
+<span>  resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>north <span class="op">=</span> <span class="st">"omop.gibleed_north"</span>, south <span class="op">=</span> <span class="st">"omop.gibleed_south"</span><span class="op">)</span>,</span>
+<span>  symbol <span class="op">=</span> <span class="st">"rare"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<p>Publish each person’s first rare condition and their sex, and tabulate it:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rare</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4066995</span>, <span class="fl">44782520</span>, <span class="fl">317009</span>, <span class="fl">198199</span>, <span class="fl">80809</span>, <span class="fl">4043241</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">first_rare</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, name <span class="op">=</span> <span class="st">"rare"</span>,</span>
+<span>  concepts <span class="op">=</span> <span class="va">rare</span><span class="op">)</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"condition_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sex</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"sex"</span>, table <span class="op">=</span> <span class="st">"person"</span>, column <span class="op">=</span> <span class="st">"gender_concept_id"</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"categorical"</span>, format <span class="op">=</span> <span class="st">"raw"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="va">first_rare</span>, sex <span class="op">=</span> <span class="va">sex</span><span class="op">)</span>,</span>
+<span>    outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"rare"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rare <span class="op">=</span> <span class="st">"D_rare"</span><span class="op">)</span>, symbol <span class="op">=</span> <span class="st">"rare"</span>, datasources <span class="op">=</span> <span class="va">rare_conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_rare"</span>, <span class="st">"condition"</span>, datasources <span class="op">=</span> <span class="va">rare_conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; All studies failed for reasons identified below </span></span>
+<span><span class="co">#&gt; north: Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3</span></span>
+<span><span class="co">#&gt; south: Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3</span></span></code></pre>
+<p>Some condition is held by one or two people at a site, so no count of that table is released there. For a descriptive table, make a copy in which, at each site, the categories held by fewer than three people are missing. dsBase’s own table and summary then work on it:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.drop_small_categories.html">ds.omop.drop_small_categories</a></span><span class="op">(</span><span class="st">"D_rare"</span>, newobj <span class="op">=</span> <span class="st">"D_rare_tables"</span>, symbol <span class="op">=</span> <span class="st">"rare"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="va">rare_conns</span><span class="op">)</span></span>
+<span><span class="va">copy</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_rare_tables$condition"</span>, datasources <span class="op">=</span> <span class="va">rare_conns</span><span class="op">)</span></span>
+<span><span class="va">copy</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLE_rvar.by.study_counts</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">north</th>
+<th align="right">south</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Rheumatoid_arthritis</td>
+<td align="right">6</td>
+<td align="right">12</td>
+</tr>
+<tr class="even">
+<td align="left">Pyelonephritis</td>
+<td align="right">5</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">Familial_Alzheimer_s_disease_of_early_onset</td>
+<td align="right">11</td>
+<td align="right">7</td>
+</tr>
+<tr class="even">
+<td align="left">Asthma</td>
+<td align="right">0</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="right">1325</td>
+<td align="right">1324</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_rare_tables$condition"</span>, datasources <span class="op">=</span> <span class="va">rare_conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $north</span></span>
+<span><span class="co">#&gt; $north$class</span></span>
+<span><span class="co">#&gt; [1] "dsomop_concept_factor" "factor"               </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $north$length</span></span>
+<span><span class="co">#&gt; [1] 1347</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $north$categories</span></span>
+<span><span class="co">#&gt; [1] "Rheumatoid_arthritis"                       </span></span>
+<span><span class="co">#&gt; [2] "Pyelonephritis"                             </span></span>
+<span><span class="co">#&gt; [3] "Asthma"                                     </span></span>
+<span><span class="co">#&gt; [4] "Familial_Alzheimer_s_disease_of_early_onset"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $north$`count of 'Rheumatoid_arthritis'`</span></span>
+<span><span class="co">#&gt; [1] 6</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $north$`count of 'Pyelonephritis'`</span></span>
+<span><span class="co">#&gt; [1] 5</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $north$`count of 'Asthma'`</span></span>
+<span><span class="co">#&gt; [1] 0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $north$`count of 'Familial_Alzheimer_s_disease_of_early_onset'`</span></span>
+<span><span class="co">#&gt; [1] 11</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south</span></span>
+<span><span class="co">#&gt; $south$class</span></span>
+<span><span class="co">#&gt; [1] "dsomop_concept_factor" "factor"               </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south$length</span></span>
+<span><span class="co">#&gt; [1] 1347</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south$categories</span></span>
+<span><span class="co">#&gt; [1] "Rheumatoid_arthritis"                       </span></span>
+<span><span class="co">#&gt; [2] "Pyelonephritis"                             </span></span>
+<span><span class="co">#&gt; [3] "Asthma"                                     </span></span>
+<span><span class="co">#&gt; [4] "Familial_Alzheimer_s_disease_of_early_onset"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south$`count of 'Rheumatoid_arthritis'`</span></span>
+<span><span class="co">#&gt; [1] 12</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south$`count of 'Pyelonephritis'`</span></span>
+<span><span class="co">#&gt; [1] 0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south$`count of 'Asthma'`</span></span>
+<span><span class="co">#&gt; [1] 4</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $south$`count of 'Familial_Alzheimer_s_disease_of_early_onset'`</span></span>
+<span><span class="co">#&gt; [1] 7</span></span></code></pre>
+<p>A zero now means “fewer than three people” at that site. When the people made missing at a site would be only one or two, the next smallest category is made missing too, so that subtracting the table from a total never reveals a small count. The copy is for descriptive tables: those people’s conditions are missing in it. For models, group rare categories instead (<code><a href="../reference/omop_category_spec.html">omop_category_recode()</a></code>, <code><a href="../reference/omop_category_spec.html">omop_category_rollup()</a></code>). To publish a recipe’s outputs this way from the start, pass <code>small_categories = "missing"</code> to <code><a href="../reference/recipe_execute.html">recipe_execute()</a></code>.</p>
+<p>For a two-way table, <code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code> can make the small cells missing in its temporary copy; the published table is unchanged:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_rare"</span>, <span class="st">"condition"</span>, by <span class="op">=</span> <span class="st">"sex"</span>, small <span class="op">=</span> <span class="st">"missing"</span>, datasources <span class="op">=</span> <span class="va">rare_conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Combined (all valid sites): condition by sex </span></span>
+<span><span class="co">#&gt;                                                       D_rare$sex</span></span>
+<span><span class="co">#&gt; D_rare$condition                                       MALE FEMALE</span></span>
+<span><span class="co">#&gt;   Rheumatoid_arthritis                                   10      6</span></span>
+<span><span class="co">#&gt;   Pyelonephritis                                          0      9</span></span>
+<span><span class="co">#&gt;   Asthma                                                  0      0</span></span>
+<span><span class="co">#&gt;   Familial_Alzheimer_s_disease_of_early_onset             8     10</span></span>
+<span><span class="co">#&gt;   Fracture_of_vertebral_column_with_spinal_cord_injury    0      0</span></span>
+<span><span class="co">#&gt;   Chronic_paralysis_due_to_lesion_of_spinal_cord          0      0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; By site:</span></span>
+<span><span class="co">#&gt; TABLE_STUDY.north_counts </span></span>
+<span><span class="co">#&gt;                                                       D_rare$sex</span></span>
+<span><span class="co">#&gt; D_rare$condition                                       MALE FEMALE</span></span>
+<span><span class="co">#&gt;   Rheumatoid_arthritis                                    4      0</span></span>
+<span><span class="co">#&gt;   Pyelonephritis                                          0      5</span></span>
+<span><span class="co">#&gt;   Asthma                                                  0      0</span></span>
+<span><span class="co">#&gt;   Familial_Alzheimer_s_disease_of_early_onset             4      7</span></span>
+<span><span class="co">#&gt;   Fracture_of_vertebral_column_with_spinal_cord_injury    0      0</span></span>
+<span><span class="co">#&gt;   Chronic_paralysis_due_to_lesion_of_spinal_cord          0      0</span></span>
+<span><span class="co">#&gt; TABLE_STUDY.south_counts </span></span>
+<span><span class="co">#&gt;                                                       D_rare$sex</span></span>
+<span><span class="co">#&gt; D_rare$condition                                       MALE FEMALE</span></span>
+<span><span class="co">#&gt;   Rheumatoid_arthritis                                    6      6</span></span>
+<span><span class="co">#&gt;   Pyelonephritis                                          0      4</span></span>
+<span><span class="co">#&gt;   Asthma                                                  0      0</span></span>
+<span><span class="co">#&gt;   Familial_Alzheimer_s_disease_of_early_onset             4      3</span></span>
+<span><span class="co">#&gt;   Fracture_of_vertebral_column_with_spinal_cord_injury    0      0</span></span>
+<span><span class="co">#&gt;   Chronic_paralysis_due_to_lesion_of_spinal_cord          0      0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Categories held by fewer than nfilter.tab people at a site are missing at that site.</span></span></code></pre>
+<p>The labels, such as <code>Chronic_paralysis_due_to_lesion_of_spinal_cord</code>, keep only letters, digits, <code>.</code>, <code>_</code>, <code>-</code> and <code>+</code>: Opal’s DataSHIELD parser refuses spaces, accents and most punctuation inside the requests that dsBase’s functions send, so published labels are written that way, identically at every site. <code><a href="../reference/recipe_codebook.html">recipe_codebook()</a></code> keeps the exact vocabulary names.</p>
+</div>
+<div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused.</p>
+<p>A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused. A table with categories held by one or two people at a site is refused there; a copy without them serves descriptive tables.</p>
 <p><strong>Next:</strong> <a href="book-13-visits.html">13. Visit dates, one idea at a time</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

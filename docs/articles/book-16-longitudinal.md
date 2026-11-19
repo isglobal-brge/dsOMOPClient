@@ -85,7 +85,7 @@ visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = omop_output("visits", rows = "visitors", format = "long", sources = "admission",
     options = list(columns_derived = c("days_from_index", "duration_days"))))
-recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns)
+recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), datasources = conns)
 ```
 
 The long table remains private. Release the setting counts to describe
@@ -97,7 +97,7 @@ visit_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
     #> D_visit_long$concept_id
-    #> Inpatient Visit              NA
+    #> Inpatient_Visit              NA
     #>            1037               0
 
 The table counts exactly 1,037 admission rows; chapter 4’s locator count
@@ -108,9 +108,9 @@ single from repeat visitors.
 ``` r
 visits_per_person <- omop_study(visits, outputs = "baseline", baseline = list(
   admissions = omop_variable(event = visits, reducer = omop_reduce("count"))))
-recipe_execute(visits_per_person, out = c(baseline = "D_visitors"), conns = conns)
+recipe_execute(visits_per_person, out = c(baseline = "D_visitors"), datasources = conns)
 ds.omop.mutate("D_visitors", pattern = ifelse(admissions == 1,
-  "One admission", "Repeated admissions"), newobj = "D_visit_patterns", conns = conns)
+  "One admission", "Repeated admissions"), newobj = "D_visit_patterns", datasources = conns)
 dsBaseClient::ds.table("D_visit_patterns$pattern",
   datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -145,8 +145,8 @@ measurements.
 ## Irregular measurements: define windows first
 
 ``` r
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
 ```
 
 ``` r
@@ -175,7 +175,7 @@ windows <- omop_recipe(events = list(lab), populations = list(entry), variables 
   last2 = window_value("last_value", 1000, 1999),
   last3 = window_value("last_value", 2000, 2999)),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-recipe_execute(windows, out = c(wide = "D_windows"), conns = conns)
+recipe_execute(windows, out = c(wide = "D_windows"), datasources = conns)
 ```
 
 No eligible nonmissing value gives `NA`. It never gives zero hemoglobin.
@@ -219,7 +219,7 @@ ds.omop.mutate("D_windows",
   missing1 = ifelse(is.na(first1), "missing", "observed"),
   missing2 = ifelse(is.na(first2), "missing", "observed"),
   missing3 = ifelse(is.na(first3), "missing", "observed"),
-  newobj = "D_missing", conns = conns)
+  newobj = "D_missing", datasources = conns)
 dsBaseClient::ds.table("D_missing$missing1",
   datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -267,7 +267,7 @@ repeated_hb <- omop_repeated(lab, values = list(hb = omop_number_rows(lab)),
 repeated_recipe <- omop_recipe(events = list(lab), populations = list(entry),
   variables = list(measurements = repeated_hb),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-repeated_result <- recipe_execute(repeated_recipe, out = "D_timepoints", conns = conns)
+repeated_result <- recipe_execute(repeated_recipe, out = "D_timepoints", datasources = conns)
 dsBaseClient::ds.colnames("D_timepoints", datasources = conns)
 ```
 
@@ -394,7 +394,7 @@ panel <- omop_recipe(events = list(lab), populations = list(entry),
   outputs = omop_output("panel", rows = "entry", format = "person_period",
     options = list(sources = list(lab), bins = list(width = 1000L),
       window = omop_window(0, 2999), analyses = c("count", "last"), representation = "dense")))
-recipe_execute(panel, out = c(panel = "D_panel"), conns = conns)
+recipe_execute(panel, out = c(panel = "D_panel"), datasources = conns)
 dsBaseClient::ds.colnames("D_panel", datasources = conns)
 ```
 
@@ -468,7 +468,7 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
     omop_output("risk", rows = "entry", format = "joined",
       options = list(from = list(list(output = "daily"), list(output = "ends")),
         how = "left", cardinality = "many_to_one"))), publish = "risk")
-recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "pair")
+recipe_execute(hazard, out = c(risk = "D_days"), datasources = two_conns, symbol = "pair")
 ```
 
 Remove days after the first repeat or death. A missing next-day value
@@ -479,14 +479,14 @@ coincide; state this tie rule.
 ``` r
 ds.omop.mutate("D_days", to_next = next_day - period_start_days,
   to_death = death_day - period_start_days,
-  newobj = "D_remaining", conns = two_conns, symbol = "pair")
+  newobj = "D_remaining", datasources = two_conns, symbol = "pair")
 ds.omop.filter("D_remaining",
   expr = omop_where((is.na(to_next) | to_next >= 0) &
   (is.na(to_death) | to_death >= 0)),
-  newobj = "D_risk", conns = two_conns, symbol = "pair")
+  newobj = "D_risk", datasources = two_conns, symbol = "pair")
 ds.omop.mutate("D_risk", event = ifelse(hb_count > 0, 1L, 0L),
   years = period_start_days / 365.25,
-  newobj = "D_hazard", conns = two_conns, symbol = "pair")
+  newobj = "D_hazard", datasources = two_conns, symbol = "pair")
 hazard_counts <- dsBaseClient::ds.table("D_hazard$event", datasources = two_conns)
 hazard_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -564,7 +564,7 @@ bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "pair")
+recipe_execute(repeated, out = c(long = "D_long"), datasources = two_conns, symbol = "pair")
 dsBaseClient::ds.colnames("D_long", datasources = two_conns)
 ```
 
@@ -596,7 +596,7 @@ identifies an episode.
 ``` r
 ds.omop.mutate("D_long", years = start_date / 365.25,
   above_cutoff = ifelse(value >= 25, 1L, 0L),
-  newobj = "D_repeat", conns = two_conns, symbol = "pair")
+  newobj = "D_repeat", datasources = two_conns, symbol = "pair")
 repeat_groups <- dsBaseClient::ds.meanSdGp("D_repeat$value", "D_repeat$above_cutoff",
   type = "combine", datasources = two_conns)
 data.frame(Band = c("below 25", "25 or above"),
@@ -697,8 +697,8 @@ binary_sites
 
 | Site  | Intercept | Time\_coefficient | Random\_intercept\_SD |
 | :---- | --------: | ----------------: | --------------------: |
-| north |    \-9.37 |              1.28 |                 17.31 |
-| south |      9.25 |              0.00 |                 12.44 |
+| north |    \-9.38 |              1.28 |                 17.32 |
+| south |      9.25 |              0.00 |                 12.43 |
 
 Site intercepts near −9.4 and +9.2 and random-intercept standard
 deviations near 17 and 12 logits indicate extreme separation between

@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-15-formulas.Rmd" class="external-link"><code>vignettes/book-15-formulas.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-15-formulas.Rmd" class="external-link"><code>vignettes/book-15-formulas.Rmd</code></a></small>
       <div class="d-none name"><code>book-15-formulas.Rmd</code></div>
     </div>
 
@@ -106,8 +106,8 @@
 <span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 <p>Search weight and height separately and inspect their standard status. Select an exact name, not the first search hit.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">weight_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Body weight"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="va">height_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Body height"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">weight_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Body weight"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">height_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Body height"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">weight_hits</span>, <span class="va">height_hits</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -138,9 +138,9 @@
 <p>Body weight is <strong>3025315</strong> and Body height is <strong>3036277</strong>. Choosing the exact name avoids mixing measurements with similar wording.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weight_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">weight_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">height_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">height_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">weight_units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -191,17 +191,17 @@
 <span><span class="va">bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_formula_bmi.html">omop_formula_bmi</a></span><span class="op">(</span><span class="va">weight_kg</span>, <span class="va">height_m</span><span class="op">)</span></span>
 <span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">weight_event</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span>, height <span class="op">=</span> <span class="va">height</span>, bmi <span class="op">=</span> <span class="va">bmi</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_body"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_body"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_formula_body$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 11.53374 13.62216 15.88957 23.86380 27.93787 30.20849 30.36386 22.11315</span></span></code></pre>
 <p>The mean BMI is about 22.11 kg/m². BMI is kg divided by metres squared. The formula uses the presented coordinates, requires positive finite inputs and records its equation and definition in the codebook. Missing or invalid inputs become missing privately. Same-day alignment remains a study decision; a formula does not create it automatically.</p>
 <p><strong>Exercise 1.</strong> Round BMI to one decimal for presentation while keeping the unrounded formula available.</p>
@@ -210,17 +210,17 @@
 <code class="sourceCode R"><span><span class="va">body_rounded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">weight_event</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>bmi <span class="op">=</span> <span class="va">bmi</span>, rounded <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number</a></span><span class="op">(</span><span class="va">bmi</span>,</span>
 <span>    <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_spec</a></span><span class="op">(</span>rounding <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_round</a></span><span class="op">(</span><span class="st">"decimals"</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body_rounded</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_rounded"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body_rounded</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_rounded"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_formula_rounded$rounded"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 11.52000 13.60000 15.85000 23.85000 27.90000 30.19000 30.40000 22.10357</span></span></code></pre>
 <p>The rounded BMI mean is about 22.1 kg/m². The final presentation changes; the canonical BMI expression still uses its unrounded inputs.</p>
 </details>
@@ -230,8 +230,8 @@
 </h2>
 <p>Find systolic and diastolic pressure, inspect their recorded units, then bind both to the same systolic measurement date. The familiar approximate MAP formula is (SBP + 2 × DBP) / 3; it is a derived estimate, not a separately measured pressure.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sbp_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Systolic blood pressure"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="va">dbp_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Diastolic blood pressure"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">sbp_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Systolic blood pressure"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">dbp_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Diastolic blood pressure"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">sbp_hits</span>, <span class="va">dbp_hits</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -273,7 +273,7 @@
 <span><span class="va">dbp_id</span> <span class="op">&lt;-</span> <span class="va">dbp_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">dbp_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Diastolic blood pressure"</span><span class="op">]</span></span>
 <span><span class="va">pressure_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Systolic <span class="op">=</span> <span class="va">sbp_id</span>, Diastolic <span class="op">=</span> <span class="va">dbp_id</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">id</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">id</span>,</span>
-<span>    scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span>    type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">pressure_units</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -309,17 +309,17 @@
 <span><span class="va">map</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_formula_bmi.html">omop_formula_map</a></span><span class="op">(</span><span class="va">sbp_mmhg</span>, <span class="va">dbp_mmhg</span><span class="op">)</span></span>
 <span><span class="va">ratio</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_formula_bmi.html">omop_formula_ratio</a></span><span class="op">(</span><span class="va">sbp_mmhg</span>, <span class="va">dbp_mmhg</span>, unit <span class="op">=</span> <span class="st">"1"</span><span class="op">)</span></span>
 <span><span class="va">pressure</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">sbp_event</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>map <span class="op">=</span> <span class="va">map</span>, ratio <span class="op">=</span> <span class="va">ratio</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">pressure</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_pressure"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">pressure</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_formula_pressure"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_formula_pressure$map"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 85.70000 87.23333 90.08333 93.50000 95.75000 96.96667 99.40000 93.53571</span></span></code></pre>
 <p>The MAP summary describes the same-day formula, in mmHg; its mean is about 93.54. This is an approximation from two pressure readings.</p>
 <p><strong>Exercise 2.</strong> Summarise the dimensionless systolic/diastolic ratio. Is its unit mmHg?</p>
@@ -329,12 +329,12 @@
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 1.220452 1.291128 1.316157 1.516234 1.612708 1.639932 1.726477 1.487598</span></span></code></pre>
 <p>The mean ratio is about 1.5. Its unit is not mmHg: the identical numerator and denominator units cancel. That does not make ratios from different measurement definitions interchangeable.</p>
 </details>
@@ -347,7 +347,7 @@
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">creatinine_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Creatinine"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>,</span>
-<span>  vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">creatinine_hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -377,7 +377,7 @@
 <code class="sourceCode R"><span><span class="va">serum_id</span> <span class="op">&lt;-</span> <span class="va">creatinine_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">creatinine_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span></span>
 <span>  <span class="st">"Creatinine [Mass/volume] in Serum or Plasma"</span><span class="op">]</span></span>
 <span><span class="va">serum_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">serum_id</span><span class="op">)</span></span>
-<span><span class="va">serum_locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">serum_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">serum_locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">serum_id</span>, type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">serum_locations</span><span class="op">$</span><span class="va">per_site</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -406,17 +406,17 @@
 <span><span class="va">collapsed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">episodes</span><span class="op">)</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"weights"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>    collapse <span class="op">=</span> <span class="st">"first_episode"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">collapsed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_collapsed_weights"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">collapsed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_collapsed_weights"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_collapsed_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt;  2.71000  3.73000 11.05000 70.90000 75.72500 80.94000 84.83500 50.44643</span></span></code></pre>
 <p>The first-episode weight mean is 50.45 kg. Selecting the closest reading chooses one reading; averaging combines all eligible readings. A same-day window alone does not decide how duplicates are combined. Document whether the problem is repeated episodes or duplicated source records before choosing a collapse or reducer. The events chapter compares record counts with distinct-day counts.</p>
 <p>Compare the last eligible episode with the first one.</p>
@@ -424,17 +424,17 @@
 <code class="sourceCode R"><span><span class="va">last_episode</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">episodes</span><span class="op">)</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"weights"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>    collapse <span class="op">=</span> <span class="st">"last_episode"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">last_episode</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_last_weights"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">last_episode</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_last_weights"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_last_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean</span></span>
+<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean </span></span>
 <span><span class="co">#&gt; 12.630 16.850 64.325 75.000 82.300 89.630 94.365 66.600</span></span></code></pre>
 <p>The last-episode weight mean is 66.60 kg, compared with 50.45 kg at the first episode. The Synthea population includes children growing across years, which helps explain this large difference. Each person contributes their selected episode; this is not an average over all measurements or episodes.</p>
 </div>
@@ -443,12 +443,12 @@
 </h2>
 <p><code>omop.questionnaire_formulas</code> holds synthetic standardized serum creatinine measurements and explicitly named equation-sex categories. This is formula practice, separate from the Synthea data. Its partial birth dates remain incomplete so that missing age still produces missing eGFR.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.questionnaire_formulas"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.questionnaire_formulas"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Teaching standardized serum creatinine"</span>,</span>
-<span>  domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="va">sex_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, domain <span class="op">=</span> <span class="st">"Gender"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  domain <span class="op">=</span> <span class="st">"Measurement"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">sex_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, domain <span class="op">=</span> <span class="st">"Gender"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">formula_hits</span>, <span class="va">sex_hits</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -483,7 +483,7 @@
 <span><span class="va">formula_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">formula_id</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">formula_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<span>  type <span class="op">=</span> <span class="st">"both"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">value</th>
@@ -516,17 +516,17 @@
 <span>  populations <span class="op">=</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"measurements"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">serum_event</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>egfr <span class="op">=</span> <span class="va">egfr</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"measurements"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">egfr_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">egfr_recipe</span>, out <span class="op">=</span> <span class="st">"D_egfr"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">egfr_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">egfr_recipe</span>, out <span class="op">=</span> <span class="st">"D_egfr"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_egfr$egfr"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 48</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean</span></span>
+<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt;  34.53919  34.53919  46.14291  99.23431 116.37404 118.71584 118.71584  86.11545</span></span></code></pre>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_egfr$egfr"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -540,7 +540,7 @@
 <span><span class="va">formula_record</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equation"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $equation</span></span>
 <span><span class="co">#&gt; [1] "142*min(Scr/k,1)^alpha*max(Scr/k,1)^(-1.200)*0.9938^age*sex_factor"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $unit</span></span>
 <span><span class="co">#&gt; [1] "coordinate:ml_min_1_73m2"</span></span></code></pre>
 <p>The equation and unit identify what was calculated. Keep the full formula record with the saved codebook, including its adult eligibility rules.</p>
@@ -551,7 +551,7 @@
 </h2>
 <p>The questionnaire weights use concept <strong>950002</strong>, Body weight (questionnaire), and unit <strong>9529</strong>, kilogram. With the formula data, 12 people have weights 60 and 72 kg on the same day, then 66 kg two days later. For them, daily mean then mean is 66 kg; daily max then mean is 69 kg. The other measured groups have values 80 and 100 kg, and 12 people have no weight. Synthea weights have no same-day duplicates, so they cannot demonstrate this difference.</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">weight_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">950002L</span>, <span class="fl">9529L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<code class="sourceCode R"><span><span class="va">weight_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">950002L</span>, <span class="fl">9529L</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">weight_info</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -575,7 +575,7 @@
 <span><span class="va">daily</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  daily_mean <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="va">rows</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"mean"</span><span class="op">)</span>,</span>
 <span>  daily_max <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="va">rows</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"max"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">daily</span>, out <span class="op">=</span> <span class="st">"D_daily"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">daily</span>, out <span class="op">=</span> <span class="st">"D_daily"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.mean</span><span class="op">(</span><span class="st">"D_daily$daily_mean"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">Mean.by.Study</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">

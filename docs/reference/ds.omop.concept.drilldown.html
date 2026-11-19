@@ -17,7 +17,7 @@ side before being returned."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,7 @@ side before being returned."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Get concept drilldown profile</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/exploration.R" class="external-link"><code>R/exploration.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/exploration.R" class="external-link"><code>R/exploration.R</code></a></small>
       <div class="d-none name"><code>ds.omop.concept.drilldown.Rd</code></div>
     </div>
 
@@ -92,7 +92,8 @@ side before being returned.</p>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  execute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  type <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  type <span class="op">=</span> <span class="st">"split"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -116,12 +117,13 @@ for automatic detection based on the table's standard concept column
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Character; <code>"per_site"</code> (default) or <code>"pooled"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>type</code> (<code>"per_site"</code> or
+<code>"pooled"</code>).</p></dd>
 
 
 <dt id="arg-pooling-policy">pooling_policy<a class="anchor" aria-label="anchor" href="#arg-pooling-policy"></a></dt>
 <dd><p>Character; <code>"strict"</code> (default) or
-<code>"pooled_only_ok"</code>.</p></dd>
+<code>"pooled_only_ok"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 
 <dt id="arg-symbol">symbol<a class="anchor" aria-label="anchor" href="#arg-symbol"></a></dt>
@@ -129,7 +131,8 @@ for automatic detection based on the table's standard concept column
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s) or NULL to use the session default.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-execute">execute<a class="anchor" aria-label="anchor" href="#arg-execute"></a></dt>
@@ -138,16 +141,33 @@ containing only the generated call code (default: <code>TRUE</code>).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional result view: <code>"split"</code>, <code>"combine"</code>, or
-<code>"both"</code>. When omitted, legacy <code>scope</code> behaviour is preserved.</p></dd>
+<dd><p>Result view: <code>"split"</code> (default), <code>"both"</code>, or
+<code>"combine"</code>. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dsomop_result</code> object with <code>$per_site</code> (named list
-  of lists containing <code>summary</code>, <code>numeric</code>, <code>categorical</code>,
-  <code>date_range</code>, and <code>missingness</code> components), <code>$pooled</code>
-  (combined profile when pooled), and <code>$meta</code>.</p>
+    <p>A <code>dsomop_result</code>. Each <code>$per_site</code> entry is a list
+  with <code>summary</code> (<code>concept_id</code>, <code>concept_name</code>, banded
+  <code>n_records</code> and <code>n_persons</code>, <code>records_per_person_mean</code>,
+  <code>pct_persons_multi</code>), <code>numeric_summary</code> (<code>quantiles</code>,
+  <code>histogram</code>), <code>categorical_values</code>
+  (<code>value_as_concept_id</code>, <code>concept_name</code>, <code>n</code>),
+  <code>date_range</code> (<code>column</code>, <code>min_month_safe</code>,
+  <code>max_month_safe</code>, yearly <code>date_counts</code>) and
+  <code>missingness</code> (<code>column_name</code>, <code>missing_rate</code>).
+  <code>$pooled</code> has the same parts: counts, histogram bins, categorical
+  values and yearly counts summed, the date range spanned, and the
+  non-additive parts (quantiles, <code>pct_persons_multi</code>, and missing
+  rates the servers return without counts) left <code>NULL</code> or <code>NA</code>
+  with a warning.</p>
     </div>
 
     <div class="section level2">

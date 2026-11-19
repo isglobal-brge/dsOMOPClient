@@ -37,7 +37,7 @@ dictionary &amp;lt;name&amp;gt;.transitionRef."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,7 @@ dictionary &amp;lt;name&amp;gt;.transitionRef."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Execute a plan and create server-side tables</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/plan.R" class="external-link"><code>R/plan.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/plan.R" class="external-link"><code>R/plan.R</code></a></small>
       <div class="d-none name"><code>ds.omop.plan.execute.Rd</code></div>
     </div>
 
@@ -119,7 +119,9 @@ dictionary <code>&lt;name&gt;.transitionRef</code>.</p>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  output_mode <span class="op">=</span> <span class="st">"memory"</span>,</span>
-<span>  on_small_site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"skip"</span><span class="op">)</span></span>
+<span>  on_small_site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"skip"</span><span class="op">)</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  small_categories <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"keep"</span>, <span class="st">"missing"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -158,8 +160,8 @@ server (default <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code>, uses the
-connections stored in the session.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
 
 
 <dt id="arg-output-mode">output_mode<a class="anchor" aria-label="anchor" href="#arg-output-mode"></a></dt>
@@ -179,6 +181,24 @@ These policies require the publication protocol on every site. If any
 site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
 warning, and <code>on_small_site</code> does not change that call; a language-2
 plan is refused before assignment.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
+
+
+<dt id="arg-small-categories">small_categories<a class="anchor" aria-label="anchor" href="#arg-small-categories"></a></dt>
+<dd><p>Character; <code>"keep"</code> (the default) publishes
+the outputs as computed. <code>"missing"</code> then makes, at each site, the
+values of categories held by fewer than <code>nfilter.tab</code> people missing
+in every published factor column, with secondary suppression (see
+<code><a href="ds.omop.drop_small_categories.html">ds.omop.drop_small_categories</a></code>), so that dsBase's
+<code>ds.table()</code> and <code>ds.summary()</code> accept those columns. Levels,
+labels and the codebook stay as published. In-memory outputs only; every
+server needs dsOMOP 2.10.9.</p></dd>
 
 </dl></div>
     <div class="section level2">

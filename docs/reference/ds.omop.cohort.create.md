@@ -17,7 +17,9 @@ ds.omop.cohort.create(
   name = NULL,
   overwrite = FALSE,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  newobj = NULL,
+  datasources = NULL
 )
 ```
 
@@ -41,7 +43,8 @@ ds.omop.cohort.create(
   - cohort\_id:
     
     Integer; cohort definition ID. If `NULL`, an auto-generated ID is
-    used.
+    used. The server names a temporary cohort table after it
+    (`dsomop_cohort_<id>`).
 
   - name:
     
@@ -60,8 +63,22 @@ ds.omop.cohort.create(
 
   - conns:
     
-    DSI connection object(s). If `NULL` (the default), the connections
-    stored in the active session are used.
+    Deprecated alias of `datasources`, kept for backward compatibility
+    (a one-time message names the new argument).
+
+  - newobj:
+    
+    The cohort's output name, as dsBaseClient assigning functions call
+    it: the cohort id, or a name of the form `"dsomop_cohort_<id>"` (the
+    server names temporary cohort tables by their id). An alternative to
+    `cohort_id`; giving both with different ids is an error.
+
+  - datasources:
+    
+    DataSHIELD connections (a named list of `DSConnection` objects).
+    `NULL` (the default) uses the OMOP session's connections, or
+    `DSI::datashield.connections_find()` when no session exists. See
+    [dsomop\_conventions](https://isglobal-brge.github.io/dsOMOPClient/reference/dsomop_conventions.md).
 
 ## Value
 

@@ -15,7 +15,7 @@ closed if it falls below the disclosure threshold."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@ closed if it falls below the disclosure threshold."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Merge two server-side omop.table data frames on the person key</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/manipulate.R" class="external-link"><code>R/manipulate.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/R/manipulate.R" class="external-link"><code>R/manipulate.R</code></a></small>
       <div class="d-none name"><code>ds.omop.merge.Rd</code></div>
     </div>
 
@@ -87,7 +87,9 @@ closed if it falls below the disclosure threshold.</p>
 <span>  type <span class="op">=</span> <span class="st">"inner"</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  conns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  join <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -113,7 +115,8 @@ server-side.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Character; <code>"inner"</code> (default) or <code>"left"</code>.</p></dd>
+<dd><p>Deprecated alias of <code>join</code> (kept in its position, so
+positional calls keep working).</p></dd>
 
 
 <dt id="arg-newobj">newobj<a class="anchor" aria-label="anchor" href="#arg-newobj"></a></dt>
@@ -127,8 +130,21 @@ initialised (default: <code>"omop"</code>).</p></dd>
 
 
 <dt id="arg-conns">conns<a class="anchor" aria-label="anchor" href="#arg-conns"></a></dt>
-<dd><p>DSI connection object(s). If <code>NULL</code> (the default), the
-connections stored in the active session are used.</p></dd>
+<dd><p>Deprecated alias of <code>datasources</code>, kept for backward
+compatibility (a one-time message names the new argument).</p></dd>
+
+
+<dt id="arg-join">join<a class="anchor" aria-label="anchor" href="#arg-join"></a></dt>
+<dd><p>Character; the join type, <code>"inner"</code> (default) or
+<code>"left"</code>. It replaces <code>type</code>, which elsewhere in the package
+names the result view.</p></dd>
+
+
+<dt id="arg-datasources">datasources<a class="anchor" aria-label="anchor" href="#arg-datasources"></a></dt>
+<dd><p>DataSHIELD connections (a named list of
+<code>DSConnection</code> objects). <code>NULL</code> (the default) uses the OMOP
+session's connections, or <code><a href="https://datashield.github.io/DSI/reference/datashield.connections_find.html" class="external-link">DSI::datashield.connections_find()</a></code> when
+no session exists. See <a href="dsomop_conventions.html">dsomop_conventions</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -143,7 +159,7 @@ connections stored in the active session are used.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.merge</span><span class="op">(</span><span class="st">"cohort_a"</span>, <span class="st">"cohort_b"</span>, type <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span>
+<span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="fu">ds.omop.merge</span><span class="op">(</span><span class="st">"cohort_a"</span>, <span class="st">"cohort_b"</span>, join <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

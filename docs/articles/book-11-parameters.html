@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-11-parameters.Rmd" class="external-link"><code>vignettes/book-11-parameters.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.9/vignettes/book-11-parameters.Rmd" class="external-link"><code>vignettes/book-11-parameters.Rmd</code></a></small>
       <div class="d-none name"><code>book-11-parameters.Rmd</code></div>
     </div>
 
@@ -130,8 +130,7 @@
 <p><code><a href="../reference/omop_study.html">omop_study()</a></code> returns an ordinary recipe. It creates an indexed population and baseline output. We explicitly exclude day zero from the prior-visit count. The parameter list shows that <code>setting</code> still needs a concept set. Compilation refuses an unbound template:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Error: Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().</span></span></code></pre>
 <p>The error names <code>setting</code> and asks you to bind it. The template defines how to select people, but has not yet chosen which visit setting starts the study.</p>
 </div>
 <div class="section level2">
@@ -143,17 +142,17 @@
 <pre><code><span><span class="co">#&gt; list()</span></span></code></pre>
 <p>The empty parameter list means the bound copy has no remaining placeholders. Binding preserves the original template. Concept 9202 is the Outpatient Visit setting, found in <a href="book-04-vocabulary.html">chapter 4</a>. Inpatient Visit is <strong>9201</strong>. These select setting, not the record’s provenance type.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">outpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_outpatient"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">outpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_outpatient"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_param_outpatient$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;    5%   10%   25%   50%   75%   90%   95%  Mean</span></span>
+<span><span class="co">#&gt;    5%   10%   25%   50%   75%   90%   95%  Mean </span></span>
 <span><span class="co">#&gt;  0.00  0.00  0.00  2.50 17.00 18.00 18.00  7.75</span></span></code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_param_outpatient$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -184,12 +183,12 @@
 <span>    count <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>, before <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>,</span>
 <span>    value <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>,</span>
 <span>      tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fl">8713L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">shortcuts</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_shortcuts"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">shortcuts</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_shortcuts"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_shortcuts$ever"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_shortcuts$ever</span></span>
-<span><span class="co">#&gt;  1</span></span>
+<span><span class="co">#&gt;  1 </span></span>
 <span><span class="co">#&gt; 28</span></span></code></pre>
 <p>All 28 people have ever = 1 because the index hemoglobin measurement itself is included. To ask about measurements strictly before entry use <code>window = omop_window(-365, -1)</code> instead. First/last/mean/min/max-value shortcuts use the same event and window model. <code><a href="../reference/omop_history.html">omop_history()</a></code> bundles named ever variables; it does not define a new language.</p>
 </div>
@@ -206,7 +205,7 @@
 <p>BMI is weight in kilograms divided by squared height in metres. Index each person at their first weight measurement, then select weight and height on that date. We require the recorded kg and cm units; we do not combine unrelated latest readings or silently substitute a height from another day.</p>
 <p>Look up the four inputs so that their names and IDs are visible together:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">body_concepts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3025315L</span>, <span class="fl">3036277L</span>, <span class="fl">9529L</span>, <span class="fl">8582L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">body_concepts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3025315L</span>, <span class="fl">3036277L</span>, <span class="fl">9529L</span>, <span class="fl">8582L</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">body_concepts</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -243,7 +242,7 @@
 <span>  age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">weight_event</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  first_date <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">weight_event</span>, which <span class="op">=</span> <span class="st">"first"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  last_date <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">weight_event</span>, which <span class="op">=</span> <span class="st">"last"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_body"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_body"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>These are synthetic Synthea measurements, including children. Calculated BMI is a numeric teaching example, not an adult clinical classification.</p>
 </div>
 <div class="section level2">
@@ -251,17 +250,17 @@
 </h2>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_body"</span>, height_m <span class="op">=</span> <span class="va">height_cm</span> <span class="op">/</span> <span class="fl">100</span>,</span>
-<span>  bmi <span class="op">=</span> <span class="va">weight_kg</span> <span class="op">/</span> <span class="op">(</span><span class="va">height_m</span> <span class="op">*</span> <span class="va">height_m</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  bmi <span class="op">=</span> <span class="va">weight_kg</span> <span class="op">/</span> <span class="op">(</span><span class="va">height_m</span> <span class="op">*</span> <span class="va">height_m</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 11.53374 13.62216 15.88957 23.86380 27.93787 30.20849 30.36386 22.11315</span></span></code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -282,24 +281,24 @@
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, age_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">age</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">18</span>, <span class="fl">121</span><span class="op">)</span>,</span>
 <span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 18"</span>, <span class="st">"18 to 120"</span><span class="op">)</span>, right <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_grouped"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_grouped"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">age_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_grouped$age_group"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">age_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_grouped$age_group</span></span>
-<span><span class="co">#&gt; 18 to 120  under 18        NA</span></span>
+<span><span class="co">#&gt; 18 to 120  under 18        NA </span></span>
 <span><span class="co">#&gt;        14        14         0</span></span></code></pre>
 <p>There are 14 people under 18 and 14 aged 18–120 at their first weight. <code>cut</code> produces text labels in this grammar, not an ordered R factor. The table may display them alphabetically. <a href="book-14-labs.html">Chapter 14</a> shows how to assign an explicit factor level sequence for modelling and display.</p>
 <p><strong>Exercise:</strong> create an adult flag using the same lower boundary of 18.</p>
 <details><p><summary>Solution — an age recode</summary></p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_grouped"</span>, adult <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">18</span>, <span class="st">"yes"</span>, <span class="st">"no"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_adults"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_adults"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">adult_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_adults$adult"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">adult_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_adults$adult</span></span>
-<span><span class="co">#&gt;  no yes  NA</span></span>
+<span><span class="co">#&gt;  no yes  NA </span></span>
 <span><span class="co">#&gt;  14  14   0</span></span></code></pre>
 <p>A missing age stays missing rather than becoming “no”. The 14 adults match the 18-to-120 band; the 14 under-18s become “no”.</p>
 </details>
@@ -309,34 +308,34 @@
 </h2>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, span_days <span class="op">=</span> <span class="va">last_date</span> <span class="op">-</span> <span class="va">first_date</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_span"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_span"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_span$span_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt;  952.700 1845.200 6142.500 6678.000 6996.500 7049.000 7053.550 5679.607</span></span></code></pre>
 <p>The mean span is 5,679.61 days and the median is 6,678 days across 28 people. This is elapsed time between first and last recorded weights, in days. It is not age or duration under continuous observation. Exact dates stay private.</p>
 <p><strong>Exercise:</strong> express that duration in 365-day years, retaining the days column.</p>
 <details><p><summary>Solution — convert a duration</summary></p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_span"</span>, span_years <span class="op">=</span> <span class="va">span_days</span> <span class="op">/</span> <span class="fl">365</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_years"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_years$span_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean</span></span>
+<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt;  2.610137  5.055342 16.828767 18.295890 19.168493 19.312329 19.324795 15.560568</span></span></code></pre>
 <p>The mean is 15.56 years and the median is 18.30 years. Each summary is the day summary divided by 365. These are fixed-length units, not completed birthdays; use <code>omop_age_at</code> for completed age.</p>
 </details>
@@ -349,12 +348,12 @@
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, life_stage <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span> <span class="op">~</span> <span class="st">"unknown"</span>, <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">5</span> <span class="op">~</span> <span class="st">"young child"</span>,</span>
 <span>  <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">18</span> <span class="op">~</span> <span class="st">"older child"</span>, .default <span class="op">=</span> <span class="st">"adult"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_stage"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_stage"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">stage_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_stage$life_stage"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">stage_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_stage$life_stage</span></span>
-<span><span class="co">#&gt;       adult older child young child          NA</span></span>
+<span><span class="co">#&gt;       adult older child young child          NA </span></span>
 <span><span class="co">#&gt;          14           5           9           0</span></span></code></pre>
 <p>There are 9 young children, 5 older children and 14 adults. The declared default applies only after the preceding conditions are false. This recode distinguishes unknown age from a known age; it does not impute age.</p>
 <p>To recode a derived text category, combine both child labels as follows:</p>
@@ -362,12 +361,12 @@
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_stage"</span>, adult <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span></span>
 <span>  <span class="va">life_stage</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"young child"</span>, <span class="st">"older child"</span><span class="op">)</span> <span class="op">~</span> <span class="st">"no"</span>,</span>
 <span>  <span class="va">life_stage</span> <span class="op">==</span> <span class="st">"unknown"</span> <span class="op">~</span> <span class="cn">NA</span>,</span>
-<span>  .default <span class="op">=</span> <span class="st">"yes"</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_recoded"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  .default <span class="op">=</span> <span class="st">"yes"</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_recoded"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">recode_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_recoded$adult"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">recode_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_recoded$adult</span></span>
-<span><span class="co">#&gt;  no yes  NA</span></span>
+<span><span class="co">#&gt;  no yes  NA </span></span>
 <span><span class="co">#&gt;  14  14   0</span></span></code></pre>
 <p>These counts agree with the earlier adult flag. Here the synthetic source has complete ages, so the missingness branch introduces no extra category count.</p>
 </div>
@@ -378,7 +377,7 @@
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, height_m <span class="op">=</span> <span class="va">height_cm</span> <span class="op">/</span> <span class="fl">100</span>,</span>
 <span>  bmi <span class="op">=</span> <span class="va">weight_kg</span> <span class="op">/</span> <span class="op">(</span><span class="va">height_m</span> <span class="op">*</span> <span class="va">height_m</span><span class="op">)</span>, bmi_copy <span class="op">=</span> <span class="va">bmi</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">before_columns</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">before_bmi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.mean</span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">before_columns</span><span class="op">$</span><span class="va">site</span>, <span class="va">bmi_columns</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
@@ -391,35 +390,31 @@
 <p>The following failures are intentional. First try an unknown function:</p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, bmi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">bmi</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! ds.omop.mutate(): 'sqrt' is not part of the mutation grammar (+ - * /, conditions, ifelse, case_when, coalesce, cut, as.Date).</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, bmi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">bmi</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: ds.omop.mutate(): 'sqrt' is not part of the mutation grammar (+ - * /, conditions, ifelse, case_when, coalesce, cut, as.Date).</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p><code>sqrt</code> is outside the closed grammar and is refused by the client before a request can alter the table. Use supported arithmetic or a documented analysis function; arbitrary R functions cannot be sent through mutate.</p>
 <p>Next try to copy a protected key. The server refuses this column reference:</p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, copied <span class="op">=</span> <span class="va">person_id</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<span>  newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p>The message refuses the protected person key. Next, a class-1 source name is refused even as the name of a new column:</p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, person_source_value <span class="op">=</span> <span class="st">"label"</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_blocked_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: 'person_source_value' is a blocked (class-1) column name; choose another name; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<span>  newobj <span class="op">=</span> <span class="st">"D_blocked_copy"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: 'person_source_value' is a blocked (class-1) column name; choose another name; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p>This is a blocked source/assignment name, not a request to alter its protection. Use descriptive study-variable names for allowed derived values.</p>
 <p>Finally request an ordinary BMI change followed by a protected-key overwrite in the same in-place call. The whole request must fail:</p>
 <!-- expected-refusal:start -->
 <div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, bmi <span class="op">=</span> <span class="va">bmi</span> <span class="op">+</span> <span class="fl">1</span>, person_id <span class="op">=</span> <span class="st">"replacement"</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Error:</span></span>
-<span><span class="co">#&gt; ! OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()</span></span></code></pre>
+<span>  newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error: OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p>The protected-identifier message applies to person, episode and set keys and any columns marked protected by the server. It prohibits both reads and writes. Renaming a key is not an allowed transformation.</p>
 <div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
@@ -452,17 +447,17 @@
 <p>A <em>predicate</em> is a condition. Only TRUE rows survive; missing conditions are dropped. This retains adults without using a key to target a known person.</p>
 <div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">18</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_adult_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_adult_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_adult_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 14</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 22.75976 23.69819 25.78897 28.03959 29.79277 30.36457 30.45801 27.34679</span></span></code></pre>
 <div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_adult_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
@@ -472,17 +467,17 @@
 <p>A text-category predicate can select the same adults:</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_stage"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">life_stage</span> <span class="op">==</span> <span class="st">"adult"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_working_age"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_working_age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_working_age$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$length</span></span>
 <span><span class="co">#&gt; [1] 14</span></span>
-<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 22.75976 23.69819 25.78897 28.03959 29.79277 30.36457 30.45801 27.34679</span></span></code></pre>
 <p>This category means ages 18 and over, so its summary agrees with the preceding filter. The earlier missingness case ensures an unknown age is not called adult.</p>
 </div>
@@ -493,7 +488,7 @@
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inpatient</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_param.html">recipe_bind</a></span><span class="op">(</span><span class="va">template</span>, setting <span class="op">=</span> <span class="fl">9201L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">inpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_inpatient"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">inpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_inpatient"</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">inpatient_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.mean</span><span class="op">(</span><span class="st">"D_param_inpatient$prior_visits"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">inpatient_mean</span><span class="op">$</span><span class="va">Global.Mean</span></span></code></pre></div>

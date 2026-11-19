@@ -28,7 +28,7 @@ conns <- ds.omop.login("https://localhost:8443", user = "administrator",
 ## Choose a populated measurement
 
 ``` r
-hits <- ds.omop.concept.search("Glucose", domain = "Measurement", vocabulary = "LOINC", conns = conns)$pooled
+hits <- ds.omop.concept.search("Glucose", domain = "Measurement", vocabulary = "LOINC", datasources = conns)$pooled
 hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
@@ -41,7 +41,7 @@ hits[c("concept_id", "concept_name", "standard_concept")]
 
 ``` r
 glucose_id <- hits$concept_id[trimws(hits$concept_name) == "Glucose [Mass/volume] in Blood"]
-ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled
+ds.omop.concept.locate(glucose_id, type = "both", datasources = conns)$pooled
 ```
 
 | concept\_id | table\_name | concept\_column          | n\_records | n\_persons |
@@ -50,7 +50,7 @@ ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled
 
 ``` r
 ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
-  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")]
+  type = "both", datasources = conns)$pooled[c("value", "concept_name", "n")]
 ```
 
 | value | concept\_name           |   n |
@@ -90,7 +90,7 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   followup_days = omop_variable(event = glucose, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 95, op = "ge")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
-recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns)
+recipe_execute(trajectory, out = c(people = "D_glucose"), datasources = conns)
 sapply(c("first", "last", "change", "per_year", "followup_days"), function(column)
   dsBaseClient::ds.quantileMean(paste0("D_glucose$", column), datasources = conns))
 ```
@@ -120,7 +120,7 @@ dsBaseClient::ds.table("D_glucose$control",
 ```
 
     #> D_glucose$control
-    #>    below 90 90 or above          NA
+    #>    below_90 90_or_above          NA
     #>           4           6           0
 
 Four people are below 90 and six are at least 90 mg/dL. It is a
@@ -201,7 +201,7 @@ Solution 1
 
 ``` r
 ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
-  newobj = "D_glucose_years", conns = conns)
+  newobj = "D_glucose_years", datasources = conns)
 dsBaseClient::ds.summary("D_glucose_years$target_years", datasources = conns)
 ```
 
@@ -235,7 +235,7 @@ Solution 2
 
 ``` r
 ds.omop.mutate("D_glucose", difference = last - first,
-  newobj = "D_difference", conns = conns)
+  newobj = "D_difference", datasources = conns)
 dsBaseClient::ds.summary("D_difference$difference", datasources = conns)
 ```
 
