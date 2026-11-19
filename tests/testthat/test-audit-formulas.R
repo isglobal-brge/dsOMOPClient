@@ -33,7 +33,14 @@ test_that("Q14 independent power oracle agrees with actual private published for
       expect_equal(sort(f$egfr),sort(reference(scr,40,sex==8532)),tolerance=1e-10)
       expect_equal(f$bmi,rep(20,nrow(f)));expect_equal(f$map,rep(280/3,nrow(f)))
       expect_equal(f$ratio,rep(5,nrow(f)));expect_true(all(is.na(f$zero)))
-      expect_identical(attr(f,"omop_numbers")$egfr$privacy_class,2L)
+      if(mode=="memory") expect_identical(attr(f,"omop_numbers")$egfr$privacy_class,2L)
+    }
+    # A staged output's chunks are plain data: its number contracts travel in
+    # the descriptor's presentation metadata.
+    if(mode=="staged") for(server in ctx$servers) {
+      descriptor<-server$getSessionData(server$getSessionIds()[[1L]],symbols[[1L]])
+      meta<-dsOMOP:::.ds_arg(descriptor$metadata$concept_presentation)
+      expect_identical(meta$numbers$egfr$privacy_class,2L)
     }
     expect_true(length(recipe_codebook(result)[[1L]]$formulas)>0L)
   }

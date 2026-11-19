@@ -56,7 +56,8 @@
       object <- server$getSessionData(server$getSessionIds()[[1L]],target)
       if(mode=="staged") {
         expect_s3_class(object,"FlowerDatasetDescriptor")
-        .equivalence_identical(object$metadata$format,"parquet")
+        # Parquet when the server has arrow, CSV otherwise; both must read back the same.
+        .equivalence_identical(object$metadata$format,if(requireNamespace("arrow",quietly=TRUE))"parquet" else "csv")
         frames <- list()
         dsOMOP:::.publishReadChunks(object,function(x)frames[[length(frames)+1L]] <<- x)
       } else frames <- list(object)
