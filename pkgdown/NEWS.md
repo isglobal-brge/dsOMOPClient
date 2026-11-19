@@ -5,7 +5,8 @@ Publish the installed server methods and options in the selected Opal profile,
 then check its published and running versions from the client.
 
 Concept IDs are categories everywhere, with the same levels at every site.
-Observed categories follow DataSHIELD's factor-level rule; declared lists
+Observed categories follow DataSHIELD's factor-level rule (a person's repeated
+value counts once); declared lists
 (`omop_concept_levels()`, recodes, label maps, concept sets) need no discovery.
 When a site observes more categories than the rule admits, the servers declare
 a public list that holds them, climbing the vocabulary's hierarchy only as far

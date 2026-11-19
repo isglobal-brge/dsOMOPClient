@@ -8,6 +8,9 @@
   the client reads each distinct list once, and servers holding the same list
   rebuild the shared levels from it (checked by digest). Naming provenance stays
   on the client. Results equal the full transport, which older servers keep.
+- With dsOMOP 2.10.8 servers, the level rule counts a person's repeated value
+  once: a person-level variable repeated on the event rows of a long output,
+  stacked or joined, is weighed against its people, as in a wide output.
 - Corrected: `ds.omop.filter()` and `ds.omop.bind_rows()` work on reconciled
   recipe outputs and keep their shared levels, and `ds.omop.table()` and
   `ds.omop.drop_empty_levels()` work on their results (needs dsOMOP 2.10.8).

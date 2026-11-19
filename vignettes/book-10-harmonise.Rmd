@@ -596,7 +596,8 @@ records contribute to both. Neither level is selected by counting observed drugs
 ## Many categories at one site
 
 DataSHIELD lets a site release the categories it observes only when they are
-few: at most 40 by default, and fewer than a third of the rows. A site that
+few: at most 40 by default, and fewer than a third of the rows (a person's
+repeated value counts once). A site that
 records 60 different causes of death is above that rule. The servers then
 declare a public list that holds the observed categories themselves: they climb
 the vocabulary's hierarchy only as far as the rule needs and declare the
