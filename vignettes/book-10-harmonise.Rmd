@@ -597,11 +597,12 @@ records contribute to both. Neither level is selected by counting observed drugs
 
 DataSHIELD lets a site release the categories it observes only when they are
 few: at most 40 by default, and fewer than a third of the rows. A site that
-records 60 different causes of death is above that rule. When a short public
-list in the vocabulary holds the observed categories, for example a
-cause-of-death vocabulary, the servers declare that whole list themselves. The
-recipe needs no change, and every site gets the same levels, including causes
-nobody has. Dates by month, quarter or week work the same way: every period of
+records 60 different causes of death is above that rule. The servers then
+declare a public list that holds the observed categories themselves: they climb
+the vocabulary's hierarchy only as far as the rule needs and declare the
+categories under those few groups, or, for a vocabulary without a hierarchy,
+its whole short list. The recipe needs no change, and every site gets the same
+levels, including categories nobody has. Dates by month, quarter or week work the same way: every period of
 the observed years becomes a level.
 
 A longer list, such as a large clinical terminology, is refused with the

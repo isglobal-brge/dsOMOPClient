@@ -1,4 +1,4 @@
-# dsOMOPClient 2.10.7
+# dsOMOPClient 2.10.8
 
 Use matching dsOMOP and dsOMOPClient packages for the study examples in this book.
 Publish the installed server methods and options in the selected Opal profile,

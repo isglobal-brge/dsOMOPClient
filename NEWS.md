@@ -1,3 +1,16 @@
+# dsOMOPClient 2.10.8 (2026-11-19)
+
+- With dsOMOP 2.10.8 servers, automatic vocabulary lists are adaptive: each
+  server climbs the vocabulary hierarchy only as far as DataSHIELD's rule
+  needs, so many observed diagnoses publish with the concepts of a few groups
+  instead of a whole terminology.
+- Long public lists travel as fingerprints: servers send their list's digest,
+  the client reads each distinct list once, and servers holding the same list
+  rebuild the shared levels from it (checked by digest). Naming provenance stays
+  on the client. Results equal the full transport, which older servers keep.
+- Corrected: `ds.omop.filter()` and `ds.omop.bind_rows()` work on reconciled
+  recipe outputs and keep their shared levels (needs dsOMOP 2.10.8).
+
 # dsOMOPClient 2.10.7 (2026-11-19)
 
 - With dsOMOP 2.10.7 servers, a concept column with more observed levels than
