@@ -14,6 +14,12 @@ x$name
 
 # S3 method for class 'dsomop_result'
 x[[i, exact = TRUE]]
+
+# S3 method for class 'dsomop_listing'
+x$name
+
+# S3 method for class 'dsomop_listing'
+x[[i, exact = TRUE]]
 ```
 
 ## Arguments

@@ -11,7 +11,8 @@
     ds.omop.table() result, as the plain table that dsOMOPClient 2.10.8
     and earlier returned.
 
-  - `` `$`(<dsomop_result>) `` `` `[[`(<dsomop_result>) `` : Access
+  - `` `$`(<dsomop_result>) `` `` `[[`(<dsomop_result>) ``
+    `` `$`(<dsomop_listing>) `` `` `[[`(<dsomop_listing>) `` : Access
     dsomop\_result elements with backward compatibility
 
   - `ds.omop.achilles.analyses()` : List available Achilles analyses
