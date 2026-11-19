@@ -17,7 +17,7 @@ every site and in the same order; each copy keeps its own rows and values."></he
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,7 @@ every site and in the same order; each copy keeps its own rows and values."></he
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Drop levels that are empty at every site, for models</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/model_levels.R" class="external-link"><code>R/model_levels.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/candidate-2.10.8/R/model_levels.R" class="external-link"><code>R/model_levels.R</code></a></small>
       <div class="d-none name"><code>ds.omop.drop_empty_levels.Rd</code></div>
     </div>
 
@@ -103,7 +103,8 @@ every site and in the same order; each copy keeps its own rows and values.</p>
 
 <dt id="arg-columns">columns<a class="anchor" aria-label="anchor" href="#arg-columns"></a></dt>
 <dd><p>Optional character vector of factor columns; by default every
-published factor column.</p></dd>
+published concept, category or calendar column (the columns the servers
+reconciled; other factors, such as legacy age bands, are left as they are).</p></dd>
 
 
 <dt id="arg-newobj">newobj<a class="anchor" aria-label="anchor" href="#arg-newobj"></a></dt>

@@ -30,7 +30,9 @@ ds.omop.drop_empty_levels(
   - columns:
     
     Optional character vector of factor columns; by default every
-    published factor column.
+    published concept, category or calendar column (the columns the
+    servers reconciled; other factors, such as legacy age bands, are
+    left as they are).
 
   - newobj:
     

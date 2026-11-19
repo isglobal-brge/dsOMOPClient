@@ -1,6 +1,6 @@
 # Changelog
 
-## dsOMOPClient 2.10.7
+## dsOMOPClient 2.10.8
 
 Use matching dsOMOP and dsOMOPClient packages for the study examples in
 this book. Publish the installed server methods and options in the
@@ -8,12 +8,13 @@ selected Opal profile, then check its published and running versions
 from the client.
 
 Concept IDs are categories everywhere, with the same levels at every
-site. Observed categories follow DataSHIELD’s factor-level rule;
-declared lists (`omop_concept_levels()`, recodes, label maps, concept
-sets) need no discovery. When a site observes more categories than the
-rule admits and a short public vocabulary list holds them, the servers
-declare that list themselves; dates by month or week declare every
-period of their observed years. Before a pooled model,
+site. Observed categories follow DataSHIELD’s factor-level rule (a
+person’s repeated value counts once); declared lists
+(`omop_concept_levels()`, recodes, label maps, concept sets) need no
+discovery. When a site observes more categories than the rule admits,
+the servers declare a public list that holds them, climbing the
+vocabulary’s hierarchy only as far as needed; dates by month or week
+declare every period of their observed years. Before a pooled model,
 `ds.omop.drop_empty_levels()` drops levels that no site uses.
 
 The package also provides numeric units, rounding, bins, thresholds,

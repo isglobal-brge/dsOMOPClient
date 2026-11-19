@@ -125,16 +125,17 @@ disambiguated by ID. Empty labels are refused, while a literal `"NA"` is
 a category distinct from missing. `factor_concepts = TRUE` remains
 accepted; `factor_concepts = FALSE` is rejected. Observed levels follow
 DataSHIELD’s factor-level maximum and density rule in both translation
-modes. Declared levels and complete recodes need no discovery. When a
-site’s observed levels exceed that rule and a short public vocabulary
-list holds them, the servers declare that list themselves (up to each
-server’s `dsomop.auto_declared_levels_max`, 1000 by default); dates
-without `level_range` declare every period of their observed years. A
-refusal names the column, site and rule; declare the levels (for example
-with `omop_concept_levels()`), group them with `omop_category_recode()`
-/ `omop_category_rollup()`, or narrow events with `concepts =`. Before a
-pooled model, `ds.omop.drop_empty_levels()` copies a table without the
-levels that no site uses.
+modes; the density rule counts a person’s repeated value once. Declared
+levels and complete recodes need no discovery. When a site’s observed
+levels exceed that rule, the servers declare a public vocabulary list
+that holds them, climbing the hierarchy only as far as the rule needs
+(up to each server’s `dsomop.auto_declared_levels_max`, 10000 by
+default); dates without `level_range` declare every period of their
+observed years. A refusal names the column, site and rule; declare the
+levels (for example with `omop_concept_levels()`), group them with
+`omop_category_recode()` / `omop_category_rollup()`, or narrow events
+with `concepts =`. Before a pooled model, `ds.omop.drop_empty_levels()`
+copies a table without the levels that no site uses.
 
 After publishing the education recipe above, use its committed symbol
 for a pooled table that retains every permitted category, including
