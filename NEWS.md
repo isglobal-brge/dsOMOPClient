@@ -14,9 +14,11 @@
 - Published factor labels work in every dsBase function on Opal by default
   (for example `Acute_myocardial_infarction`, `Neumonia`): spaces, accents and
   punctuation that Opal's parser or `ds.table()` reject are replaced, the same
-  at every site, when every server runs dsOMOP 2.10.9. The codebook keeps the
-  exact names (`names`); `options(dsomop.safe_labels = FALSE)` keeps exact
-  names in the published labels.
+  at every site, when every server runs dsOMOP 2.10.9; labels declared in a
+  recipe follow the same rule (`"under 18"` is published as `under_18`). The
+  codebook keeps the exact names (`names`); `options(dsomop.safe_labels =
+  FALSE)` keeps exact names in the published labels (they then work in
+  `ds.omop.table()` but not in dsBase's `ds.table()` on Opal).
 
 # dsOMOPClient 2.10.8 (2026-11-19)
 
