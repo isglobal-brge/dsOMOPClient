@@ -23,8 +23,9 @@ ds.omop.plan.options(
 
   - translate\_concepts:
     
-    Logical; if `TRUE`, concept ID columns are automatically translated
-    to human-readable concept names in output tables.
+    Logical; chooses concept factor labels: vocabulary names when
+    `TRUE`, decimal ID strings when `FALSE`. Concept columns always have
+    shared factor levels across retained servers.
 
   - block\_sensitive:
     
@@ -33,13 +34,9 @@ ds.omop.plan.options(
 
   - factor\_concepts:
     
-    Logical; if `TRUE` (default), after a memory-mode execution every
-    `_concept_id` column is converted into a factor whose levels are
-    harmonized across all connected servers, so pooled
-    `ds.glm`/`ds.glmSLMA`/`ds.table` see an identical level coding.
-    Columns whose distinct values exceed the server disclosure cap are
-    left raw. Set `FALSE` to keep the raw integer ids (or translated
-    character names) unchanged.
+    Logical; `TRUE` remains accepted. Since 2.10.6, concept IDs are
+    always categories and `FALSE` is rejected. Discovery uses
+    DataSHIELD's factor-level rule; a refusal prevents publication.
 
 ## Value
 

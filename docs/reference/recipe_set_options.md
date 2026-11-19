@@ -26,8 +26,9 @@ recipe_set_options(
 
   - translate\_concepts:
     
-    Logical; if `TRUE`, concept ID columns are translated to
-    human-readable concept names in output tables.
+    Logical; chooses concept factor labels: vocabulary names when
+    `TRUE`, decimal ID strings when `FALSE`. Concept columns always have
+    shared factor levels across retained servers.
 
   - block\_sensitive:
     
@@ -36,9 +37,8 @@ recipe_set_options(
 
   - factor\_concepts:
     
-    Logical; if `TRUE`, after a memory-mode execution every
-    `_concept_id` column is converted to a factor whose levels are
-    harmonized across all connected servers.
+    Logical; `TRUE` remains accepted. Since 2.10.6, concept IDs are
+    always categories and `FALSE` is rejected.
 
 ## Value
 

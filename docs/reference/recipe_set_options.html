@@ -19,7 +19,7 @@ ds.omop.plan.options."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@ ds.omop.plan.options."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Set plan-wide options on a recipe</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/R/recipe.R" class="external-link"><code>R/recipe.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/recipe.R" class="external-link"><code>R/recipe.R</code></a></small>
       <div class="d-none name"><code>recipe_set_options.Rd</code></div>
     </div>
 
@@ -103,8 +103,9 @@ existing option values are preserved for omitted arguments. Mirrors
 
 
 <dt id="arg-translate-concepts">translate_concepts<a class="anchor" aria-label="anchor" href="#arg-translate-concepts"></a></dt>
-<dd><p>Logical; if <code>TRUE</code>, concept ID columns are
-translated to human-readable concept names in output tables.</p></dd>
+<dd><p>Logical; chooses concept factor labels:
+vocabulary names when <code>TRUE</code>, decimal ID strings when <code>FALSE</code>.
+Concept columns always have shared factor levels across retained servers.</p></dd>
 
 
 <dt id="arg-block-sensitive">block_sensitive<a class="anchor" aria-label="anchor" href="#arg-block-sensitive"></a></dt>
@@ -113,9 +114,8 @@ translated to human-readable concept names in output tables.</p></dd>
 
 
 <dt id="arg-factor-concepts">factor_concepts<a class="anchor" aria-label="anchor" href="#arg-factor-concepts"></a></dt>
-<dd><p>Logical; if <code>TRUE</code>, after a memory-mode
-execution every <code>_concept_id</code> column is converted to a factor whose
-levels are harmonized across all connected servers.</p></dd>
+<dd><p>Logical; <code>TRUE</code> remains accepted. Since 2.10.6,
+concept IDs are always categories and <code>FALSE</code> is rejected.</p></dd>
 
 </dl></div>
     <div class="section level2">

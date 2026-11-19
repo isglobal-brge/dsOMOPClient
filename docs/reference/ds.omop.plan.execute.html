@@ -37,7 +37,7 @@ dictionary &amp;lt;name&amp;gt;.transitionRef."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,7 @@ dictionary &amp;lt;name&amp;gt;.transitionRef."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Execute a plan and create server-side tables</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/R/plan.R" class="external-link"><code>R/plan.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/plan.R" class="external-link"><code>R/plan.R</code></a></small>
       <div class="d-none name"><code>ds.omop.plan.execute.Rd</code></div>
     </div>
 
@@ -197,9 +197,10 @@ plan is refused before assignment.</p></dd>
     <p>When <code>output_mode = "staged"</code>, outputs are written to server-local
 Parquet files (CSV fallback when Arrow is unavailable) and
 assigned as <code>FlowerDatasetDescriptor</code> objects instead of final
-data.frames. Long event and interval outputs preserve numeric OMOP concept
-IDs and stream in bounded chunks to Parquet row groups in one file; labels
-can be supplied as a separate concept-reference output. Outputs that still
+data.frames. Long event and interval outputs stream in bounded chunks to
+Parquet row groups in one file. Concept columns use shared factor levels
+with vocabulary labels or decimal ID labels, according to
+<code>translate_concepts</code>. Outputs that still
 require an R-side reshape or
 derivation are materialized before staging. Descriptors are
 server paths readable under the server OS identity; other service accounts

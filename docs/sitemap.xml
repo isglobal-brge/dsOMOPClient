@@ -267,6 +267,7 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.prepare.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.release.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.status.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.drop_empty_levels.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.filter.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.joins.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.login.html</loc></url>
@@ -349,6 +350,7 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_category_rows.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_category_spec.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_censor.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_concept_levels.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_concept_set.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_cost.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_date_spec.html</loc></url>

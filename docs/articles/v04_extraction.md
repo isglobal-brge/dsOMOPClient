@@ -77,11 +77,13 @@ Translation follows the declared concept type, including renamed wide
 columns; it does not depend on an `_concept_id` suffix. The assigned
 columns are unordered factors with shared permitted levels. Joins and
 computations use internal IDs; the published labels are presentation. To
-retain numeric concept IDs instead, set `options =
-list(translate_concepts = FALSE)` on the recipe. `cause_of_death` is the
-coded cause, not proof that everyone has died; missing cause stays NA.
-It is an outcome description and may use future information, so do not
-treat it as a pre-index predictor.
+use concept IDs as factor labels, set `options = list(translate_concepts
+= FALSE)` on the recipe. Since 2.10.6, concept columns are always
+factors with shared levels across retained sites. Compare their labels,
+for example `"4306655"`, rather than numeric IDs. `cause_of_death` is
+the coded cause, not proof that everyone has died; missing cause stays
+NA. It is an outcome description and may use future information, so do
+not treat it as a pre-index predictor.
 
 For a dataset that stores answers as text, this spelling illustrates the
 requested alternative, but it is deliberately refused under ordinary
@@ -120,8 +122,19 @@ gender <- omop_variable(name = "gender", table = "person",
 complete R names. It renames columns without combining them; duplicate
 target names are refused. Automatic duplicate concept names are
 disambiguated by ID. Empty labels are refused, while a literal `"NA"` is
-a category distinct from missing. Keep the default `factor_concepts =
-TRUE` when translation is enabled.
+a category distinct from missing. `factor_concepts = TRUE` remains
+accepted; `factor_concepts = FALSE` is rejected. Observed levels follow
+DataSHIELD’s factor-level maximum and density rule in both translation
+modes. Declared levels and complete recodes need no discovery. When a
+site’s observed levels exceed that rule and a short public vocabulary
+list holds them, the servers declare that list themselves (up to each
+server’s `dsomop.auto_declared_levels_max`, 1000 by default); dates
+without `level_range` declare every period of their observed years. A
+refusal names the column, site and rule; declare the levels (for example
+with `omop_concept_levels()`), group them with `omop_category_recode()`
+/ `omop_category_rollup()`, or narrow events with `concepts =`. Before a
+pooled model, `ds.omop.drop_empty_levels()` copies a table without the
+levels that no site uses.
 
 After publishing the education recipe above, use its committed symbol
 for a pooled table that retains every permitted category, including

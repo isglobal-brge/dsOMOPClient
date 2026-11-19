@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/book-10-harmonise.Rmd" class="external-link"><code>vignettes/book-10-harmonise.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-10-harmonise.Rmd" class="external-link"><code>vignettes/book-10-harmonise.Rmd</code></a></small>
       <div class="d-none name"><code>book-10-harmonise.Rmd</code></div>
     </div>
 
@@ -122,7 +122,7 @@
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">categories</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_categories"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>Translation is the default. The data values become labelled factors on the server.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_categories$education"</span>,</span>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_categories$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_categories$education</span></span>
 <span><span class="co">#&gt;  Secondary education University education                   NA</span></span>
@@ -139,7 +139,7 @@
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fever_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>fever <span class="op">=</span> <span class="va">fever_default</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">fever_recipe</span>, out <span class="op">=</span> <span class="st">"D_fever_default"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_fever_default$fever"</span>,</span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_fever_default$fever"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_fever_default$fever</span></span>
 <span><span class="co">#&gt; Yes  No  NA</span></span>
@@ -156,7 +156,7 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">answers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_category_answers"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">recode_table_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_category_answers$fever"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">recode_table_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_category_answers$fever"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">recode_table_result</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_category_answers$fever</span></span>
 <span><span class="co">#&gt; yes  no</span></span>
@@ -171,7 +171,7 @@
 <code class="sourceCode R"><span><span class="va">renamed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>schooling <span class="op">=</span> <span class="va">education</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">renamed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_renamed_categories"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_renamed_categories"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_renamed_categories"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "person_id" "schooling"</span></span></code></pre>
 <p>The list name supplies the scalar variable name. A concept label map would instead change values inside that column. The visit walkthrough uses a value-preserving mutate alias when adding a new name to an already assigned date column.</p>
@@ -246,7 +246,7 @@
 <p>The keys combine the source name, concept identity and analysis. They remain stable when a vocabulary changes its wording; your chosen column names remain readable. An explicit name cannot collide with a protected or another final column.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">renamed_panel</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="st">"D_renamed_panel"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_renamed_panel"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.colnames</span><span class="op">(</span><span class="st">"D_renamed_panel"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"            "cohort_row_id"     "person_id"         "period_start_days"</span></span>
 <span><span class="co">#&gt; [5] "period_end_days"   "days"              "admissions"        "outpatient"</span></span></code></pre>
@@ -376,7 +376,7 @@
 <p>The table follows primary &lt; secondary &lt; tertiary, with primary = 0, secondary = 12 and tertiary = 12. The 24 missing answers are omitted by <code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code>. The order is chosen by the study, not inferred from frequency. Ordered factors use polynomial contrasts; set <code>ordered = FALSE</code> if your model needs nominal treatment contrasts instead. A treatment reference and display order are separate choices.</p>
 <p>Check the actual type of this column.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.class.html" class="external-link">ds.class</a></span><span class="op">(</span><span class="st">"D_ordered$education"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.class</span><span class="op">(</span><span class="st">"D_ordered$education"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "dsomop_category_factor" "ordered"                "factor"</span></span></code></pre>
 <p>It is an ordered factor, not the integers used internally to store a factor.</p>
@@ -612,10 +612,19 @@
 <p>The first and second levels have different labels even though the same drug records contribute to both. Neither level is selected by counting observed drugs.</p>
 </div>
 <div class="section level2">
+<h2 id="many-categories-at-one-site">Many categories at one site<a class="anchor" aria-label="anchor" href="#many-categories-at-one-site"></a>
+</h2>
+<p>DataSHIELD lets a site release the categories it observes only when they are few: at most 40 by default, and fewer than a third of the rows. A site that records 60 different causes of death is above that rule. When a short public list in the vocabulary holds the observed categories, for example a cause-of-death vocabulary, the servers declare that whole list themselves. The recipe needs no change, and every site gets the same levels, including causes nobody has. Dates by month, quarter or week work the same way: every period of the observed years becomes a level.</p>
+<p>A longer list, such as a large clinical terminology, is refused with the remedies. Group the codes with <code><a href="../reference/omop_category_spec.html">omop_category_rollup()</a></code> or <code><a href="../reference/omop_category_spec.html">omop_category_recode()</a></code>, narrow the events with <code>concepts =</code>, or declare the codes you study with <code><a href="../reference/omop_concept_levels.html">omop_concept_levels()</a></code>.</p>
+<p>Levels that no site uses show as zero counts in tables, but a pooled model cannot estimate them. Before <code>ds.glm()</code>, make a copy that keeps only the levels that some site uses:</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.drop_empty_levels.html">ds.omop.drop_empty_levels</a></span><span class="op">(</span><span class="st">"D_rollups"</span>, newobj <span class="op">=</span> <span class="st">"D_rollups_model"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="read-the-codebook-of-each-table">Read the codebook of each table<a class="anchor" aria-label="anchor" href="#read-the-codebook-of-each-table"></a>
 </h2>
 <p>Keep the execution result: it carries the admitted table metadata. Calling <code><a href="../reference/recipe_codebook.html">recipe_codebook()</a></code> on it is local and does not query patient rows. Calling it on the recipe instead produces a prospective schema, with unresolved fields marked explicitly.</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">book</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">ordered_result</span><span class="op">)</span></span>
 <span><span class="va">book</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stable_key"</span>, <span class="st">"name"</span>, <span class="st">"semantic_type"</span>, <span class="st">"r_type"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
@@ -646,7 +655,7 @@
 <h2 id="two-sites-with-different-wording-and-different-answers">Two sites with different wording and different answers<a class="anchor" aria-label="anchor" href="#two-sites-with-different-wording-and-different-answers"></a>
 </h2>
 <p>Site2 has no Secondary education answers: all its respondents have University answers. Its newer vocabulary calls concept 900102 “University qualification”. Log in to both sites. In a real federation each site has its own server URL; here both resources are on our Opal:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, <span class="fl">2</span><span class="op">)</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
@@ -654,7 +663,7 @@
 <span>  server <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"site"</span>, <span class="st">"site2"</span><span class="op">)</span>,</span>
 <span>  resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>site <span class="op">=</span> <span class="st">"omop.questionnaire"</span>, site2 <span class="op">=</span> <span class="st">"omop.questionnaire_site2"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 <p>Inspect the vocabulary wording before looking at patient counts:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lookup</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fl">900102L</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">lookup</span><span class="op">$</span><span class="va">per_site</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">site</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>Site <span class="op">=</span> <span class="va">site</span>, <span class="va">lookup</span><span class="op">$</span><span class="va">per_site</span><span class="op">[[</span><span class="va">site</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -683,9 +692,9 @@
 <h2 id="let-the-default-reconciliation-work">Let the default reconciliation work<a class="anchor" aria-label="anchor" href="#let-the-default-reconciliation-work"></a>
 </h2>
 <p>Execute the original unlabelled education recipe on both connections:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">categories</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_default_pair"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">paired_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_default_pair$education"</span>,</span>
+<span><span class="va">paired_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_default_pair$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">paired_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_default_pair$education</span></span>
@@ -693,7 +702,7 @@
 <span><span class="co">#&gt;                       12                       36                       48</span></span></code></pre>
 <p>The pooled counts are Secondary education = 12, University qualification = 36, and missing = 48. Execution already chooses one category per concept ID and uses the newest vocabulary wording. No label map was needed to combine them.</p>
 <p>The same two-site response contains counts for each site. Select the count matrix, leaving out the proportion matrices:</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">site_counts</span> <span class="op">&lt;-</span> <span class="va">paired_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLE_rvar.by.study_counts</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">site_counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">site_counts</span></span></code></pre></div>
@@ -728,12 +737,12 @@
 </h2>
 <p>Keep “University education” as the shared label even when a site has a newer name. Does this change the counts?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">harmonised</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="va">education</span><span class="op">)</span>,</span>
 <span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"900102"</span> <span class="op">=</span> <span class="st">"University education"</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">harmonised</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_shared"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_shared$education"</span>,</span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_shared$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_shared$education</span></span>
 <span><span class="co">#&gt;  Secondary education University education                   NA</span></span>
@@ -746,11 +755,11 @@
 </h2>
 <p>Give Secondary and University the same label, “Recorded education”. Predict the pooled count and missing count before executing.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">merged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="va">education</span><span class="op">)</span>,</span>
 <span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"900101"</span> <span class="op">=</span> <span class="st">"Recorded education"</span>, <span class="st">"900102"</span> <span class="op">=</span> <span class="st">"Recorded education"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">merged</span>, out <span class="op">=</span> <span class="st">"D_merged_answers"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_merged_answers$education"</span>,</span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_merged_answers$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_merged_answers$education</span></span>
 <span><span class="co">#&gt; Recorded education                 NA</span></span>
@@ -763,12 +772,12 @@
 </h2>
 <p>Take the first education answer instead of the last. Does either site’s marginal distribution change?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">first_answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
 <span>  event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, concepts <span class="op">=</span> <span class="fl">900001L</span><span class="op">)</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">first_answers</span>, out <span class="op">=</span> <span class="st">"D_first_pair"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">first_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_first_pair$education"</span>,</span>
+<span><span class="va">first_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_first_pair$education"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">first_site_counts</span> <span class="op">&lt;-</span> <span class="va">first_counts</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLE_rvar.by.study_counts</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">first_site_counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>

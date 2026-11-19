@@ -2,8 +2,8 @@
 
 Scans other outputs in the plan for concept IDs and produces a lookup
 table with concept names, domains, vocabulary IDs, and which outputs
-reference each concept. Useful for translating numeric concept IDs in
-other output tables into human-readable labels.
+reference each concept. Useful for labelling concept ID factors in other
+output tables into human-readable labels.
 
 ## Usage
 

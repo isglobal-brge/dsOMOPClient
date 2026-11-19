@@ -61,7 +61,10 @@ omop_category_binary(as = "integer", labels = c("no", "yes"))
 
   - levels:
     
-    Complete declared category keys, including unused categories.
+    Complete declared category keys, including unused categories. For a
+    concept column, `omop_concept_levels()` builds them from the public
+    vocabulary; declared levels need no discovery, so no factor-level
+    limit applies to them.
 
   - order:
     

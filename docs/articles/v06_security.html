@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,7 +86,7 @@
       <h1>Security and Disclosure Controls</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v06_security.Rmd" class="external-link"><code>vignettes/v06_security.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/v06_security.Rmd" class="external-link"><code>vignettes/v06_security.Rmd</code></a></small>
       <div class="d-none name"><code>v06_security.Rmd</code></div>
     </div>
 
@@ -282,7 +282,7 @@
 </h2>
 <p>Staged mode can stream untranslated long-event and interval chunks to Parquet row groups in one file when Arrow is available, with CSV as the fallback. SQL-first temporal/person-period components are streamed in the same way. Outputs that inherently require an R-side reshape are materialized before being staged, so staged mode does not make every representation memory-bounded.</p>
 <p>Files live under a private server directory with <code>0700</code> directories and <code>0600</code> files and are governed by row, byte, output-count, directory and TTL limits. A local staging transaction deletes its new directory on a pre-commit error and writes <code>manifest.json</code> version 2 only after every file and descriptor is complete. Each descriptor binds its dataset/source/origin/token identity, path, format, permissions and expiry, plus its pseudonym-key ID/epoch, exact component <code>semantic_contract</code> and shared output-level <code>bundle_contract</code>.</p>
-<p>The returned object is a server-side descriptor, not a URL, a DataSHIELD download or automatic interoperability with another package. A consumer running as the same operating-system identity should resolve it through <code><a href="https://rdrr.io/pkg/dsOMOP/man/omopStagedDatasetPath.html" class="external-link">dsOMOP::omopStagedDatasetPath()</a></code>, which rechecks those identities and contracts as well as path confinement, format, expiry and owner-only permissions. Sibling components must share the expected <code>bundle_contract</code>, key ID and epoch; their exact component semantic contracts intentionally differ by shape. A different identity, host or service needs an explicitly reviewed broker that rechecks authorization, expiry and path confinement.</p>
+<p>The returned object is a server-side descriptor, not a URL, a DataSHIELD download or automatic interoperability with another package. A consumer running as the same operating-system identity should resolve it through <code>dsOMOP::omopStagedDatasetPath()</code>, which rechecks those identities and contracts as well as path confinement, format, expiry and owner-only permissions. Sibling components must share the expected <code>bundle_contract</code>, key ID and epoch; their exact component semantic contracts intentionally differ by shape. A different identity, host or service needs an explicitly reviewed broker that rechecks authorization, expiry and path confinement.</p>
 <p>Cross-node execution is all-or-none only for DataSHIELD-visible symbols. If a node fails after another has committed its local manifest, client cleanup removes the descriptors but the already committed private files may remain registered with the successful handle until handle cleanup, disconnect or TTL cleanup. Stale cleanup occurs on package load/attach and is not a scheduler, so operators should also provide lifecycle monitoring appropriate to their deployment.</p>
 <p>Staged files that carry person tokens require a resource-scoped key provider. The optional global pseudonym key is readable for in-memory objects but cannot be used to create this wider interoperability surface.</p>
 </div>

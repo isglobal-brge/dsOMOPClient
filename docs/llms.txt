@@ -158,6 +158,8 @@ Book by **David Sarrat González**.
     releases
   - `ds.omop.dp.release()` : Request a sticky privacy release
   - `ds.omop.dp.status()` : Inspect sticky privacy-release services
+  - `ds.omop.drop_empty_levels()` : Drop levels that are empty at every
+    site, for models
   - `ds.omop.filter()` : Filter the rows of a server-side omop.table
     data frame
   - `ds.omop.joins()` : Get the join relationship graph
@@ -293,6 +295,8 @@ Book by **David Sarrat González**.
     `omop_category_binary()` : Category identity, ordering and
     presentation
   - `omop_censor()` : Censoring by an event or era
+  - `omop_concept_levels()` : Declared category levels from the public
+    vocabulary
   - `omop_concept_set()` : Define a concept set
   - `omop_cost()` : Cost rows linked to an event
   - `omop_date_spec()` `omop_date()` `omop_date_components()`

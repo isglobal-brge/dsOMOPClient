@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/book-21-case-glucose.Rmd" class="external-link"><code>vignettes/book-21-case-glucose.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-21-case-glucose.Rmd" class="external-link"><code>vignettes/book-21-case-glucose.Rmd</code></a></small>
       <div class="d-none name"><code>book-21-case-glucose.Rmd</code></div>
     </div>
 
@@ -199,7 +199,7 @@
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"measured"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">trajectory</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_glucose"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span>, <span class="st">"change"</span>, <span class="st">"per_year"</span>, <span class="st">"followup_days"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span></span>
-<span>  <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.quantileMean.html" class="external-link">ds.quantileMean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_glucose$"</span>, <span class="va">column</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.quantileMean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_glucose$"</span>, <span class="va">column</span><span class="op">)</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left"></th>
@@ -282,7 +282,7 @@
 <h2 id="classify-values-and-distinguish-unobserved-attainment">Classify values and distinguish unobserved attainment<a class="anchor" aria-label="anchor" href="#classify-values-and-distinguish-unobserved-attainment"></a>
 </h2>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_glucose$control"</span>,</span>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_glucose$control"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_glucose$control</span></span>
 <span><span class="co">#&gt;    below 90 90 or above          NA</span></span>
@@ -290,7 +290,7 @@
 <p>Four people are below 90 and six are at least 90 mg/dL. It is a presentation rule, not a diagnosis or treatment goal. More detailed categories may be withheld in a population this small.</p>
 <p>For a separate timing question, use the first <strong>observed</strong> glucose ≥95 mg/dL. In this tiny synthetic dataset, a 100 mg/dL rule would leave too few people for a released summary, so the lesson uses 95 mg/dL as a teaching threshold. In a real study the threshold comes from the protocol, and a withheld result is reported as withheld, not avoided by changing the cutoff.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
@@ -302,7 +302,7 @@
 <span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean</span></span>
 <span><span class="co">#&gt;  259.7  519.4  986.5 1169.0 2693.5 4769.8 5555.9 2101.5</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_glucose$target_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] 2</span></span></code></pre>
 <p>Eight people have an observed attainment and two are missing. The median among attainments is 1,169 days; the mean is 2,101.5 days. One of the eight attains at day zero, which is not shown directly by these interpolated quantiles. A zero means the threshold was met at baseline; a positive time means a later recorded crossing. Missing means no crossing was observed during available measurements. The missing people must remain under observation until censoring in a time-to-event analysis; a mean among observed crossings alone is conditional on crossing and does not estimate everyone’s time to threshold.</p>
@@ -312,7 +312,7 @@
 </h2>
 <p>A Gaussian regression describes the association between first and last readings. With ten complete people and two coefficients, use a t interval with eight residual degrees of freedom rather than the large-sample z interval.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.glm.html" class="external-link">ds.glm</a></span><span class="op">(</span><span class="st">"last ~ first"</span>, data <span class="op">=</span> <span class="st">"D_glucose"</span>, family <span class="op">=</span> <span class="st">"gaussian"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.glm</span><span class="op">(</span><span class="st">"last ~ first"</span>, data <span class="op">=</span> <span class="st">"D_glucose"</span>, family <span class="op">=</span> <span class="st">"gaussian"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="st">"first"</span>, <span class="st">"Estimate"</span><span class="op">]</span></span>
 <span><span class="va">se</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="st">"first"</span>, <span class="st">"Std. Error"</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>N <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">Nvalid</span>, df <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">df</span>, Estimate <span class="op">=</span> <span class="va">b</span>, Lower_95 <span class="op">=</span> <span class="va">b</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">.975</span>, <span class="va">fit</span><span class="op">$</span><span class="va">df</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>,</span>
@@ -345,7 +345,7 @@
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_glucose"</span>, target_years <span class="op">=</span> <span class="va">target_days</span> <span class="op">/</span> <span class="fl">365.25</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_glucose_years"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>
@@ -357,7 +357,7 @@
 <span><span class="co">#&gt;         5%        10%        25%        50%        75%        90%        95%       Mean</span></span>
 <span><span class="co">#&gt;  0.7110198  1.4220397  2.7008898  3.2005476  7.3744011 13.0590007 15.2112252  5.7535934</span></span></code></pre>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.numNA</span><span class="op">(</span><span class="st">"D_glucose_years$target_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] 2</span></span></code></pre>
 <p>The median becomes 3.20 years and the mean 5.75 years. Divide the day summary by 365.25 to check the values. The valid and missing counts do not change: rescaling cannot supply unobserved crossings.</p>
@@ -366,7 +366,7 @@
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_glucose"</span>, difference <span class="op">=</span> <span class="va">last</span> <span class="op">-</span> <span class="va">first</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_difference"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_difference$difference"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D_difference$difference"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "numeric"</span></span>

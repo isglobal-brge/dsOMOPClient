@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/book-20-case-gibleed.Rmd" class="external-link"><code>vignettes/book-20-case-gibleed.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/vignettes/book-20-case-gibleed.Rmd" class="external-link"><code>vignettes/book-20-case-gibleed.Rmd</code></a></small>
       <div class="d-none name"><code>book-20-case-gibleed.Rmd</code></div>
     </div>
 
@@ -293,13 +293,13 @@
 <span>  age <span class="op">=</span> <span class="va">entry_year</span> <span class="op">-</span> <span class="va">birth_year</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">month_difference</span> <span class="op">&lt;</span> <span class="fl">0</span> <span class="op">|</span></span>
 <span>    <span class="op">(</span><span class="va">month_difference</span> <span class="op">==</span> <span class="fl">0</span> <span class="op">&amp;</span> <span class="va">day_difference</span> <span class="op">&lt;</span> <span class="fl">0</span><span class="op">)</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_comparison_model"</span>, conns <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_comparison_model$zero_time"</span>,</span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_comparison_model$zero_time"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_comparison_model$zero_time</span></span>
 <span><span class="co">#&gt;    0   NA</span></span>
 <span><span class="co">#&gt; 2630    0</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_comparison$celecoxib"</span>,</span>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_comparison$celecoxib"</span>,</span>
 <span>  <span class="st">"D_comparison$event"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -334,7 +334,7 @@
 <code class="sourceCode R"><span><span class="va">arm_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">0</span><span class="op">:</span><span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">arm</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_comparison_model"</span>, var <span class="op">=</span> <span class="st">"celecoxib"</span>, op <span class="op">=</span> <span class="st">"=="</span>, value <span class="op">=</span> <span class="va">arm</span>,</span>
 <span>    newobj <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_arm"</span>, <span class="va">arm</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span>  <span class="va">aggregate</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_arm"</span>, <span class="va">arm</span>, <span class="st">"$"</span>, <span class="va">column</span><span class="op">)</span>,</span>
+<span>  <span class="va">aggregate</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_arm"</span>, <span class="va">arm</span>, <span class="st">"$"</span>, <span class="va">column</span><span class="op">)</span>,</span>
 <span>    type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
 <span>  <span class="va">time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="st">"years"</span><span class="op">)</span>; <span class="va">event</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="st">"event"</span><span class="op">)</span>; <span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="st">"age"</span><span class="op">)</span></span>
 <span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="va">time</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nvalid"</span><span class="op">]</span></span>
@@ -383,8 +383,8 @@
 </h2>
 <p>An exponential survival model assumes a constant event hazard during follow-up. Fit a Poisson model of the event indicator with log(person-years) as an offset. The treatment coefficient is a log hazard ratio against diclofenac, conditional on completed age at entry. This is not a Cox model.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.log.html" class="external-link">ds.log</a></span><span class="op">(</span><span class="st">"D_comparison_model$years"</span>, newobj <span class="op">=</span> <span class="st">"log_years"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="va">comparison_fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.glm.html" class="external-link">ds.glm</a></span><span class="op">(</span><span class="st">"event ~ celecoxib + age"</span>,</span>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.log</span><span class="op">(</span><span class="st">"D_comparison_model$years"</span>, newobj <span class="op">=</span> <span class="st">"log_years"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
+<span><span class="va">comparison_fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.glm</span><span class="op">(</span><span class="st">"event ~ celecoxib + age"</span>,</span>
 <span>  data <span class="op">=</span> <span class="st">"D_comparison_model"</span>, family <span class="op">=</span> <span class="st">"poisson"</span>, offset <span class="op">=</span> <span class="st">"log_years"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
 <span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="va">comparison_fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="st">"celecoxib"</span>, <span class="st">"Estimate"</span><span class="op">]</span></span>
 <span><span class="va">se</span> <span class="op">&lt;-</span> <span class="va">comparison_fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="st">"celecoxib"</span>, <span class="st">"Std. Error"</span><span class="op">]</span></span>
@@ -428,7 +428,7 @@
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_comparison"</span>, early_censor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">event</span> <span class="op">==</span> <span class="fl">0</span> <span class="op">&amp;</span> <span class="va">follow_up_days</span> <span class="op">&lt;</span> <span class="fl">364</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_censor"</span>, conns <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_censor$early_censor"</span>,</span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.table</span><span class="op">(</span><span class="st">"D_censor$early_censor"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_censor$early_censor</span></span>
 <span><span class="co">#&gt;    0    1   NA</span></span>

@@ -17,7 +17,7 @@ toJSON's native row-wise encoding."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,12 +68,12 @@ toJSON's native row-wise encoding."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Recursively coerce named atomic vectors to lists</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/R/session.R" class="external-link"><code>R/session.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/session.R" class="external-link"><code>R/session.R</code></a></small>
       <div class="d-none name"><code>dot-ds_coerce_names.Rd</code></div>
     </div>
 
     <div class="ref-description section level2">
-    <p><code><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">jsonlite::toJSON</a></code> drops the names of a named atomic vector (it emits a
+    <p><code><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">jsonlite::toJSON</a></code> drops the names of a named atomic vector (it emits a
 bare array), but keeps the names of a list (as object keys). Walking the
 structure and converting every named atomic vector to a list makes names
 survive the JSON round-trip at any nesting depth. Unnamed atomic vectors are

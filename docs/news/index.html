@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,13 +58,14 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.10.5" id="dsomopclient-2105">dsOMOPClient 2.10.5<a class="anchor" aria-label="anchor" href="#dsomopclient-2105"></a></h2>
+<h2 class="pkg-version" data-toc-text="2.10.7" id="dsomopclient-2107">dsOMOPClient 2.10.7<a class="anchor" aria-label="anchor" href="#dsomopclient-2107"></a></h2>
 <p>Use matching dsOMOP and dsOMOPClient packages for the study examples in this book. Publish the installed server methods and options in the selected Opal profile, then check its published and running versions from the client.</p>
-<p>This release provides numeric units, rounding, bins, thresholds, transformations, change over time and clinical formulas. Categories support declared ordering, labels, hierarchy groups and missing-value policies. Each output has a codebook that records its column types and presentation rules.</p>
+<p>Concept IDs are categories everywhere, with the same levels at every site. Observed categories follow DataSHIELD’s factor-level rule; declared lists (<code><a href="../reference/omop_concept_levels.html">omop_concept_levels()</a></code>, recodes, label maps, concept sets) need no discovery. When a site observes more categories than the rule admits and a short public vocabulary list holds them, the servers declare that list themselves; dates by month or week declare every period of their observed years. Before a pooled model, <code><a href="../reference/ds.omop.drop_empty_levels.html">ds.omop.drop_empty_levels()</a></code> drops levels that no site uses.</p>
+<p>The package also provides numeric units, rounding, bins, thresholds, transformations, change over time and clinical formulas. Categories support declared ordering, labels, hierarchy groups and missing-value policies. Each output has a codebook that records its column types and presentation rules.</p>
 <p>Start with <a href="../articles/book-00-start.html">Getting started</a>, explore the <a href="../articles/book-showcase.html">worked examples</a>, or read the <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/NEWS.md" class="external-link">complete package release history</a>.</p>
 </div>
   </main></div>

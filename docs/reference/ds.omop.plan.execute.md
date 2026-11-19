@@ -99,19 +99,19 @@ subsequent manipulation wrappers (`ds.omop.merge`, `ds.omop.filter`,
 When `output_mode = "staged"`, outputs are written to server-local
 Parquet files (CSV fallback when Arrow is unavailable) and assigned as
 `FlowerDatasetDescriptor` objects instead of final data.frames. Long
-event and interval outputs preserve numeric OMOP concept IDs and stream
-in bounded chunks to Parquet row groups in one file; labels can be
-supplied as a separate concept-reference output. Outputs that still
-require an R-side reshape or derivation are materialized before staging.
-Descriptors are server paths readable under the server OS identity;
-other service accounts require a separately reviewed broker. They are
-not client download URLs and do not by themselves establish
-compatibility with a particular external package. Publication status is
-read before the temporary execution symbol is removed. The server
-reports the actual output inventory and allocates fresh names for
-occupied destinations. A technical or transport failure revokes and
-removes this execution's symbols and staged files across all
-participating sites.
+event and interval outputs stream in bounded chunks to Parquet row
+groups in one file. Concept columns use shared factor levels with
+vocabulary labels or decimal ID labels, according to
+`translate_concepts`. Outputs that still require an R-side reshape or
+derivation are materialized before staging. Descriptors are server paths
+readable under the server OS identity; other service accounts require a
+separately reviewed broker. They are not client download URLs and do not
+by themselves establish compatibility with a particular external
+package. Publication status is read before the temporary execution
+symbol is removed. The server reports the actual output inventory and
+allocates fresh names for occupied destinations. A technical or
+transport failure revokes and removes this execution's symbols and
+staged files across all participating sites.
 
 With two or more servers, execution first establishes (or revalidates) a
 strict schema/semantic harmonization contract. Concept factors are

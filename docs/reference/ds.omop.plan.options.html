@@ -11,7 +11,7 @@ preserved for omitted arguments."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@ preserved for omitted arguments."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Set plan-wide options</h1>
-      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/R/plan.R" class="external-link"><code>R/plan.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/main/R/plan.R" class="external-link"><code>R/plan.R</code></a></small>
       <div class="d-none name"><code>ds.omop.plan.options.Rd</code></div>
     </div>
 
@@ -91,9 +91,9 @@ preserved for omitted arguments.</p>
 
 
 <dt id="arg-translate-concepts">translate_concepts<a class="anchor" aria-label="anchor" href="#arg-translate-concepts"></a></dt>
-<dd><p>Logical; if <code>TRUE</code>, concept ID columns
-are automatically translated to human-readable concept names in
-output tables.</p></dd>
+<dd><p>Logical; chooses concept factor labels:
+vocabulary names when <code>TRUE</code>, decimal ID strings when <code>FALSE</code>.
+Concept columns always have shared factor levels across retained servers.</p></dd>
 
 
 <dt id="arg-block-sensitive">block_sensitive<a class="anchor" aria-label="anchor" href="#arg-block-sensitive"></a></dt>
@@ -102,13 +102,9 @@ output tables.</p></dd>
 
 
 <dt id="arg-factor-concepts">factor_concepts<a class="anchor" aria-label="anchor" href="#arg-factor-concepts"></a></dt>
-<dd><p>Logical; if <code>TRUE</code> (default), after a
-memory-mode execution every <code>_concept_id</code> column is converted
-into a factor whose levels are harmonized across all connected
-servers, so pooled <code>ds.glm</code>/<code>ds.glmSLMA</code>/<code>ds.table</code>
-see an identical level coding. Columns whose distinct values exceed
-the server disclosure cap are left raw. Set <code>FALSE</code> to keep the
-raw integer ids (or translated character names) unchanged.</p></dd>
+<dd><p>Logical; <code>TRUE</code> remains accepted. Since 2.10.6,
+concept IDs are always categories and <code>FALSE</code> is rejected. Discovery
+uses DataSHIELD's factor-level rule; a refusal prevents publication.</p></dd>
 
 </dl></div>
     <div class="section level2">

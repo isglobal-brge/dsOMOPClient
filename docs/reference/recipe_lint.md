@@ -62,8 +62,8 @@ wrong), and `"INFO"` (advisory). Rules:
 
   - highcard\_factor (WARNING):
     
-    a raw `_concept_id` column with `factor_concepts = TRUE`, or a
-    categorical format on a high-cardinality domain.
+    a raw `_concept_id` column, or a categorical format on a
+    high-cardinality domain.
 
   - window\_inverted (WARNING):
     
