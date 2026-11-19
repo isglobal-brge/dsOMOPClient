@@ -640,7 +640,8 @@ test_that("split output symbols resolve against the longest recipe parent", {
   testthat::local_mocked_bindings(
     ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
                                     output_mode = "memory",
-                                    on_small_site = c("error", "skip")) {
+                                    on_small_site = c("error", "skip"),
+                                    small_categories = c("keep", "missing")) {
       seen <<- out
       invisible(out)
     },

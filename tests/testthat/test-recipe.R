@@ -1786,15 +1786,17 @@ test_that("recipe_execute forwards output_mode to plan execution", {
   testthat::local_mocked_bindings(
     ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
                                     output_mode = "memory",
-                                    on_small_site = c("error", "skip")) {
+                                    on_small_site = c("error", "skip"),
+                                    small_categories = c("keep", "missing")) {
       seen <<- list(plan = plan, out = out, symbol = symbol,
-                    output_mode = output_mode)
+                    output_mode = output_mode, small_categories = small_categories)
       invisible(out)
     },
     .package = "dsOMOPClient"
   )
 
   out <- recipe_execute(c, symbol = "x", output_mode = "staged")
+  expect_identical(seen$small_categories, "keep")
 
   expect_equal(out, c(demo = "D_demo"))
   expect_s3_class(seen$plan, "omop_plan")
