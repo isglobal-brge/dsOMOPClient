@@ -38,11 +38,20 @@
 #'   \code{NULL} (the default) returns both.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
 #'   de-duplicated cross-site view of the shared vocabulary; per-site frames
 #'   remain available).
@@ -72,7 +81,11 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
                                    valid = NULL,
                                    symbol = "omop",
                                    conns = NULL,
-                                   execute = TRUE) {
+                                   execute = TRUE,
+                                   type = "both",
+                                   datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.search")
+  result_type <- .resolve_result_type(type, default_type = "both")
   if (!is.null(pattern) &&
       (!is.character(pattern) || length(pattern) != 1L || is.na(pattern))) {
     stop("pattern must be NULL or one non-missing character string.",
@@ -81,16 +94,12 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
   code <- .build_code("ds.omop.concept.search",
     pattern = pattern, domain = domain, vocabulary = vocabulary,
     standard_only = standard_only, limit = limit, concept_id = concept_id,
-    standard = standard, valid = valid, symbol = symbol)
+    standard = standard, valid = valid, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "per_site")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -103,9 +112,12 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
                 standard = standard, valid = valid)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_concept_metadata(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_concept_metadata(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' Look up OMOP concepts by ID
@@ -119,11 +131,20 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
 #'   (e.g., \code{c(201826, 4329847)}).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
 #'   de-duplicated cross-site view of the shared vocabulary; per-site frames
 #'   remain available).
@@ -141,18 +162,18 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
 ds.omop.concept.lookup <- function(concept_ids,
                                    symbol = "omop",
                                    conns = NULL,
-                                   execute = TRUE) {
+                                   execute = TRUE,
+                                   type = "both",
+                                   datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.lookup")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.lookup",
-    concept_ids = concept_ids, symbol = symbol)
+    concept_ids = concept_ids, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "per_site")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -160,9 +181,12 @@ ds.omop.concept.lookup <- function(concept_ids,
                 .ds_encode(as.integer(concept_ids)))
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_concept_metadata(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_concept_metadata(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' Get descendant concepts via the concept_ancestor table
@@ -179,11 +203,20 @@ ds.omop.concept.lookup <- function(concept_ids,
 #'   descendants.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
 #'   de-duplicated cross-site view of the shared vocabulary; per-site frames
 #'   remain available).
@@ -202,19 +235,19 @@ ds.omop.concept.descendants <- function(ancestor_ids,
                                         include_self = TRUE,
                                         symbol = "omop",
                                         conns = NULL,
-                                        execute = TRUE) {
+                                        execute = TRUE,
+                                        type = "both",
+                                        datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.descendants")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.descendants",
     ancestor_ids = ancestor_ids, include_self = include_self,
-    symbol = symbol)
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "per_site")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -222,9 +255,12 @@ ds.omop.concept.descendants <- function(ancestor_ids,
                 .ds_encode(as.integer(ancestor_ids)), include_self)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_concept_metadata(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_concept_metadata(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' Build a concept set specification (client-only)
@@ -282,11 +318,20 @@ ds.omop.concept.set <- function(concepts,
 #'   \code{\link{ds.omop.concept.set}}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
 #'   de-duplicated cross-site view of the shared vocabulary; per-site frames
 #'   remain available).
@@ -301,18 +346,18 @@ ds.omop.concept.set <- function(concepts,
 ds.omop.concept.expand <- function(concept_set,
                                    symbol = "omop",
                                    conns = NULL,
-                                   execute = TRUE) {
+                                   execute = TRUE,
+                                   type = "both",
+                                   datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.expand")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.expand",
-    concept_set = concept_set, symbol = symbol)
+    concept_set = concept_set, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "per_site")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -320,9 +365,12 @@ ds.omop.concept.expand <- function(concept_set,
                 .ds_encode(concept_set))
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_concept_metadata(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_concept_metadata(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 # --- Vocabulary catalog pooling helper ----------------------------------------
@@ -344,7 +392,7 @@ ds.omop.concept.expand <- function(concept_set,
 .pool_vocab_union <- function(per_site) {
   if (length(attr(per_site, "ds_errors")) > 0L) return(NULL)
   dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
-  if (length(dfs) == 0) return(NULL)
+  if (length(dfs) == 0) return(.empty_metadata_union(per_site))
   common <- Reduce(intersect, lapply(dfs, names))
   if (length(common) == 0) return(NULL)
   combined <- do.call(rbind, lapply(dfs, function(d) d[, common, drop = FALSE]))
@@ -369,11 +417,20 @@ ds.omop.concept.expand <- function(concept_set,
 #'   hierarchy for (e.g., \code{c(201826)}).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's frame
 #'   (with \code{direction} and \code{levels_of_separation}); \code{pooled} is
 #'   the de-duplicated union across servers.
@@ -387,18 +444,18 @@ ds.omop.concept.expand <- function(concept_set,
 ds.omop.concept.ancestors <- function(concept_ids,
                                       symbol = "omop",
                                       conns = NULL,
-                                      execute = TRUE) {
+                                      execute = TRUE,
+                                      type = "both",
+                                      datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.ancestors")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.ancestors",
-    concept_ids = concept_ids, symbol = symbol)
+    concept_ids = concept_ids, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -406,9 +463,12 @@ ds.omop.concept.ancestors <- function(concept_ids,
                 .ds_encode(as.integer(concept_ids)))
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_vocab_union(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_vocab_union(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' Get the synonyms of one or more concepts
@@ -423,11 +483,20 @@ ds.omop.concept.ancestors <- function(concept_ids,
 #'   synonyms for (e.g., \code{c(201826)}).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's
 #'   \code{concept_id} / \code{concept_synonym_name} frame; \code{pooled} is the
 #'   de-duplicated union across servers.
@@ -440,18 +509,18 @@ ds.omop.concept.ancestors <- function(concept_ids,
 ds.omop.concept.synonyms <- function(concept_ids,
                                      symbol = "omop",
                                      conns = NULL,
-                                     execute = TRUE) {
+                                     execute = TRUE,
+                                     type = "both",
+                                     datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.synonyms")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.synonyms",
-    concept_ids = concept_ids, symbol = symbol)
+    concept_ids = concept_ids, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -459,9 +528,12 @@ ds.omop.concept.synonyms <- function(concept_ids,
                 .ds_encode(as.integer(concept_ids)))
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_vocab_union(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_vocab_union(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' Get the relationships of one or more concepts
@@ -481,11 +553,20 @@ ds.omop.concept.synonyms <- function(concept_ids,
 #'   \code{NULL} (the default) returns all relationship types.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's
 #'   relationship frame (with a \code{direction} column); \code{pooled} is the
 #'   de-duplicated union across servers.
@@ -503,19 +584,19 @@ ds.omop.concept.relationships <- function(concept_ids,
                                           relationship_id = NULL,
                                           symbol = "omop",
                                           conns = NULL,
-                                          execute = TRUE) {
+                                          execute = TRUE,
+                                          type = "both",
+                                          datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.relationships")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.relationships",
     concept_ids = concept_ids, relationship_id = relationship_id,
-    symbol = symbol)
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -524,9 +605,12 @@ ds.omop.concept.relationships <- function(concept_ids,
                 relationship_id = relationship_id)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_vocab_union(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_vocab_union(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 # --- Paged concept catalog ----------------------------------------------------
@@ -539,8 +623,12 @@ ds.omop.concept.relationships <- function(concept_ids,
 #' \code{\link{ds.omop.concept.search}} this returns the total matching count
 #' alongside the current page so callers can build pagination controls.
 #' Vocabulary reference data carries no patient information, so this reader is
-#' not disclosure-gated; the per-site pages are pooled by set union and the
-#' per-site \code{total_count} values are summed.
+#' not disclosure-gated; the per-site pages are pooled by set union. The
+#' pooled \code{total_count} is the sum of the per-site totals, labelled as
+#' such: a concept present on several servers (shared vocabularies usually
+#' are) counts once per server, so it is an upper bound of the distinct
+#' concepts; \code{total_count_max}, the largest per-site total, is a lower
+#' bound.
 #'
 #' @param domain Character; filter by \code{domain_id} (e.g. \code{"Condition"}).
 #'   \code{NULL} (the default) applies no domain filter.
@@ -559,15 +647,24 @@ ds.omop.concept.relationships <- function(concept_ids,
 #'   the server default (\code{concept_id}).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's
 #'   \code{list(rows, total_count, offset, limit)}; \code{pooled} is a list with
-#'   \code{rows} (the de-duplicated union of the page rows) and
-#'   \code{total_count} (the summed per-site totals).
+#'   \code{rows} (the de-duplicated union of the page rows),
+#'   \code{total_count} (the sum of the per-site totals, an upper bound of the
+#'   distinct concepts), \code{total_count_max} (the largest per-site total,
+#'   a lower bound), \code{total_count_basis} (that label), \code{offset}
+#'   and \code{limit}.
 #' @examples
 #' \dontrun{
 #' # First page of SNOMED conditions, with the total available count
@@ -586,20 +683,20 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
                                  valid = NULL, offset = 0, limit = 100,
                                  order = NULL,
                                  symbol = "omop", conns = NULL,
-                                 execute = TRUE) {
+                                 execute = TRUE,
+                                 type = "both",
+                                 datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.list")
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.concept.list",
     domain = domain, vocabulary = vocabulary, concept_class = concept_class,
     standard = standard, valid = valid, offset = offset, limit = limit,
-    order = order, symbol = symbol)
+    order = order, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -610,8 +707,9 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
                 limit = as.integer(limit), order = order)
   )
 
-  # Union the page rows across sites; sum the per-site total_count (each site
-  # reports the size of ITS own matching set, so the cross-site total is a sum).
+  # Union the page rows across sites. Each site reports the size of ITS own
+  # matching set: their sum counts a shared concept once per server (an upper
+  # bound) and their maximum is a lower bound of the distinct concepts.
   page_rows <- lapply(raw, function(s) if (is.list(s)) s$rows else NULL)
   names(page_rows) <- names(raw)
   attr(page_rows, "ds_errors") <- attr(raw, "ds_errors")
@@ -619,19 +717,24 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
     if (is.list(s) && !is.null(s$total_count)) as.numeric(s$total_count)
     else NA_real_
   }, numeric(1))
-  pooled <- list(
+  incomplete <- length(attr(raw, "ds_errors")) > 0L || all(is.na(totals))
+  pooled <- if (.result_type_wants_combine(result_type)) list(
     rows = .pool_vocab_union(page_rows),
-    total_count = if (length(attr(raw, "ds_errors")) > 0L ||
-                        all(is.na(totals))) {
-      NA_real_
-    } else sum(totals, na.rm = TRUE),
+    total_count = if (incomplete) NA_real_ else sum(totals, na.rm = TRUE),
+    total_count_max = if (incomplete) NA_real_ else max(totals, na.rm = TRUE),
+    total_count_basis = paste0(
+      "total_count sums the per-site totals (a concept on several servers ",
+      "counts once per server); total_count_max is the largest per-site ",
+      "total"),
     offset = as.integer(offset),
     limit = as.integer(limit)
   )
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled"))
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this concept page.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 # --- Vocabulary catalogs (vocabularies / domains / classes) -------------------
@@ -647,11 +750,20 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's
 #'   vocabulary frame; \code{pooled} is the de-duplicated union across servers.
 #' @examples
@@ -661,26 +773,29 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
 #' }
 #' @export
 ds.omop.vocab.vocabularies <- function(symbol = "omop", conns = NULL,
-                                       execute = TRUE) {
-  code <- .build_code("ds.omop.vocab.vocabularies", symbol = symbol)
+                                       execute = TRUE,
+                                       type = "both",
+                                       datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.vocab.vocabularies")
+  result_type <- .resolve_result_type(type, default_type = "both")
+  code <- .build_code("ds.omop.vocab.vocabularies", type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopVocabulariesDS", session$res_symbol)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_vocab_union(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_vocab_union(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' List the domains available on each server
@@ -693,11 +808,20 @@ ds.omop.vocab.vocabularies <- function(symbol = "omop", conns = NULL,
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's domain
 #'   frame; \code{pooled} is the de-duplicated union across servers.
 #' @examples
@@ -707,26 +831,29 @@ ds.omop.vocab.vocabularies <- function(symbol = "omop", conns = NULL,
 #' }
 #' @export
 ds.omop.vocab.domains <- function(symbol = "omop", conns = NULL,
-                                  execute = TRUE) {
-  code <- .build_code("ds.omop.vocab.domains", symbol = symbol)
+                                  execute = TRUE,
+                                  type = "both",
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.vocab.domains")
+  result_type <- .resolve_result_type(type, default_type = "both")
+  code <- .build_code("ds.omop.vocab.domains", type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopDomainsDS", session$res_symbol)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_vocab_union(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_vocab_union(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 #' List the concept classes available on each server
@@ -739,11 +866,20 @@ ds.omop.vocab.domains <- function(symbol = "omop", conns = NULL,
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. The pooled view is the de-duplicated union of the
+#'   servers' rows (shared reference data, no patient counts); it is
+#'   \code{NULL} with \code{meta$pooling_reason} when a server did not
+#'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's concept
 #'   class frame; \code{pooled} is the de-duplicated union across servers.
 #' @examples
@@ -753,26 +889,29 @@ ds.omop.vocab.domains <- function(symbol = "omop", conns = NULL,
 #' }
 #' @export
 ds.omop.vocab.classes <- function(symbol = "omop", conns = NULL,
-                                  execute = TRUE) {
-  code <- .build_code("ds.omop.vocab.classes", symbol = symbol)
+                                  execute = TRUE,
+                                  type = "both",
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.vocab.classes")
+  result_type <- .resolve_result_type(type, default_type = "both")
+  code <- .build_code("ds.omop.vocab.classes", type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "pooled")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopConceptClassesDS", session$res_symbol)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = .pool_vocab_union(raw),
-    meta = list(call_code = code, scope = "pooled"))
+  .result_type_view(dsomop_result(
+    per_site = raw,
+    pooled = if (.result_type_wants_combine(result_type)) .pool_vocab_union(raw),
+    meta = list(call_code = code)), result_type,
+    "Not every server returned this vocabulary result.",
+    pooling = .pooling_meta("metadata_union"))
 }
 
 # --- CDM source / version metadata (per-server) -------------------------------
@@ -787,12 +926,20 @@ ds.omop.vocab.classes <- function(symbol = "omop", conns = NULL,
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
-#' @return A \code{dsomop_result} with \code{scope = "per_site"}. Each server's
+#' @param type Result view: \code{"split"} (default) or \code{"both"}. Data
+#'   source descriptions are site-specific: \code{"both"} returns
+#'   \code{pooled = NULL} with \code{meta$pooling_reason}, and
+#'   \code{"combine"} stops before contacting the servers.
+#' @return A \code{dsomop_result} (per-server view). Each server's
 #'   result is its \code{cdm_source} data frame (empty if the table is absent).
 #'   \code{pooled} is \code{NULL} by design.
 #' @examples
@@ -802,26 +949,29 @@ ds.omop.vocab.classes <- function(symbol = "omop", conns = NULL,
 #' }
 #' @export
 ds.omop.cdm.source <- function(symbol = "omop", conns = NULL,
-                               execute = TRUE) {
-  code <- .build_code("ds.omop.cdm.source", symbol = symbol)
+                               execute = TRUE,
+                               type = "split",
+                               datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cdm.source")
+  result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- "CDM source descriptions are site-specific and are not merged."
+  .combine_unavailable(result_type, reason)
+  code <- .build_code("ds.omop.cdm.source", type = result_type,
+                      symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "per_site")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopCdmSourceDS", session$res_symbol)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+  .result_type_view(dsomop_result(
+    per_site = raw, pooled = NULL, meta = list(call_code = code)),
+    result_type, reason)
 }
 
 #' Get the CDM version reported by each server
@@ -835,14 +985,21 @@ ds.omop.cdm.source <- function(symbol = "omop", conns = NULL,
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
-#' @return A \code{dsomop_result} with \code{scope = "per_site"}. Each server's
-#'   result is a list with \code{cdm_version}, \code{source}, and
-#'   \code{vocabulary_version}. \code{pooled} is \code{NULL} by design.
+#' @param type Result view: \code{"split"} (default), \code{"both"}, or
+#'   \code{"combine"}. The pooled view is the version record every server
+#'   reported identically; when the servers differ it is \code{NULL} with
+#'   \code{meta$pooling_reason}, never a silent merge.
+#' @return A \code{dsomop_result}. Each server's result is a list with
+#'   \code{cdm_version}, \code{source}, and \code{vocabulary_version}.
 #' @examples
 #' \dontrun{
 #' ver <- ds.omop.cdm.version()
@@ -851,24 +1008,47 @@ ds.omop.cdm.source <- function(symbol = "omop", conns = NULL,
 #' }
 #' @export
 ds.omop.cdm.version <- function(symbol = "omop", conns = NULL,
-                                execute = TRUE) {
-  code <- .build_code("ds.omop.cdm.version", symbol = symbol)
+                                execute = TRUE,
+                                type = "split",
+                                datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cdm.version")
+  result_type <- .resolve_result_type(type, default_type = "split")
+  code <- .build_code("ds.omop.cdm.version", type = result_type,
+                      symbol = symbol)
 
-  if (!execute) {
-    return(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = "per_site")))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopCdmVersionDS", session$res_symbol)
   )
 
-  dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+  consensus <- list(result = NULL, reason = NULL)
+  if (.result_type_wants_combine(result_type)) {
+    missing <- unique(c(names(attr(raw, "ds_errors")),
+                        setdiff(names(conns), names(raw))))
+    versions <- vapply(raw, function(v) {
+      as.character(v$cdm_version %||% NA_character_)[[1L]]
+    }, character(1))
+    consensus <- if (length(missing) > 0L) {
+      list(result = NULL, reason = paste0(
+        "No CDM version from: ", paste(missing, collapse = ", "), "."))
+    } else if (length(raw) > 0L &&
+               all(vapply(raw, identical, logical(1), raw[[1L]]))) {
+      list(result = raw[[1L]], reason = NULL)
+    } else {
+      list(result = NULL, reason = paste0(
+        "Servers report different CDM version records (",
+        paste(names(versions), versions, sep = " = ", collapse = ", "),
+        "); they are not merged."))
+    }
+  }
+  .result_type_view(dsomop_result(
+    per_site = raw, pooled = consensus$result,
+    meta = list(call_code = code)), result_type,
+    consensus$reason %||% "No CDM version was reported by every server.",
+    pooling = .pooling_meta("metadata_consensus"))
 }

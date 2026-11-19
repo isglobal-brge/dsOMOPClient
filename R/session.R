@@ -855,7 +855,12 @@
 #'   are immediate mapping errors (\code{TRUE}) or warnings where possible.
 #'   Transactional connection still requires a valid resource and successful
 #'   initialization on every requested server regardless of this value.
-#' @param conns DSI connections object (NULL uses default connections).
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return An \code{omop_session} object (invisibly).
 #' @examples
 #' \dontrun{
@@ -864,7 +869,8 @@
 #' builder$append(server = "server1", url = "https://opal.example.org",
 #'                resource = "project.omop_cdm", driver = "OpalDriver")
 #' conns <- datashield.login(builder$build())
-#' session <- ds.omop.connect(resource = "project.omop_cdm", conns = conns)
+#' session <- ds.omop.connect(resource = "project.omop_cdm",
+#'                            datasources = conns)
 #' }
 #' @seealso \code{\link{ds.omop.disconnect}}, \code{\link{ds.omop.status}}
 #' @export
@@ -875,7 +881,9 @@ ds.omop.connect <- function(resource,
                             results_schema = NULL,
                             temp_schema = NULL,
                             strict = TRUE,
-                            conns = NULL) {
+                            conns = NULL,
+                            datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.connect")
   if (!is.logical(strict) || length(strict) != 1L || is.na(strict)) {
     stop("strict must be TRUE or FALSE.", call. = FALSE)
   }
@@ -887,7 +895,11 @@ ds.omop.connect <- function(resource,
     stop("OMOP session '", symbol, "' is already active; disconnect it before ",
          "reusing the symbol.", call. = FALSE)
   }
-  conns <- conns %||% DSI::datashield.connections_default()
+  if (is.null(conns)) {
+    # No session exists yet for `symbol`: every DataSHIELD connection found.
+    conns <- tryCatch(.resolve_datasources(NULL, symbol = NULL),
+                      error = function(e) NULL)
+  }
   if (is.null(conns) || length(conns) == 0L || is.null(names(conns)) ||
       anyNA(names(conns)) || any(!nzchar(names(conns))) ||
       anyDuplicated(names(conns))) {
@@ -1197,8 +1209,8 @@ ds.omop.login <- function(url, user = "", password = "", resource,
   conns <- DSI::datashield.login(builder$build())
 
   session <- tryCatch(
-    ds.omop.connect(resource = resource, symbol = symbol,
-                    conns = conns, ...),
+    .quiet_aliases(ds.omop.connect(resource = resource, symbol = symbol,
+                                   conns = conns, ...)),
     error = function(connect_error) {
       logout_error <- tryCatch({
         DSI::datashield.logout(conns)
@@ -1253,9 +1265,12 @@ ds.omop.login <- function(url, user = "", password = "", resource,
 #' session registry is retained so cleanup can be retried.
 #'
 #' @param symbol Character; the session symbol to disconnect (default: "omop").
-#' @param conns DSI connections. \code{NULL} uses the session's stored
-#'   connections. When supplied, it must contain exactly the same named
-#'   connection objects; subsets and replacements are rejected before cleanup.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisible TRUE on success.
 #' @examples
 #' \dontrun{
@@ -1263,7 +1278,8 @@ ds.omop.login <- function(url, user = "", password = "", resource,
 #' }
 #' @seealso \code{\link{ds.omop.connect}}
 #' @export
-ds.omop.disconnect <- function(symbol = "omop", conns = NULL) {
+ds.omop.disconnect <- function(symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.disconnect")
   session <- .get_session(symbol)
   conns <- if (is.null(conns)) {
     session$conns
@@ -1353,24 +1369,35 @@ ds.omop.disconnect <- function(symbol = "omop", conns = NULL) {
 #' including capabilities, server versions, and any connection errors.
 #'
 #' @param symbol Character; session symbol (default: "omop").
+#' @param datasources DataSHIELD connections to ping. \code{NULL} (the
+#'   default) uses the session's connections. See \link{dsomop_conventions}.
 #' @return Named list with symbol, servers, capabilities, ping results,
-#'   and errors.
+#'   and errors. \code{ping} has one entry per server: that server's ping
+#'   answer, or \code{list(error = <message>)} for a server that did not
+#'   answer.
 #' @examples
 #' \dontrun{
 #' status <- ds.omop.status("omop")
 #' status$ping
 #' }
 #' @export
-ds.omop.status <- function(symbol = "omop") {
+ds.omop.status <- function(symbol = "omop", datasources = NULL) {
   session <- .get_session(symbol)
+  conns <- .resolve_datasources(datasources, symbol, session)
 
-  ping <- tryCatch(
-    DSI::datashield.aggregate(
-      session$conns,
-      expr = call("omopPingDS")
-    ),
-    error = function(e) list(error = e$message)
-  )
+  # One entry per server: an unreachable server reports its own error instead
+  # of collapsing every answer into one.
+  answers <- tryCatch(.ds_safe_aggregate(conns, expr = call("omopPingDS")),
+                      error = function(e) {
+                        structure(list(), ds_errors = stats::setNames(
+                          rep(list(conditionMessage(e)), length(conns)),
+                          names(conns)))
+                      })
+  errors <- attr(answers, "ds_errors") %||% list()
+  ping <- lapply(stats::setNames(names(conns), names(conns)), function(server) {
+    if (server %in% names(answers)) return(answers[[server]])
+    list(error = as.character(errors[[server]] %||% "no answer")[[1L]])
+  })
 
   list(
     symbol = symbol,
@@ -1394,32 +1421,65 @@ ds.omop.status <- function(symbol = "omop") {
 #' This is strictly \strong{read-only}. The thresholds are configured
 #' server-side through R options (Opal admin panel, Armadillo config, or
 #' \code{Rprofile.site}); there is deliberately no client-side way to lower
-#' them. Servers may report different floors, so the result is per-server.
+#' them. Servers may report different floors: the per-server settings are in
+#' \code{$per_site}, and the pooled view is the federation contract the
+#' client negotiates from them (the settings every server can honour
+#' together, as used by federated analyses).
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or \code{NULL} to use the session
-#'   default.
-#' @return A named list, one element per server, each holding that server's
-#'   active disclosure settings (e.g. \code{nfilter_subset},
-#'   \code{nfilter_tab}, \code{nfilter_levels_max}). Servers that fail to
-#'   respond are omitted and their errors attached as a \code{ds_errors}
-#'   attribute.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. \code{$per_site} is the named list (one
+#'   element per server, each holding that server's active disclosure
+#'   settings, e.g. \code{nfilter_subset}, \code{nfilter_tab},
+#'   \code{nfilter_levels_max}) returned by earlier versions; servers that
+#'   fail to respond are omitted and their errors attached as a
+#'   \code{ds_errors} attribute. \code{res$<server>} still reaches one
+#'   server's settings. \code{$pooled} is the negotiated federation contract
+#'   (\code{NULL}, with \code{meta$pooling_reason}, when a server did not
+#'   answer).
 #' @examples
 #' \dontrun{
 #' settings <- ds.omop.disclosure.settings()
 #' # Effective per-patient floor on each server:
-#' lapply(settings, function(s) s$nfilter_subset)
+#' lapply(settings$per_site, function(s) s$nfilter_subset)
+#' # The contract the federation negotiates from them:
+#' settings$pooled
 #' }
 #' @seealso \code{\link{ds.omop.status}}
 #' @export
-ds.omop.disclosure.settings <- function(symbol = "omop", conns = NULL) {
+ds.omop.disclosure.settings <- function(symbol = "omop", conns = NULL,
+                                        type = "both", datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.disclosure.settings")
+  result_type <- .resolve_result_type(type, default_type = "both")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
-  .ds_safe_aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopDisclosureSettingsDS")
   )
+  complete <- length(attr(raw, "ds_errors")) == 0L &&
+    all(names(conns) %in% names(raw))
+  pooled <- if (.result_type_wants_combine(result_type) && complete) {
+    tryCatch(.federated_harmonization_contract(
+      raw, expected_servers = names(conns), fail = FALSE
+    ), error = function(e) NULL)
+  }
+  .result_type_view(dsomop_result(
+    per_site = raw, pooled = pooled,
+    meta = list(call_code = .build_code("ds.omop.disclosure.settings",
+                                        type = result_type,
+                                        symbol = symbol))),
+    result_type,
+    "No federation contract could be negotiated from every server's settings.",
+    pooling = .pooling_meta("federation_contract"))
 }
 
 #' Resolve a resource argument into a per-server resource map

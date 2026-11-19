@@ -15,7 +15,9 @@ ds.omop.date.counts(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  cohort = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -35,25 +37,38 @@ for filtering, or NULL (default: NULL).}
 \item{window}{List with \code{start}/\code{end} date strings for
 temporal filtering, or NULL (default: NULL).}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+Takes precedence over \code{cohort_table}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{period} and \code{count_value}),
-  \code{$pooled} (combined counts when pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a data
+  frame with \code{period}, \code{n_records} and \code{n_persons}
+  (banded; periods below the threshold are left out). \code{$pooled} sums
+  the counts per period; a period missing on a server is not treated as
+  zero.
 }
 \description{
 Aggregates records in an OMOP CDM table by time period (year, quarter,

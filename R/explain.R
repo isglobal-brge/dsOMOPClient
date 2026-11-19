@@ -22,7 +22,7 @@
 #' payload and the legacy rules it relies on; offline its lowered IR and
 #' digest are not available (the server lowers it), and its native rendering
 #' (\code{recipe_to_plan(version = 2)}) is never presented as the executed
-#' plan. With \code{conns}, each server whose profile publishes
+#' plan. With connections (\code{datasources}), each server whose profile publishes
 #' \code{omopPlanExplainDS} (dsOMOP 2.10.3) receives the selected wire plan
 #' and reports its normalised IR, compatibility variants and semantic digest
 #' (attached as \code{$server}). A server whose profile does not publish it,
@@ -37,7 +37,17 @@
 #' @param recipe An \code{omop_recipe}.
 #' @param detail \code{"summary"} (one line per node) or \code{"semantics"}
 #'   (every default and rule spelled out).
-#' @param conns Optional DSI connections (uses the active OMOP session).
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param offline Logical or \code{NULL}. \code{TRUE} explains the recipe
+#'   without contacting any server; \code{FALSE} asks the servers (through
+#'   \code{datasources}, or the default connections when it is \code{NULL}).
+#'   \code{NULL} (the default) keeps the earlier behaviour: offline unless
+#'   connections are given.
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param symbol OMOP session symbol used with \code{conns}.
 #' @return An \code{omop_recipe_explain} object: \code{$text} (character
 #'   lines), \code{$selected} (\code{"v1"} or \code{"v2"}), \code{$payload}
@@ -61,15 +71,27 @@
 #'   not query category occurrence. Before publication those names are unresolved.
 #' @export
 recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = NULL,
-                           symbol = "omop") {
+                           symbol = "omop", offline = NULL,
+                           datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "recipe_explain")
   .v2_recipe_check(recipe)
   detail <- match.arg(detail)
+  # Without connections the explanation stays offline, as before; offline =
+  # FALSE asks the servers through the default connections.
+  if (is.null(offline)) offline <- is.null(conns)
+  if (!is.logical(offline) || length(offline) != 1L || is.na(offline)) {
+    stop("offline must be TRUE, FALSE or NULL.", call. = FALSE)
+  }
+  if (offline) conns <- NULL
+  if (!offline && is.null(conns)) {
+    conns <- .resolve_datasources(NULL, symbol = symbol)
+  }
   # A-14: explain selects the plan exactly as recipe_execute() does (and, with
   # conns, against the same target capabilities). A recipe that execution
   # would refuse on these servers is still explained from the only plan it
   # has, and the refusal is reported.
   refusal <- NULL
-  plan <- if (is.null(conns)) .recipe_plan_auto(recipe) else
+  plan <- if (offline) .recipe_plan_auto(recipe) else
     tryCatch(.recipe_plan_for_session(recipe, symbol, conns), error = function(e) e)
   if (inherits(plan, "error")) {
     refusal <- conditionMessage(plan)
@@ -92,7 +114,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
   server <- NULL
   if (!is.null(conns)) {
     session <- .get_session(symbol)
-    conns <- conns %||% session$conns
+    conns <- .resolve_datasources(conns, symbol, session)
     # B7: server explain needs the method actually published on the site.
     published <- .dsomop_published_methods(conns)
     explains <- vapply(names(conns), function(s) {

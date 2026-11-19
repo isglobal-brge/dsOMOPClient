@@ -4,22 +4,39 @@
 \alias{ds.omop.cohort.list}
 \title{List available cohort definitions}
 \usage{
-ds.omop.cohort.list(symbol = "omop", conns = NULL)
+ds.omop.cohort.list(
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 }
 \arguments{
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}.
+Cohort catalogs are site-specific: \code{"both"} returns
+\code{pooled = NULL} with \code{meta$pooling_reason}, and
+\code{"combine"} stops before contacting the servers.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-Named list (one entry per server) of data frames with cohort
-  metadata. Each row is a cohort at or above the server's
-  \code{nfilter_subset} threshold; its reported size is BANDED to a multiple
-  of \code{nfilter_band} (never the exact subject count). Sub-threshold
-  cohorts are intentionally absent. Returns an empty list (or per-server empty
-  data frames) when no cohort clears the threshold.
+A \code{dsomop_result}. \code{$per_site} is the named list (one
+  entry per server) of data frames with cohort metadata returned by
+  earlier versions, and \code{res$<server>} or \code{res[["<server>"]]}
+  still reaches one server's frame. Each row is a cohort at or above the
+  server's \code{nfilter_subset} threshold; its reported size is BANDED to
+  a multiple of \code{nfilter_band} (never the exact subject count).
+  Sub-threshold cohorts are intentionally absent; a server with no cohort
+  above the threshold returns an empty data frame.
 }
 \description{
 Queries each connected server for existing cohort definitions. Returns a

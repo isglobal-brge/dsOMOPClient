@@ -10,7 +10,7 @@ ds.omop.querylibrary.sticky.release(
   datasources = NULL,
   pool = TRUE,
   format = c("long", "wide", "vector", "raw"),
-  type = NULL,
+  type = "both",
   symbol = "omop"
 )
 }
@@ -25,17 +25,20 @@ argument.}
 \item{redesign}{An object created by
 \code{\link{omop_querylibrary_sticky}}.}
 
-\item{datasources}{Named DataSHIELD connection list. \code{NULL} uses active
-connections.}
+\item{datasources}{Named DataSHIELD connection list. \code{NULL} uses the
+connections of the OMOP session \code{symbol}, or
+\code{DSI::datashield.connections_find()} when there is none.}
 
-\item{pool}{Pool compatible releases across sites. For
+\item{pool}{Deprecated alias of \code{type} (\code{TRUE} means
+\code{"both"}, \code{FALSE} means \code{"split"}). For
 \code{bounded_distinct}, pooling is the sum of site-local cardinalities,
-not a cross-site set union; use \code{FALSE} for site-specific estimates.}
+not a cross-site set union; use \code{type = "split"} for site-specific
+estimates.}
 
 \item{format}{Output format passed to \code{\link{ds.omop.dp.release}}.}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, the legacy \code{pool} argument is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}, passed to \code{\link{ds.omop.dp.release}}.}
 
 \item{symbol}{Session symbol of the OMOP connection, used only when the
 input is prepared automatically (default \code{"omop"}).}

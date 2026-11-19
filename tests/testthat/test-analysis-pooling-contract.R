@@ -349,9 +349,16 @@ test_that("analysis.run exposes both/split/combine and preflights contracts", {
 
   metadata$pooling_contract <- NULL
   before <- runs
-  expect_error(ds.omop.analysis.run("dsomop:test"),
+  # combine stops before any analysis runs; both returns the per-site
+  # results (what split returns) without a pooled value, never a heuristic one.
+  expect_error(ds.omop.analysis.run("dsomop:test", type = "combine"),
                "Invalid analysis pooling contract")
   expect_equal(runs, before)
+  no_contract <- ds.omop.analysis.run("dsomop:test")
+  expect_named(no_contract$per_site, c("a", "b"))
+  expect_null(no_contract$pooled)
+  expect_match(no_contract$meta$pooling_reason,
+               "Invalid analysis pooling contract")
   expect_silent(split_without_contract <-
     ds.omop.analysis.run("dsomop:test", type = "split"))
   expect_named(split_without_contract$per_site, c("a", "b"))

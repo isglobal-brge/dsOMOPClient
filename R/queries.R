@@ -29,8 +29,12 @@
 #' @param provider Character; ignored (retained for back-compatibility).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Data frame of analysis-catalog entry metadata (the pooled view).
 #' @examples
 #' \dontrun{
@@ -40,9 +44,12 @@
 #' @seealso \code{\link{ds.omop.analysis.list}}
 #' @export
 ds.omop.query.list <- function(domain = NULL, provider = "native",
-                                  symbol = "omop", conns = NULL) {
+                                  symbol = "omop", conns = NULL,
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.query.list")
   .Deprecated("ds.omop.analysis.list")
-  res <- ds.omop.analysis.list(domain = domain, symbol = symbol, conns = conns)
+  res <- ds.omop.analysis.list(domain = domain, symbol = symbol,
+                               datasources = conns)
   if (is.data.frame(res$pooled)) return(res$pooled)
   data.frame()
 }
@@ -57,8 +64,12 @@ ds.omop.query.list <- function(domain = NULL, provider = "native",
 #'   \code{"condition_prevalence"}).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Named list of catalog entry metadata, or \code{NULL} if not found.
 #' @examples
 #' \dontrun{
@@ -67,10 +78,11 @@ ds.omop.query.list <- function(domain = NULL, provider = "native",
 #' }
 #' @seealso \code{\link{ds.omop.analysis.get}}
 #' @export
-ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
+ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.query.get")
   .Deprecated("ds.omop.analysis.get")
   res <- ds.omop.analysis.get(.query_id_to_name(query_id),
-                              symbol = symbol, conns = conns)
+                              symbol = symbol, datasources = conns)
   res$pooled
 }
 
@@ -93,8 +105,12 @@ ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
 #'   trusted server catalog metadata by \code{\link{ds.omop.analysis.run}}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return A named list of per-server disclosure-controlled data frames. Use
 #'   \code{\link{ds.omop.query.pool}} to combine them, or prefer the pooled view
 #'   returned by \code{\link{ds.omop.analysis.run}} directly.
@@ -108,7 +124,9 @@ ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
 #' @export
 ds.omop.query.exec <- function(query_id, inputs = list(),
                                   mode = "aggregate",
-                                  symbol = "omop", conns = NULL) {
+                                  symbol = "omop", conns = NULL,
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.query.exec")
   .Deprecated("ds.omop.analysis.run")
   mode <- match.arg(mode, c("aggregate", "assign"))
   if (!identical(mode, "aggregate")) {
@@ -117,7 +135,8 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
          "ds.omop.analysis.run().", call. = FALSE)
   }
   res <- ds.omop.analysis.run(.query_id_to_name(query_id), params = inputs,
-                              symbol = symbol, conns = conns, type = "split")
+                              symbol = symbol, datasources = conns,
+                              type = "split")
   out <- res$per_site
   attr(out, "dsomop.pooling_contract") <- res$meta$pooling_contract
   attr(out, "dsomop.harmonization") <- res$meta$harmonization
@@ -144,9 +163,11 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
 #'   analysis identity carried by \code{results}.
 #' @param sensitive_fields Deprecated and unsupported; must remain \code{NULL}.
 #' @param pool_strategy Deprecated and unsupported; must remain \code{"sum"}.
-#' @param policy Character; suppression propagation policy. \code{"strict"}
-#'   (the default) sets the pooled value to NA if any server suppressed the
-#'   cell. \code{"pooled_only_ok"} sums only the non-suppressed values.
+#' @param policy Deprecated alias of \code{pooling_policy}.
+#' @param pooling_policy Character; suppression propagation policy.
+#'   \code{"strict"} (the default) sets the pooled value to NA if any server
+#'   suppressed the cell. \code{"pooled_only_ok"} sums only the
+#'   non-suppressed values. See \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @return A data frame with contractually pooled results, or \code{NULL} when
@@ -168,9 +189,15 @@ ds.omop.query.pool <- function(results, query_id = NULL,
                                   sensitive_fields = NULL,
                                   pool_strategy = "sum",
                                   policy = "strict",
-                                  symbol = "omop") {
+                                  symbol = "omop",
+                                  pooling_policy = NULL) {
   .Deprecated("ds.omop.analysis.run")
-  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  policy <- .alias_value(pooling_policy, policy,
+                         new_given = !is.null(pooling_policy),
+                         old_given = !missing(policy),
+                         new = "pooling_policy", old = "policy",
+                         fn = "ds.omop.query.pool") %||% "strict"
+  policy <- .pooling_policy_arg(policy)
   if (is.null(results) || length(results) == 0) return(NULL)
   if (!is.null(sensitive_fields) || !identical(pool_strategy, "sum")) {
     stop("Caller-selected pooling fields or strategies are no longer accepted. ",

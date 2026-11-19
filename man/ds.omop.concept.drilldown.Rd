@@ -13,7 +13,8 @@ ds.omop.concept.drilldown(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -26,26 +27,43 @@ ds.omop.concept.drilldown(
 for automatic detection based on the table's standard concept column
 (default: NULL).}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of lists containing \code{summary}, \code{numeric}, \code{categorical},
-  \code{date_range}, and \code{missingness} components), \code{$pooled}
-  (combined profile when pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a list
+  with \code{summary} (\code{concept_id}, \code{concept_name}, banded
+  \code{n_records} and \code{n_persons}, \code{records_per_person_mean},
+  \code{pct_persons_multi}), \code{numeric_summary} (\code{quantiles},
+  \code{histogram}), \code{categorical_values}
+  (\code{value_as_concept_id}, \code{concept_name}, \code{n}),
+  \code{date_range} (\code{column}, \code{min_month_safe},
+  \code{max_month_safe}, yearly \code{date_counts}) and
+  \code{missingness} (\code{column_name}, \code{missing_rate}).
+  \code{$pooled} has the same parts: counts, histogram bins, categorical
+  values and yearly counts summed, the date range spanned, and the
+  non-additive parts (quantiles, \code{pct_persons_multi}, and missing
+  rates the servers return without counts) left \code{NULL} or \code{NA}
+  with a warning.
 }
 \description{
 Returns a comprehensive drilldown profile for a single concept within

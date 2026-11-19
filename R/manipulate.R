@@ -48,24 +48,37 @@
 #' @param by Character vector; the join key. Must be the person key
 #'   (\code{"person_id"} or \code{"subject_id"}); other columns are rejected
 #'   server-side.
-#' @param type Character; \code{"inner"} (default) or \code{"left"}.
+#' @param type Deprecated alias of \code{join} (kept in its position, so
+#'   positional calls keep working).
+#' @param join Character; the join type, \code{"inner"} (default) or
+#'   \code{"left"}. It replaces \code{type}, which elsewhere in the package
+#'   names the result view.
 #' @param newobj Character; name of the server-side symbol to create. If
 #'   \code{NULL} (default), a unique name is generated.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly, the name of the created server-side symbol (\code{newobj}).
 #' @examples
 #' \dontrun{
-#' joined <- ds.omop.merge("cohort_a", "cohort_b", type = "left")
+#' joined <- ds.omop.merge("cohort_a", "cohort_b", join = "left")
 #' }
 #' @seealso \code{\link{ds.omop.filter}}, \code{\link{ds.omop.bind_rows}}
 #' @export
 ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
-                          newobj = NULL, symbol = "omop", conns = NULL) {
+                          newobj = NULL, symbol = "omop", conns = NULL,
+                          join = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.merge")
+  type <- .alias_value(join, type, new_given = !is.null(join),
+                       old_given = !missing(type), new = "join",
+                       old = "type", fn = "ds.omop.merge") %||% "inner"
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   .conceptAssertSupport(session, names(conns))
   type <- match.arg(type, c("inner", "left"))
   x <- .resolve_target_symbol(x, session, "x")
@@ -114,8 +127,12 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 #'   \code{NULL} (default), a unique name is generated.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param expr (2.10.3) A predicate from \code{\link{omop_where}} (instead of
 #'   \code{var}/\code{op}/\code{value}).
 #' @return Invisibly, the name of the created server-side symbol (\code{newobj}).
@@ -128,14 +145,16 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 #'   \code{\link{ds.omop.mutate}}
 #' @export
 ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
-                           newobj = NULL, symbol = "omop", conns = NULL, expr = NULL) {
+                           newobj = NULL, symbol = "omop", conns = NULL, expr = NULL,
+                           datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.filter")
   if (!is.null(expr)) {
     if (!is.null(var) || !is.null(op) || !is.null(value)) {
       stop("ds.omop.filter(): give expr or var/op/value, not both.", call. = FALSE)
     }
     tree <- .verb_predicate_tree(expr)
     session <- .get_session(symbol)
-    conns <- conns %||% session$conns
+    conns <- .resolve_datasources(conns, symbol, session)
   .conceptAssertSupport(session, names(conns))
     .verb_assert_supported(session, conns, "verb.filter_expr",
                            "ds.omop.filter(expr = )", "omopFilterDS")
@@ -153,7 +172,7 @@ ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
     stop("ds.omop.filter() needs var, op and value.", call. = FALSE)
   }
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   .conceptAssertSupport(session, names(conns))
   op <- match.arg(op, c("==", "!=", "in", "not_in"))
   x <- .resolve_target_symbol(x, session, "x")
@@ -192,8 +211,12 @@ ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
 #'   \code{NULL} (default), a unique name is generated.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly, the name of the created server-side symbol (\code{newobj}).
 #' @examples
 #' \dontrun{
@@ -202,9 +225,11 @@ ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
 #' @seealso \code{\link{ds.omop.filter}}
 #' @export
 ds.omop.select <- function(x = NULL, cols,
-                           newobj = NULL, symbol = "omop", conns = NULL) {
+                           newobj = NULL, symbol = "omop", conns = NULL,
+                           datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.select")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   .conceptAssertSupport(session, names(conns))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(cols) || length(cols) == 0L) {
@@ -239,8 +264,12 @@ ds.omop.select <- function(x = NULL, cols,
 #'   \code{NULL} (default), a unique name is generated.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly, the name of the created server-side symbol (\code{newobj}).
 #' @examples
 #' \dontrun{
@@ -249,9 +278,11 @@ ds.omop.select <- function(x = NULL, cols,
 #' @seealso \code{\link{ds.omop.merge}}
 #' @export
 ds.omop.bind_rows <- function(x = NULL, y,
-                              newobj = NULL, symbol = "omop", conns = NULL) {
+                              newobj = NULL, symbol = "omop", conns = NULL,
+                              datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.bind_rows")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   .conceptAssertSupport(session, names(conns))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(y) || length(y) != 1L) {

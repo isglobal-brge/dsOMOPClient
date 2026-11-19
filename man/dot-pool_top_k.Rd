@@ -4,21 +4,40 @@
 \alias{.pool_top_k}
 \title{Pool top-K concept results using two-pass merge}
 \usage{
-.pool_top_k(per_site_dfs, metric_col, k, policy = "strict")
+.pool_top_k(
+  per_site_dfs,
+  metric_col,
+  k,
+  policy = "strict",
+  key_cols = "concept_id",
+  sum_cols = character(0)
+)
 }
 \arguments{
-\item{per_site_dfs}{Named list of data frames with concept_id and a metric column}
+\item{per_site_dfs}{Named list of data frames with the key columns and a
+metric column}
 
-\item{metric_col}{Character; name of the metric column to sum}
+\item{metric_col}{Character; name of the metric column used for ranking}
 
 \item{k}{Integer; number of top results to return}
 
 \item{policy}{Character; pooling policy}
+
+\item{key_cols}{Character; the columns identifying a row
+(default \code{"concept_id"}).}
+
+\item{sum_cols}{Character; further additive count columns to sum when every
+server returns them.}
 }
 \value{
 List with $result (data.frame) and $warnings
 }
 \description{
-Pool top-K concept results using two-pass merge
+Rows are matched by \code{key_cols}. The ranking metric and every other
+additive count column in \code{sum_cols} are summed; a key must be released
+by every server (its absence or suppression anywhere drops it, so a rare
+key is never surfaced). A count suppressed on a server leaves that pooled
+count \code{NA}. Labels such as \code{concept_name} are carried from the
+first server that has them.
 }
 \keyword{internal}

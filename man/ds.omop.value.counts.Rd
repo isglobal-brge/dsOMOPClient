@@ -15,7 +15,8 @@ ds.omop.value.counts(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
@@ -37,38 +38,48 @@ disclosure controls to the concept-filtered population.}
 \item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
 \code{cohort_definition_id}, or a server-side cohort table name), or NULL.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{value}, \code{count_value}),
-  \code{$pooled} (combined value counts when pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a data
+  frame with \code{value}, \code{n} (banded records), \code{n_persons}
+  (banded distinct persons, person tables) and \code{concept_name}
+  (concept columns). \code{$pooled} sums \code{n} and \code{n_persons} per
+  value over the servers; a value must be released by every server.
 }
 \description{
 Returns the top-N most frequent distinct values for a column in an
 OMOP CDM table, along with their counts. This is useful for profiling
 categorical or low-cardinality columns such as \code{type_concept_id}
-or \code{unit_concept_id}. Counts below the disclosure threshold are
-suppressed, and concept names are resolved where available.
+or \code{unit_concept_id}. Values below the disclosure threshold are
+left out, surviving counts are banded, and concept names are resolved
+for concept columns.
 }
 \examples{
 \dontrun{
 vc <- ds.omop.value.counts("condition_occurrence",
                             "condition_type_concept_id",
-                            top_n = 10, scope = "pooled")
+                            top_n = 10)
 vc$pooled
 }
 }

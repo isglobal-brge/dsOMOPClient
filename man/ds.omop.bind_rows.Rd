@@ -4,7 +4,14 @@
 \alias{ds.omop.bind_rows}
 \title{Row-bind two schema-identical server-side omop.table data frames}
 \usage{
-ds.omop.bind_rows(x = NULL, y, newobj = NULL, symbol = "omop", conns = NULL)
+ds.omop.bind_rows(
+  x = NULL,
+  y,
+  newobj = NULL,
+  symbol = "omop",
+  conns = NULL,
+  datasources = NULL
+)
 }
 \arguments{
 \item{x}{Character; name of the first (top) server-side \code{omop.table}
@@ -20,8 +27,13 @@ symbol (must have identical column names to \code{x} server-side).}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly, the name of the created server-side symbol (\code{newobj}).

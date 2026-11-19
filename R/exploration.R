@@ -18,21 +18,26 @@
 #' @param n_bins Integer; exact number of bins in the controller-configured
 #'   public grid (default: 10). Unsupported or under-populated grids fail
 #'   closed; bins are never merged based on protected counts.
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
-#'   Cutpoints are inherently per-site; pooled scope is accepted but the
-#'   pooled slot will be NULL.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param symbol Character; the session symbol identifying the OMOP
 #'   connection (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}.
+#'   Cutpoints are site-specific: \code{"both"} returns \code{pooled = NULL}
+#'   with \code{meta$pooling_reason}, and \code{"combine"} stops before
+#'   contacting the servers. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   where each element contains public \code{breaks}, banded \code{counts}, a
 #'   session \code{contract}, and clipping/grid metadata),
-#'   \code{$pooled} (always NULL for cutpoints), and \code{$meta} (list with
-#'   \code{call_code} and \code{scope}).
+#'   \code{$pooled} (always NULL for cutpoints), and \code{$meta}.
 #' @examples
 #' \dontrun{
 #' cuts <- ds.omop.safe.cutpoints("measurement", "value_as_number",
@@ -44,26 +49,27 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
                                     n_bins = 10L,
                                     scope = c("per_site", "pooled"),
                                     symbol = "omop", conns = NULL,
-                                    execute = TRUE, type = NULL) {
+                                    execute = TRUE, type = "split",
+                                    datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.safe.cutpoints")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "split",
+    fn = "ds.omop.safe.cutpoints"
   )
+  reason <- "Safe cutpoints are site-specific and cannot be combined."
+  .combine_unavailable(result_type, reason)
 
   code <- .build_code("ds.omop.safe.cutpoints",
     table = table, column = column, concept_id = concept_id,
-    n_bins = n_bins, scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    n_bins = n_bins, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -71,17 +77,9 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
                 table, column, concept_id, as.integer(n_bins))
   )
 
-  ds_errors <- attr(raw, "ds_errors")
-  warnings <- if (!is.null(ds_errors)) {
-    paste0("Server errors: ",
-      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
-  } else character(0)
-
   .result_type_view(dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = scope, warnings = warnings)),
-    result_type,
-    "Safe cutpoints are site-specific and cannot be combined.")
+    per_site = raw, pooled = NULL, meta = list(call_code = code)),
+    result_type, reason)
 }
 
 #' Resolve one numeric-bin contract that every connected site issued
@@ -147,7 +145,12 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
 #' @param n_bins Integer; the number of bins for cutpoint computation
 #'   (default: 10).
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return An \code{omop_filter} object of type \code{value_bin}, suitable
 #'   for passing to query or extraction functions.
 #' @examples
@@ -161,11 +164,13 @@ ds.omop.safe.filter.value <- function(table, column, threshold,
                                        direction = c("above", "below"),
                                        concept_id = NULL,
                                        n_bins = 10L,
-                                       symbol = "omop", conns = NULL) {
+                                       symbol = "omop", conns = NULL,
+                                       datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.safe.filter.value")
   direction <- match.arg(direction)
   cuts <- ds.omop.safe.cutpoints(table, column,
     concept_id = concept_id, n_bins = n_bins,
-    scope = "per_site", symbol = symbol, conns = conns)
+    type = "split", symbol = symbol, datasources = conns)
   safe_bins <- .common_safe_bins(cuts, table, column)
   omop_filter_value(column = column, threshold = threshold,
                      direction = direction,
@@ -188,7 +193,9 @@ ds.omop.safe.filter.value <- function(table, column, threshold,
 #' @export
 ds.omop.safe.filter.measurement <- function(concept_id, min_value, max_value,
                                              n_bins = 10L,
-                                             symbol = "omop", conns = NULL) {
+                                             symbol = "omop", conns = NULL,
+                                             datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.safe.filter.measurement")
   concept_id <- suppressWarnings(as.integer(concept_id))
   min_value <- suppressWarnings(as.numeric(min_value))
   max_value <- suppressWarnings(as.numeric(max_value))
@@ -201,7 +208,7 @@ ds.omop.safe.filter.measurement <- function(concept_id, min_value, max_value,
   }
   cuts <- ds.omop.safe.cutpoints(
     "measurement", "value_as_number", concept_id = concept_id,
-    n_bins = n_bins, scope = "per_site", symbol = symbol, conns = conns
+    n_bins = n_bins, type = "split", symbol = symbol, datasources = conns
   )
   safe_bins <- .common_safe_bins(cuts, "measurement", "value_as_number")
   edges <- safe_bins$breaks
@@ -248,19 +255,14 @@ ds.omop.safe.filter.measurement <- function(concept_id, min_value, max_value,
 #' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
 #'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 #'   Takes precedence over \code{cohort_table}.
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
-#' @param pooling_policy Character; \code{"strict"} (default) requires all
-#'   servers to succeed, \code{"pooled_only_ok"} allows partial results.
-#' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
-#' @param execute Logical; if \code{FALSE}, return a dry-run result
-#'   containing only the generated call code (default: \code{TRUE}).
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
-#' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   of data frames with columns \code{concept_id}, \code{concept_name},
-#'   \code{count_value}, etc.), \code{$pooled} (combined data frame when
-#'   scope is \code{"pooled"}, otherwise NULL), and \code{$meta}.
+#' @inheritParams ds.omop.column.stats
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is a data
+#'   frame with \code{concept_id}, \code{concept_name}, \code{n_persons} and
+#'   \code{n_records} (banded), plus \code{source_table} for a global
+#'   ranking. \code{$pooled} sums \code{n_persons} and \code{n_records} per
+#'   concept (and source table) over the servers, ranks by \code{metric}
+#'   and keeps the first \code{top_n}; a concept must be released by every
+#'   server.
 #' @examples
 #' \dontrun{
 #' result <- ds.omop.concept.prevalence("condition_occurrence")
@@ -280,29 +282,30 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
                                         scope = c("per_site", "pooled"),
                                         pooling_policy = "strict",
                                         symbol = "omop", conns = NULL,
-                                        execute = TRUE, type = NULL) {
+                                        execute = TRUE, type = "split",
+                                        datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.prevalence")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "split",
+    fn = "ds.omop.concept.prevalence"
   )
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.concept.prevalence",
     table = table, concept_col = concept_col, metric = metric,
     top_n = top_n, cohort_table = cohort_scope, window = window,
     offset = offset, global = global,
-    scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    pooling_policy = .code_policy(pooling_policy),
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -312,36 +315,21 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
                 global = isTRUE(global))
   )
 
-  ds_errors <- attr(raw, "ds_errors")
-  pooled <- NULL
-  warnings <- character(0)
-  if (!is.null(ds_errors)) {
-    warnings <- paste0("Server errors: ",
-      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
-  }
-  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
-    pool_out <- .pool_result(raw, "concept_prevalence", pooling_policy)
-    pooled <- pool_out$result
-    warnings <- c(warnings, pool_out$warnings)
-  }
-
-  .result_type_view(dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings)),
-    result_type,
-    "No complete disclosure-safe pooled concept prevalence was available.")
+  .reader_result(raw, "concept_prevalence", result_type, pooling_policy,
+    code, "No complete disclosure-safe pooled concept prevalence was available.",
+    options = list(metric = metric, top_n = top_n))
 }
 
 #' Get a disclosure-safe numeric histogram
 #'
 #' @description
 #' Computes a binned histogram for a numeric column in an OMOP CDM table.
-#' When scope is \code{"pooled"}, a two-pass algorithm is used: the first
-#' pass collects p05/p95 ranges from each server to compute shared bin
-#' edges, and the second pass counts records per bin using those shared
-#' edges so that results are directly comparable and summable across
-#' servers. Bins with counts below the disclosure threshold are suppressed.
+#' For a pooled view (\code{type = "both"} or \code{"combine"}), a two-pass
+#' algorithm is used: the first pass collects p05/p95 ranges from each server
+#' to compute shared bin edges, and the second pass counts persons per bin
+#' using those shared edges so that results are directly comparable and
+#' summable across servers. Bins with counts below the disclosure threshold
+#' are left out by the server; pooled bins are matched by their edges.
 #'
 #' @param table Character; the CDM table name (e.g., \code{"measurement"}).
 #' @param value_col Character; the numeric column to histogram (e.g.,
@@ -361,27 +349,37 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
 #' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
 #'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 #'   Takes precedence over \code{cohort_table}.
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"}.
+#'   \code{"pooled_only_ok"}. See \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
 #' @param plot Logical; if \code{TRUE}, draw a federation-wide bar chart of the
-#'   pooled, shared-edge bins (forces \code{scope = "pooled"}) and return the
-#'   result invisibly. Default \code{FALSE}.
+#'   pooled, shared-edge bins (the default split view becomes \code{"both"})
+#'   and return the result invisibly. Default \code{FALSE}.
 #' @param nbins Integer; number of display bins used when \code{plot = TRUE}
 #'   (default: 9).
 #' @param xlab,main,col Axis label, title and bar colour used when
 #'   \code{plot = TRUE}.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. A pooled plot requires \code{"combine"} or \code{"both"}.
-#'   When omitted, legacy \code{scope} behaviour is preserved.
-#' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   of data frames with columns \code{bin_start}, \code{bin_end},
-#'   \code{count_value}), \code{$pooled} (combined histogram when pooled),
-#'   and \code{$meta}.
+#' @param type Result view: \code{"split"} (default), \code{"both"}, or
+#'   \code{"combine"}. A pooled plot requires \code{"combine"} or
+#'   \code{"both"}. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is a data
+#'   frame with \code{bin_start}, \code{bin_end} and \code{count} (banded
+#'   persons; bins below the threshold are left out). \code{$pooled} sums
+#'   \code{count} per bin on the shared edges, matching bins by
+#'   \code{bin_start} and \code{bin_end}; a bin missing on a server is not
+#'   treated as zero. When the shared range cannot be formed, the per-server
+#'   histograms (on each server's own edges) are still returned and
+#'   \code{meta$pooling_reason} says why nothing was pooled.
 #' @examples
 #' \dontrun{
 #' hist_result <- ds.omop.value.histogram("measurement", "value_as_number",
@@ -399,40 +397,42 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
                                      execute = TRUE,
                                      plot = FALSE, nbins = 9L, xlab = NULL,
                                      main = NULL, col = "#4C72B0",
-                                     type = NULL) {
+                                     type = "split",
+                                     datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.value.histogram")
   scope_missing <- missing(scope)
+  type_missing <- missing(type)
   scope <- match.arg(scope)
-  pooling_policy <- match.arg(pooling_policy,
-                              c("strict", "pooled_only_ok"))
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
   # A federation-wide plot must pass through the same pooling policy as the
   # returned data; it must never sum per-site frames behind a failed pool.
   if (isTRUE(plot)) {
-    if (!is.null(type) && identical(.normalize_result_type(type), "split")) {
+    if (!type_missing && !is.null(type) &&
+        identical(.normalize_result_type(type), "split")) {
       stop("plot = TRUE requires type = 'combine' or type = 'both'.",
            call. = FALSE)
     }
-    scope <- "pooled"
-    if (is.null(type)) scope_missing <- FALSE
+    # As before 2.10.9, a plot implies the pooled view of a legacy scope.
+    if (!scope_missing) scope <- "pooled"
   }
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = type_missing,
+    default_type = if (isTRUE(plot)) "both" else "split",
+    fn = "ds.omop.value.histogram"
   )
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.histogram",
     table = table, value_col = value_col, bins = bins,
     concept_id = concept_id, cohort_table = cohort_scope, window = window,
-    scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    pooling_policy = .code_policy(pooling_policy),
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   pooled <- NULL
   warnings <- character(0)
@@ -480,20 +480,26 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     }
     eligible_servers <- names(range_raw)[usable_range]
 
-    if (pooling_policy == "strict" && length(range_errors) > 0L) {
-      # No histogram query was issued, so do not expose range objects in the
-      # per-site histogram slot. Preserve the failed range nodes as errors.
-      raw <- list()
-      attr(raw, "ds_errors") <- range_errors
-      warnings <- paste0(
-        "Strict pooling failed before histogram calculation: incomplete ",
-        "range federation; unavailable server(s): ",
-        paste(names(range_errors), collapse = ", "), "."
-      )
-    } else if (length(eligible_servers) == 0L) {
-      raw <- list()
-      if (length(range_errors) > 0L) attr(raw, "ds_errors") <- range_errors
-      warnings <- "No server returned a usable disclosure-safe histogram range."
+    if ((pooling_policy == "strict" && length(range_errors) > 0L) ||
+        length(eligible_servers) == 0L) {
+      # The shared range cannot be formed, so nothing is pooled. The servers
+      # still answer their own per-site histograms (each on its own edges);
+      # only the pooling fails. A combine-only view has no use for them.
+      warnings <- if (length(eligible_servers) == 0L) {
+        "No server returned a usable disclosure-safe histogram range."
+      } else {
+        paste0(
+          "Strict pooling failed before histogram calculation: incomplete ",
+          "range federation; unavailable server(s): ",
+          paste(names(range_errors), collapse = ", "), "."
+        )
+      }
+      if (identical(result_type, "combine")) {
+        raw <- list()
+        if (length(range_errors) > 0L) attr(raw, "ds_errors") <- range_errors
+      } else {
+        raw <- .ds_safe_aggregate(conns, expr = .hist_call())
+      }
     } else {
       # The second pass must use exactly the nodes represented in the shared
       # range. Otherwise a recovered node could be counted against edges it did
@@ -548,10 +554,11 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 
   out <- .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings)),
+    meta = list(call_code = code, pooling_policy = pooling_policy,
+                warnings = warnings)),
     result_type,
-    "No complete disclosure-safe pooled histogram was available.")
+    "No complete disclosure-safe pooled histogram was available.",
+    pooling = .pooling_meta("histogram"))
 
   if (isTRUE(plot)) {
     .omopPlotHistogram(out, nbins = nbins, xlab = xlab %||% value_col,
@@ -606,10 +613,10 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #' @description
 #' Computes quantiles for a numeric column in an OMOP CDM table. Quantile
 #' computation happens entirely on the server side to avoid exposing
-#' individual-level data. Note that quantiles are inherently non-poolable
-#' from summary statistics alone; when \code{scope = "pooled"} is
-#' requested, per-site quantiles are still returned but a warning is
-#' emitted and the \code{$pooled} slot remains NULL.
+#' individual-level data. Quantiles are not poolable from summary statistics:
+#' \code{type = "both"} returns the per-site quantiles with
+#' \code{pooled = NULL} and \code{meta$pooling_reason}, and
+#' \code{type = "combine"} stops before contacting the servers.
 #'
 #' @param table Character; the CDM table name (e.g., \code{"measurement"}).
 #' @param value_col Character; the numeric column name (e.g.,
@@ -631,22 +638,24 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #'   Takes precedence over \code{cohort_table}.
 #' @param rounding Integer; number of decimal places to round quantile
 #'   values to (default: 2).
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
-#'   Pooled quantiles are not computed (see Description).
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"}.
+#'   \code{"pooled_only_ok"}; recorded only, as nothing is pooled.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. Quantiles are not poolable; \code{"combine"} therefore
-#'   returns no pooled value and records the reason. When omitted, legacy
-#'   \code{scope} behaviour is preserved.
-#' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   of named numeric vectors or data frames with quantile values),
-#'   \code{$pooled} (always NULL since quantiles cannot be safely pooled),
-#'   and \code{$meta} (includes warnings when pooled scope is requested).
+#' @param type Result view: \code{"split"} (default) or \code{"both"}; see
+#'   Description and \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is the
+#'   server's data frame of probabilities and rounded quantile values;
+#'   \code{$pooled} is always \code{NULL}.
 #' @examples
 #' \dontrun{
 #' q <- ds.omop.value.quantiles("measurement", "value_as_number",
@@ -663,28 +672,30 @@ ds.omop.value.quantiles <- function(table, value_col,
                                      scope = c("per_site", "pooled"),
                                      pooling_policy = "strict",
                                      symbol = "omop", conns = NULL,
-                                     execute = TRUE, type = NULL) {
+                                     execute = TRUE, type = "split",
+                                     datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.value.quantiles")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "split",
+    fn = "ds.omop.value.quantiles"
   )
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
+  reason <- "Quantiles cannot be safely pooled without individual-level data"
+  .combine_unavailable(result_type, paste0(reason, "."))
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.quantiles",
     table = table, value_col = value_col, probs = probs,
     concept_id = concept_id, cohort_table = cohort_scope, window = window,
-    rounding = rounding, scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    rounding = rounding, type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -694,24 +705,11 @@ ds.omop.value.quantiles <- function(table, value_col,
                 concept_id = concept_id)
   )
 
-  ds_errors <- attr(raw, "ds_errors")
-  # Quantiles are NOT safely poolable without individual-level data
-  warnings <- character(0)
-  if (!is.null(ds_errors)) {
-    warnings <- paste0("Server errors: ",
-      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
-  }
-  if (.result_type_wants_combine(result_type)) {
-    warnings <- c(warnings,
-      "Quantiles cannot be safely pooled without individual-level data")
-  }
-
+  # Quantiles are NOT safely poolable without individual-level data.
   .result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings)),
-    result_type,
-    "Quantiles cannot be safely pooled without individual-level data")
+    meta = list(call_code = code, pooling_policy = pooling_policy)),
+    result_type, reason)
 }
 
 #' Get record counts by time period
@@ -734,18 +732,29 @@ ds.omop.value.quantiles <- function(table, value_col,
 #'   for filtering, or NULL (default: NULL).
 #' @param window List with \code{start}/\code{end} date strings for
 #'   temporal filtering, or NULL (default: NULL).
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"}.
+#'   \code{"pooled_only_ok"}. See \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
-#' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   of data frames with columns \code{period} and \code{count_value}),
-#'   \code{$pooled} (combined counts when pooled), and \code{$meta}.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+#'   Takes precedence over \code{cohort_table}.
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is a data
+#'   frame with \code{period}, \code{n_records} and \code{n_persons}
+#'   (banded; periods below the threshold are left out). \code{$pooled} sums
+#'   the counts per period; a period missing on a server is not treated as
+#'   zero.
 #' @examples
 #' \dontrun{
 #' monthly <- ds.omop.date.counts("condition_occurrence",
@@ -760,53 +769,38 @@ ds.omop.date.counts <- function(table, date_col = NULL,
                                  scope = c("per_site", "pooled"),
                                  pooling_policy = "strict",
                                  symbol = "omop", conns = NULL,
-                                 execute = TRUE, type = NULL) {
+                                 execute = TRUE, type = "both",
+                                 cohort = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.date.counts")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "both",
+    fn = "ds.omop.date.counts"
   )
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
+  cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.date.counts",
     table = table, date_col = date_col, granularity = granularity,
-    cohort_table = cohort_table, window = window,
-    scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    cohort_table = cohort_scope, window = window,
+    pooling_policy = .code_policy(pooling_policy),
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopDateCountsDS", session$res_symbol,
                 table, date_col, granularity,
-                cohort_table, window)
+                cohort_scope, window)
   )
 
-  ds_errors <- attr(raw, "ds_errors")
-  pooled <- NULL
-  warnings <- character(0)
-  if (!is.null(ds_errors)) {
-    warnings <- paste0("Server errors: ",
-      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
-  }
-  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
-    pool_out <- .pool_result(raw, "date_counts", pooling_policy)
-    pooled <- pool_out$result
-    warnings <- c(warnings, pool_out$warnings)
-  }
-
-  .result_type_view(dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings)),
-    result_type,
+  .reader_result(raw, "date_counts", result_type, pooling_policy, code,
     "No complete disclosure-safe pooled date counts were available.")
 }
 
@@ -826,19 +820,35 @@ ds.omop.date.counts <- function(table, date_col = NULL,
 #' @param concept_col Character; the concept column to drill into, or NULL
 #'   for automatic detection based on the table's standard concept column
 #'   (default: NULL).
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"}.
+#'   \code{"pooled_only_ok"}. See \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
-#' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   of lists containing \code{summary}, \code{numeric}, \code{categorical},
-#'   \code{date_range}, and \code{missingness} components), \code{$pooled}
-#'   (combined profile when pooled), and \code{$meta}.
+#' @param type Result view: \code{"split"} (default), \code{"both"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is a list
+#'   with \code{summary} (\code{concept_id}, \code{concept_name}, banded
+#'   \code{n_records} and \code{n_persons}, \code{records_per_person_mean},
+#'   \code{pct_persons_multi}), \code{numeric_summary} (\code{quantiles},
+#'   \code{histogram}), \code{categorical_values}
+#'   (\code{value_as_concept_id}, \code{concept_name}, \code{n}),
+#'   \code{date_range} (\code{column}, \code{min_month_safe},
+#'   \code{max_month_safe}, yearly \code{date_counts}) and
+#'   \code{missingness} (\code{column_name}, \code{missing_rate}).
+#'   \code{$pooled} has the same parts: counts, histogram bins, categorical
+#'   values and yearly counts summed, the date range spanned, and the
+#'   non-additive parts (quantiles, \code{pct_persons_multi}, and missing
+#'   rates the servers return without counts) left \code{NULL} or \code{NA}
+#'   with a warning.
 #' @examples
 #' \dontrun{
 #' profile <- ds.omop.concept.drilldown("condition_occurrence",
@@ -852,27 +862,28 @@ ds.omop.concept.drilldown <- function(table, concept_id,
                                        scope = c("per_site", "pooled"),
                                        pooling_policy = "strict",
                                        symbol = "omop", conns = NULL,
-                                       execute = TRUE, type = NULL) {
+                                       execute = TRUE, type = "split",
+                                       datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.drilldown")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "split",
+    fn = "ds.omop.concept.drilldown"
   )
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
 
   code <- .build_code("ds.omop.concept.drilldown",
     table = table, concept_id = concept_id,
     concept_col = concept_col,
-    scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    pooling_policy = .code_policy(pooling_policy),
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   the_expr <- if (!is.null(concept_col)) {
     call("omopConceptDrilldownDS", session$res_symbol,
@@ -883,24 +894,7 @@ ds.omop.concept.drilldown <- function(table, concept_id,
   }
   raw <- .ds_safe_aggregate(conns, expr = the_expr)
 
-  ds_errors <- attr(raw, "ds_errors")
-  pooled <- NULL
-  warnings <- character(0)
-  if (!is.null(ds_errors)) {
-    warnings <- paste0("Server errors: ",
-      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
-  }
-  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
-    pool_out <- .pool_result(raw, "concept_drilldown", pooling_policy)
-    pooled <- pool_out$result
-    warnings <- c(warnings, pool_out$warnings)
-  }
-
-  .result_type_view(dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings)),
-    result_type,
+  .reader_result(raw, "concept_drilldown", result_type, pooling_policy, code,
     "No complete disclosure-safe pooled concept drilldown was available.")
 }
 
@@ -940,18 +934,23 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 #'   \code{\link{ds.omop.columns}} and whichever of
 #'   \code{c("value_as_number", "value_as_concept_id")} are present are
 #'   summarised.
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
-#'   Passed through to the underlying calls.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}), passed through to the underlying calls.
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"} (Best Effort). Passed through to the underlying
-#'   value-counts, column-stats and quantile calls so that, when pooled,
-#'   categories/values present on only some sites are summed across the
-#'   available sites rather than suppressed.
+#'   \code{"pooled_only_ok"}, passed through to the underlying value-counts,
+#'   column-stats and quantile calls. Value counts keep only values released
+#'   by every server under both policies; \code{"pooled_only_ok"} lets the
+#'   column statistics pool the servers that returned them. See
+#'   \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
-#' @param type Optional result view propagated to every aggregate component:
-#'   \code{"split"}, \code{"combine"}, or \code{"both"}. When omitted,
-#'   legacy \code{scope} behaviour is preserved.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view propagated to every component: \code{"split"}
+#'   (default) or \code{"both"}. The quantiles are never pooled.
 #' @return A named list with \code{table}, \code{concept_id},
 #'   \code{numeric} (named-by-column list where each element is a list with
 #'   \code{stats} and \code{quantiles} \code{dsomop_result} objects, or
@@ -975,17 +974,28 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
                                     scope = c("per_site", "pooled"),
                                     pooling_policy = "strict",
                                     symbol = "omop", conns = NULL,
-                                    type = NULL) {
+                                    type = "split",
+                                    datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.summary")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "split",
+    fn = "ds.omop.concept.summary"
   )
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
+  .combine_unavailable(result_type, paste0(
+    "ds.omop.concept.summary() includes quantiles, which are never pooled."))
 
   if (!is.null(column)) {
     cols <- column
   } else {
-    col_info <- ds.omop.columns(table, symbol = symbol, conns = conns)
+    col_info <- .quiet_aliases(ds.omop.columns(table, symbol = symbol,
+                                               conns = conns))
+    col_info <- if (inherits(col_info, "dsomop_result")) {
+      col_info$per_site
+    } else col_info
     available <- unique(unlist(lapply(col_info, function(df) {
       if (is.data.frame(df) && "column_name" %in% names(df)) {
         as.character(df$column_name)
@@ -1004,17 +1014,17 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
       categorical[[col]] <- ds.omop.value.counts(
         table, col, concept_id = concept_id,
         type = result_type, pooling_policy = pooling_policy,
-        symbol = symbol, conns = conns)
+        symbol = symbol, datasources = conns)
     } else {
       numeric[[col]] <- list(
         stats = ds.omop.column.stats(
           table, col, concept_id = concept_id,
           type = result_type, pooling_policy = pooling_policy,
-          symbol = symbol, conns = conns),
+          symbol = symbol, datasources = conns),
         quantiles = ds.omop.value.quantiles(
           table, col, concept_id = concept_id,
           type = result_type, pooling_policy = pooling_policy,
-          symbol = symbol, conns = conns))
+          symbol = symbol, datasources = conns))
     }
   }
 
@@ -1037,19 +1047,26 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
 #'
 #' @param concept_ids Integer vector; one or more OMOP concept IDs to
 #'   search for across all CDM tables.
-#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
+#' @param scope Deprecated alias of \code{type} (\code{"per_site"} or
+#'   \code{"pooled"}).
 #' @param pooling_policy Character; \code{"strict"} (default) or
-#'   \code{"pooled_only_ok"}.
+#'   \code{"pooled_only_ok"}. See \link{dsomop_conventions}.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
-#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
-#' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   of data frames with columns \code{concept_id}, \code{table_name},
-#'   \code{count_value}), \code{$pooled} (combined presence matrix when
-#'   pooled), and \code{$meta}.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is a data
+#'   frame with \code{table_name}, \code{concept_column}, \code{concept_id},
+#'   \code{n_records} and \code{n_persons} (banded; tables below the
+#'   threshold are left out). \code{$pooled} sums the counts per concept,
+#'   table and column.
 #' @examples
 #' \dontrun{
 #' loc <- ds.omop.concept.locate(c(201820, 316139))
@@ -1060,26 +1077,27 @@ ds.omop.concept.locate <- function(concept_ids,
                                     scope = c("per_site", "pooled"),
                                     pooling_policy = "strict",
                                     symbol = "omop", conns = NULL,
-                                    execute = TRUE, type = NULL) {
+                                    execute = TRUE, type = "both",
+                                    datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.concept.locate")
   scope_missing <- missing(scope)
   scope <- match.arg(scope)
   result_type <- .resolve_result_type(
-    type, scope = scope, scope_missing = scope_missing
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "both",
+    fn = "ds.omop.concept.locate"
   )
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
 
   code <- .build_code("ds.omop.concept.locate",
     concept_ids = concept_ids,
-    scope = if (is.null(type)) scope else NULL,
-    type = if (is.null(type)) NULL else result_type, symbol = symbol)
+    pooling_policy = .code_policy(pooling_policy),
+    type = result_type, symbol = symbol)
 
-  if (!execute) {
-    return(.result_type_view(dsomop_result(
-      per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)), result_type))
-  }
+  if (!execute) return(.reader_dry_run(code, result_type))
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
@@ -1087,23 +1105,6 @@ ds.omop.concept.locate <- function(concept_ids,
                 .ds_encode(as.integer(concept_ids)))
   )
 
-  ds_errors <- attr(raw, "ds_errors")
-  pooled <- NULL
-  warnings <- character(0)
-  if (!is.null(ds_errors)) {
-    warnings <- paste0("Server errors: ",
-      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
-  }
-  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
-    pool_out <- .pool_result(raw, "concept_locate", pooling_policy)
-    pooled <- pool_out$result
-    warnings <- c(warnings, pool_out$warnings)
-  }
-
-  .result_type_view(dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings)),
-    result_type,
+  .reader_result(raw, "concept_locate", result_type, pooling_policy, code,
     "No complete disclosure-safe pooled concept-location result was available.")
 }

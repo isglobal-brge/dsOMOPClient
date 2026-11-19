@@ -781,5 +781,5 @@ test_that("ds.omop.disclosure.settings offers NO argument to lower a threshold",
   # Read-only by construction: the public signature exposes only symbol/conns,
   # never a setter for any nfilter_* floor.
   expect_setequal(names(formals(ds.omop.disclosure.settings)),
-                  c("symbol", "conns"))
+                  c("symbol", "conns", "type", "datasources"))
 })

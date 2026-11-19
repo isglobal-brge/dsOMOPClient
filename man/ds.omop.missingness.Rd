@@ -13,7 +13,8 @@ ds.omop.missingness(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -26,40 +27,50 @@ NULL to check all columns in the table (default: NULL).}
 \item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
 \code{cohort_definition_id}, or a server-side cohort table name), or NULL.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}.}
+\code{"pooled_only_ok"}. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"split"} (default), \code{"both"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list
-  of data frames with columns \code{column_name}, \code{total_count},
-  \code{null_count}, \code{missing_pct}), \code{$pooled} (combined
-  missingness when pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is a data
+  frame with \code{column_name} and \code{missing_rate}; dsOMOP 2.10.9
+  servers add the banded counts behind the rate, \code{n_total} and
+  \code{n_missing}. \code{$pooled} has \code{column_name}, \code{n_total},
+  \code{n_missing} and \code{missing_rate} = summed \code{n_missing} /
+  summed \code{n_total}. Older servers return rates only; their results
+  are not pooled and \code{meta$pooling_reason} says so.
 }
 \description{
-Computes the proportion and count of NULL/missing values for each
-column (or a subset of columns) in an OMOP CDM table. This is
-essential for data quality assessment, helping identify columns with
-high missingness that may affect downstream analyses. Results are
-disclosure-controlled; columns where the non-null count falls below
-the threshold are suppressed.
+Computes the proportion of NULL/missing values for each column (or a
+subset of columns) in an OMOP CDM table. For person tables a person is
+missing a column when none of their records carries a value. Results are
+disclosure-controlled: a rate whose missing or non-missing group is below
+the threshold is \code{NA}.
 }
 \examples{
 \dontrun{
 miss <- ds.omop.missingness("measurement",
                              columns = c("value_as_number",
-                                         "value_as_concept_id"))
-miss$per_site$server1
+                                         "value_as_concept_id"),
+                             type = "both")
+miss$pooled
 }
 }

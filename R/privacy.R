@@ -417,9 +417,9 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
   structure(spec, class = c("omop_privacy", "list"))
 }
 
-.dp_datasources <- function(datasources) {
+.dp_datasources <- function(datasources, symbol = "omop") {
   if (is.null(datasources)) {
-    datasources <- DSI::datashield.connections_find()
+    datasources <- .resolve_datasources(NULL, symbol = symbol)
   }
   if (!is.list(datasources) || length(datasources) < 1L ||
       is.null(names(datasources)) || anyNA(names(datasources)) ||
@@ -611,19 +611,37 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' release preflight rejects repeated \code{noise_domain_id} or server-owned
 #' logical \code{domain} values.
 #'
-#' @param datasources Named DataSHIELD connection list. \code{NULL} uses
-#'   \code{DSI::datashield.connections_find()}.
-#' @return An \code{omop_dp_status} named list of per-server DP status records.
+#' @param datasources Named DataSHIELD connection list. \code{NULL} uses the
+#'   connections of the \code{"omop"} session, or
+#'   \code{DSI::datashield.connections_find()} when there is none.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}. DP
+#'   status is reported per server: \code{"both"} returns
+#'   \code{pooled = NULL} with \code{meta$pooling_reason}, and
+#'   \code{"combine"} stops. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result}. \code{$per_site} is the
+#'   \code{omop_dp_status} named list of per-server DP status records
+#'   returned by earlier versions (with its \code{unpatched} attribute and
+#'   print method), and \code{res$<server>} still reaches one server's record.
 #' @examples
-#' \dontrun{ds.omop.dp.status()}
+#' \dontrun{
+#' status <- ds.omop.dp.status()
+#' status$per_site
+#' }
 #' @export
-ds.omop.dp.status <- function(datasources = NULL) {
+ds.omop.dp.status <- function(datasources = NULL, type = "split") {
+  result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- "DP status is reported per server and cannot be combined."
+  .combine_unavailable(result_type, reason)
   datasources <- .dp_datasources(datasources)
   statuses <- .dp_statuses(datasources)
   for (message in .dp_unpatched_warnings(statuses)) {
     warning(message, call. = FALSE)
   }
-  statuses
+  .result_type_view(dsomop_result(
+    per_site = statuses, pooled = NULL,
+    meta = list(call_code = .build_code("ds.omop.dp.status",
+                                        type = result_type))),
+    result_type, reason)
 }
 
 #' DP status of every server, negotiated with the protected-release contract
@@ -1381,16 +1399,21 @@ print.omop_dp_status <- function(x, ...) {
 #' @param privacy An \code{omop_privacy} specification. If it does not contain
 #'   an explicit \code{population_id}, the bare symbol \code{x} is used as its
 #'   public compatibility label. This label does not control sticky identity.
-#' @param datasources Named DataSHIELD connection list. \code{NULL} uses
-#'   \code{DSI::datashield.connections_find()}.
-#' @param pool Logical; pool the complete set of noisy site releases.
+#' @param datasources Named DataSHIELD connection list. \code{NULL} uses the
+#'   connections of the \code{"omop"} session, or
+#'   \code{DSI::datashield.connections_find()} when there is none.
+#' @param pool Deprecated alias of \code{type}: \code{TRUE} means
+#'   \code{type = "both"}, \code{FALSE} means \code{type = "split"}.
 #' @param format Client-only pooled-result format: long data frame, one-row
 #'   wide data frame, named vector, or raw list. Histogram releases support all
 #'   four forms; other statistics retain their typed list. This argument never
 #'   enters the server specification or sticky-release identity.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved:
-#'   \code{TRUE} means both views and \code{FALSE} means split only.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}. When the releases cannot be pooled (incompatible
+#'   contracts, repeated logical sources, a non-additive statistic),
+#'   \code{"both"} keeps the per-server releases with \code{pooled = NULL}
+#'   and \code{meta$pooling_reason}, and \code{"combine"} stops with the
+#'   reason. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. On 2.10.3, \code{meta$privacy} reports
 #'   each site's protection route and guarantee scope. Only all-fixed
 #'   federations report vector epsilon composition (maximum for disjoint
@@ -1417,8 +1440,9 @@ print.omop_dp_status <- function(x, ...) {
 #' @export
 ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
                                format = c("long", "wide", "vector", "raw"),
-                               type = NULL) {
+                               type = "both") {
   pool_missing <- missing(pool)
+  type_missing <- missing(type)
   if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x) ||
       !grepl("^[A-Za-z.][A-Za-z0-9._]*$", x) || grepl("^\\.[0-9]", x)) {
     stop("x must be one bare DataSHIELD symbol.", call. = FALSE)
@@ -1430,7 +1454,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     stop("pool must be TRUE or FALSE.", call. = FALSE)
   }
   result_type <- .resolve_result_type(
-    type, pool = pool, pool_missing = pool_missing, default_type = "both"
+    type, pool = pool, pool_missing = pool_missing, default_type = "both",
+    type_missing = type_missing, fn = "ds.omop.dp.release"
   )
   want_combine <- .result_type_wants_combine(result_type)
   if (length(format) > 1L &&
@@ -1458,17 +1483,25 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   }, logical(1L))
   if (any(protected)) {
     if (!all(protected)) {
+      mixed_reason <- paste0(
+        "Servers ", paste(names(statuses)[!protected], collapse = ", "),
+        " use the per-release DP contract of dsOMOP 2.10.2 or earlier, ",
+        "and ", paste(names(statuses)[protected], collapse = ", "),
+        " the protected-release contract of dsOMOP 2.10.3; their ",
+        "releases cannot be combined. Upgrade every server to dsOMOP ",
+        "2.10.3, or request per-site results (type = \"split\").")
+      if (identical(result_type, "combine")) stop(mixed_reason, call. = FALSE)
+      mixed <- .dp_mixed_per_site_release(
+        x, privacy, datasources, protected, format, unpatched_warnings)
       if (want_combine) {
-        stop("Servers ", paste(names(statuses)[!protected], collapse = ", "),
-             " use the per-release DP contract of dsOMOP 2.10.2 or earlier, ",
-             "and ", paste(names(statuses)[protected], collapse = ", "),
-             " the protected-release contract of dsOMOP 2.10.3; their ",
-             "releases cannot be combined. Upgrade every server to dsOMOP ",
-             "2.10.3, or request per-site results (type = \"split\").",
-             call. = FALSE)
+        meta <- mixed[["meta"]]
+        meta$type <- "both"
+        meta$scope <- "pooled"
+        meta$pooling_reason <- mixed_reason
+        meta$warnings <- unique(c(meta$warnings, mixed_reason))
+        mixed[["meta"]] <- meta
       }
-      return(.dp_mixed_per_site_release(
-        x, privacy, datasources, protected, format, unpatched_warnings))
+      return(mixed)
     }
     return(.dp_protected_release(
       x, privacy, server_privacy, datasources, statuses, want_combine,
@@ -1480,14 +1513,27 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   count_like <- privacy$statistic %in% c(
     "count", "bounded_record_count", "bounded_distinct"
   )
+  # Pooling problems never cost the per-site releases of a "both" view; a
+  # "combine" view stops with the reason.
+  pool_error <- NULL
+  pool_guard <- function(expr) {
+    if (!is.null(pool_error)) return(NULL)
+    tryCatch(expr, error = function(e) {
+      if (identical(result_type, "combine")) stop(e)
+      pool_error <<- conditionMessage(e)
+      NULL
+    })
+  }
   if (length(datasources) > 1L && want_combine && !count_like) {
-    disclosure <- .dp_complete_aggregate(
-      datasources, call("omopDisclosureSettingsDS"),
-      "DP harmonization preflight"
-    )
-    harmonization <- .federated_harmonization_contract(
-      disclosure, expected_servers = names(datasources), fail = TRUE
-    )
+    harmonization <- pool_guard({
+      disclosure <- .dp_complete_aggregate(
+        datasources, call("omopDisclosureSettingsDS"),
+        "DP harmonization preflight"
+      )
+      .federated_harmonization_contract(
+        disclosure, expected_servers = names(datasources), fail = TRUE
+      )
+    })
   }
   legacy_servers <- names(statuses)[vapply(statuses, function(status) {
     identical(status$protocol, .DP_LEGACY_PROTOCOL)
@@ -1517,18 +1563,18 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   )) {
     value_types <- vapply(raw, `[[`, character(1L), "value_type")
     if (length(unique(value_types)) != 1L) {
-      stop("DP release value_type differs across servers; no pooled or ",
-           "partial result was published.", call. = FALSE)
+      pool_guard(stop("DP release value_type differs across servers; no ",
+                      "pooled result was formed.", call. = FALSE))
     }
   }
 
   pooled <- if (want_combine) {
-    .dp_pool_release(raw, privacy, contract, format = format)
+    pool_guard(.dp_pool_release(raw, privacy, contract, format = format))
   } else NULL
   epsilons <- vapply(raw, function(value) as.numeric(value$epsilon), numeric(1L))
   deltas <- vapply(raw, function(value) as.numeric(value$delta), numeric(1L))
   snapshot_ids <- vapply(statuses, `[[`, character(1L), "snapshot_id")
-  warnings <- c(unpatched_warnings, legacy_warnings)
+  warnings <- c(unpatched_warnings, legacy_warnings, pool_error)
   if (want_combine && length(statuses) > 1L &&
       identical(privacy$statistic, "bounded_distinct")) {
     warnings <- c(warnings, paste0(
@@ -1542,10 +1588,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     meta = list(
       call_code = .build_code("ds.omop.dp.release", x = x,
                               privacy = "<omop_privacy>",
-                              pool = if (is.null(type)) pool else NULL,
-                              type = if (is.null(type)) NULL else result_type,
-                              format = format),
-      scope = if (want_combine) "pooled" else "per_site",
+                              type = result_type, format = format),
       warnings = warnings
     )
   )
@@ -1591,7 +1634,9 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   result[["meta"]]$harmonization <- harmonization
   .result_type_view(
     result, result_type,
-    "No complete disclosure-safe pooled DP release was available."
+    pool_error %||%
+      "No complete disclosure-safe pooled DP release was available.",
+    pooling = .pooling_meta("protected_components")
   )
 }
 
@@ -1651,8 +1696,12 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
 #'   \code{\link{ds.omop.plan.execute}}.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return The named output-to-symbol mapping, invisibly.
 #' @examples
 #' \dontrun{
@@ -1666,7 +1715,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
 #'   breaks = seq(0, 120, by = 10), reducer = "mean"))
 #' }
 #' @export
-ds.omop.dp.prepare <- function(x, out = NULL, symbol = "omop", conns = NULL) {
+ds.omop.dp.prepare <- function(x, out = NULL, symbol = "omop", conns = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.dp.prepare")
   if (inherits(x, "omop_recipe")) {
     plan <- .recipe_plan_auto(x)
     if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(x, plan, out)

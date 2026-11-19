@@ -666,21 +666,24 @@ print.omop_querylibrary_sticky <- function(x, ...) {
 #'   argument.
 #' @param redesign An object created by
 #'   \code{\link{omop_querylibrary_sticky}}.
-#' @param datasources Named DataSHIELD connection list. \code{NULL} uses active
-#'   connections.
-#' @param pool Pool compatible releases across sites. For
+#' @param datasources Named DataSHIELD connection list. \code{NULL} uses the
+#'   connections of the OMOP session \code{symbol}, or
+#'   \code{DSI::datashield.connections_find()} when there is none.
+#' @param pool Deprecated alias of \code{type} (\code{TRUE} means
+#'   \code{"both"}, \code{FALSE} means \code{"split"}). For
 #'   \code{bounded_distinct}, pooling is the sum of site-local cardinalities,
-#'   not a cross-site set union; use \code{FALSE} for site-specific estimates.
+#'   not a cross-site set union; use \code{type = "split"} for site-specific
+#'   estimates.
 #' @param format Output format passed to \code{\link{ds.omop.dp.release}}.
-#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
-#'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}, passed to \code{\link{ds.omop.dp.release}}.
 #' @param symbol Session symbol of the OMOP connection, used only when the
 #'   input is prepared automatically (default \code{"omop"}).
 #' @return A \code{dsomop_result} from \code{\link{ds.omop.dp.release}}.
 #' @export
 ds.omop.querylibrary.sticky.release <- function(
     x = NULL, redesign, datasources = NULL, pool = TRUE,
-    format = c("long", "wide", "vector", "raw"), type = NULL,
+    format = c("long", "wide", "vector", "raw"), type = "both",
     symbol = "omop") {
   if (missing(redesign) && inherits(x, "omop_querylibrary_sticky")) {
     redesign <- x
@@ -691,26 +694,30 @@ ds.omop.querylibrary.sticky.release <- function(
     stop("pool must be TRUE or FALSE.", call. = FALSE)
   }
   result_type <- .resolve_result_type(
-    type, pool = pool, pool_missing = pool_missing, default_type = "both"
+    type, pool = pool, pool_missing = pool_missing, default_type = "both",
+    type_missing = missing(type), fn = "ds.omop.querylibrary.sticky.release"
   )
   .querylibrary_sticky_validate_redesign(redesign)
+  if (is.null(datasources)) {
+    datasources <- .resolve_datasources(NULL, symbol = symbol)
+  }
   datasources <- .dp_datasources(datasources)
   .querylibrary_sticky_server_preflight(redesign, datasources)
   if (is.null(x)) {
     x <- .querylibrary_sticky_prepare(redesign, datasources, symbol)
     on.exit(.querylibrary_sticky_remove(datasources, x), add = TRUE)
   }
-  if (is.null(type)) {
-    ds.omop.dp.release(
+  if (missing(type)) {
+    .quiet_aliases(ds.omop.dp.release(
       x = x, privacy = redesign$privacy, datasources = datasources,
-      pool = pool, format = format
-    )
+      pool = .result_type_wants_combine(result_type), format = format
+    ))
   } else {
-    ds.omop.dp.release(
+    .quiet_aliases(ds.omop.dp.release(
       x = x, privacy = redesign$privacy, datasources = datasources,
       pool = .result_type_wants_combine(result_type), format = format,
       type = result_type
-    )
+    ))
   }
 }
 
@@ -736,10 +743,10 @@ ds.omop.querylibrary.sticky.release <- function(
          call. = FALSE)
   }
   temporary <- .generate_symbol("dsOdp")
-  published <- ds.omop.dp.prepare(
+  published <- .quiet_aliases(ds.omop.dp.prepare(
     preparation, out = stats::setNames(temporary, names(plan$outputs)),
     symbol = symbol, conns = datasources
-  )
+  ))
   if (is.character(published) && length(published) == 1L) {
     return(unname(published[[1L]]))
   }

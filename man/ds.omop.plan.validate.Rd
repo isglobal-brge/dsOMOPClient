@@ -4,7 +4,13 @@
 \alias{ds.omop.plan.validate}
 \title{Validate an extraction plan}
 \usage{
-ds.omop.plan.validate(plan, symbol = "omop", conns = NULL)
+ds.omop.plan.validate(
+  plan,
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 }
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
@@ -12,11 +18,23 @@ ds.omop.plan.validate(plan, symbol = "omop", conns = NULL)
 \item{symbol}{Character; name of the OMOP session symbol on the
 server (default \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL}, uses the
-connections stored in the session.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}.
+Previews are per server: \code{"both"} returns \code{pooled = NULL}
+with \code{meta$pooling_reason}, and \code{"combine"} stops before
+contacting the servers. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A named list (one element per server). Each server's result is the
+A \code{dsomop_result} whose \code{$per_site} is the named list
+  (one element per server) returned by earlier versions;
+  \code{res$<server>} still reaches one server's payload. Each server's result is the
   preview payload, whose \code{$validation} sub-list reports
   \code{valid} (logical), \code{errors}, \code{warnings}, and
   \code{available_tables}. No raw rows or SQL are returned; the shared

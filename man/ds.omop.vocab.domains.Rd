@@ -4,18 +4,35 @@
 \alias{ds.omop.vocab.domains}
 \title{List the domains available on each server}
 \usage{
-ds.omop.vocab.domains(symbol = "omop", conns = NULL, execute = TRUE)
+ds.omop.vocab.domains(
+  symbol = "omop",
+  conns = NULL,
+  execute = TRUE,
+  type = "both",
+  datasources = NULL
+)
 }
 \arguments{
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, returns a dry-run
 \code{dsomop_result} containing only the reproducible R code without
 contacting the servers.}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. The pooled view is the de-duplicated union of the
+servers' rows (shared reference data, no patient counts); it is
+\code{NULL} with \code{meta$pooling_reason} when a server did not
+answer. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result}. \code{per_site} holds each server's domain

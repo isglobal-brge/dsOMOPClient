@@ -495,9 +495,18 @@
     raw[[server]] <- .dp_validate_protected_payload(raw[[server]], server,
                                                     privacy)
   }
-  pooled <- if (want_combine) .dp_pool_protected(raw, privacy) else NULL
+  # Pooling refusals (repeated logical sources, incompatible releases, a
+  # non-additive statistic) keep the per-site releases of a "both" view.
+  pool_error <- NULL
+  pooled <- if (want_combine) tryCatch(
+    .dp_pool_protected(raw, privacy),
+    error = function(e) {
+      if (identical(result_type, "combine")) stop(e)
+      pool_error <<- conditionMessage(e)
+      NULL
+    }) else NULL
   routes <- vapply(raw, `[[`, character(1L), "protection")
-  warnings <- character(0)
+  warnings <- pool_error %||% character(0)
   if (any(routes == "realised_sticky")) {
     warnings <- c(warnings, paste0(
       "Heuristic realised-contribution protection (",
@@ -514,10 +523,7 @@
     meta = list(
       call_code = .build_code("ds.omop.dp.release", x = x,
                               privacy = "<omop_privacy>",
-                              pool = if (is.null(type)) pool else NULL,
-                              type = if (is.null(type)) NULL else result_type,
-                              format = format),
-      scope = if (want_combine) "pooled" else "per_site",
+                              type = result_type, format = format),
       warnings = warnings))
   all_fixed <- all(routes == "fixed_synopsis")
   result[["meta"]]$privacy <- list(
@@ -551,7 +557,8 @@
     }, character(1L)))
   .result_type_view(
     result, result_type,
-    "No compatible pooled protected release was available.")
+    pool_error %||% "No compatible pooled protected release was available.",
+    pooling = .pooling_meta("protected_components"))
 }
 
 #' Pool protected analysis-catalog frames from their signed components

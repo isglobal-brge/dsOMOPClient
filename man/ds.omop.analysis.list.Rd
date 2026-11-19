@@ -8,7 +8,8 @@ ds.omop.analysis.list(
   domain = NULL,
   symbol = "omop",
   conns = NULL,
-  type = "both"
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
@@ -19,15 +20,20 @@ entries for all domains.}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{type}{Result view: \code{"both"} (default), \code{"split"}, or
-\code{"combine"}; dsBaseClient-style aliases are accepted. A split view
-can inspect nodes whose catalogs differ; combined views require equality.}
+\code{"combine"}; dsBaseClient-style aliases are accepted. A pooled
+view requires equal catalogs. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
+A \code{dsomop_result} object. The pooled
   element is a data frame with one row per entry: \code{name} (the id),
   \code{domain}, \code{adapter}, \code{mode}, disclosure \code{unit},
   \code{description} (title), parameter summary, the
@@ -40,9 +46,12 @@ Returns metadata for every entry in the server's unified analysis catalog —
 the single registry that folds the curated QueryLibrary SQL templates, the
 pre-computed Achilles analyses, and the generic OHDSI result tables behind one
 stable, pack-prefixed naming scheme (\code{"dsomop:<id>"}). Because the
-catalog is defined by the server package, the client requires an identical
-response from every participating server before exposing a pooled view. No
-SQL, compute functions, or other server internals are exposed.
+catalog is defined by the server package, the pooled view is the catalog
+every participating server returned identically. When the catalogs differ
+or a server is unavailable, \code{$pooled} is \code{NULL} and
+\code{meta$pooling_reason} says why (\code{type = "combine"} stops with
+that reason). No SQL, compute functions, or other server internals are
+exposed.
 }
 \examples{
 \dontrun{

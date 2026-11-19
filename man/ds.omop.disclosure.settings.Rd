@@ -4,20 +4,37 @@
 \alias{ds.omop.disclosure.settings}
 \title{Inspect the active disclosure thresholds on each server}
 \usage{
-ds.omop.disclosure.settings(symbol = "omop", conns = NULL)
+ds.omop.disclosure.settings(
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 }
 \arguments{
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or \code{NULL} to use the session
-default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A named list, one element per server, each holding that server's
-  active disclosure settings (e.g. \code{nfilter_subset},
-  \code{nfilter_tab}, \code{nfilter_levels_max}). Servers that fail to
-  respond are omitted and their errors attached as a \code{ds_errors}
-  attribute.
+A \code{dsomop_result}. \code{$per_site} is the named list (one
+  element per server, each holding that server's active disclosure
+  settings, e.g. \code{nfilter_subset}, \code{nfilter_tab},
+  \code{nfilter_levels_max}) returned by earlier versions; servers that
+  fail to respond are omitted and their errors attached as a
+  \code{ds_errors} attribute. \code{res$<server>} still reaches one
+  server's settings. \code{$pooled} is the negotiated federation contract
+  (\code{NULL}, with \code{meta$pooling_reason}, when a server did not
+  answer).
 }
 \description{
 Reports the disclosure-control thresholds currently in effect on every
@@ -29,13 +46,18 @@ minimum number of distinct persons the per-patient gate
 This is strictly \strong{read-only}. The thresholds are configured
 server-side through R options (Opal admin panel, Armadillo config, or
 \code{Rprofile.site}); there is deliberately no client-side way to lower
-them. Servers may report different floors, so the result is per-server.
+them. Servers may report different floors: the per-server settings are in
+\code{$per_site}, and the pooled view is the federation contract the
+client negotiates from them (the settings every server can honour
+together, as used by federated analyses).
 }
 \examples{
 \dontrun{
 settings <- ds.omop.disclosure.settings()
 # Effective per-patient floor on each server:
-lapply(settings, function(s) s$nfilter_subset)
+lapply(settings$per_site, function(s) s$nfilter_subset)
+# The contract the federation negotiates from them:
+settings$pooled
 }
 }
 \seealso{

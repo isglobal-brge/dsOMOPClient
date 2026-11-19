@@ -223,8 +223,14 @@ test_that("distinct-label cardinalities are never pooled across sites", {
   .pc_backend(statuses, releases, function(datasources, sent) {
     privacy <- omop_privacy("bounded_distinct", "concept",
                             levels = c("a", "b", "c"))
-    expect_error(ds.omop.dp.release("analysis_table", privacy, datasources),
+    expect_error(ds.omop.dp.release("analysis_table", privacy, datasources,
+                                    type = "combine"),
                  "not additive across sites")
+    # type = "both" keeps the per-site releases and says why nothing pooled.
+    both <- ds.omop.dp.release("analysis_table", privacy, datasources)
+    expect_null(both$pooled)
+    expect_match(both$meta$pooling_reason, "not additive across sites")
+    expect_equal(both$per_site$b$noisy_count, 2.1)
     value <- ds.omop.dp.release("analysis_table", privacy, datasources,
                                 pool = FALSE)
     expect_equal(value$per_site$a$noisy_count, 3.2)
@@ -239,7 +245,7 @@ test_that("protected and per-release servers are never combined", {
   statuses <- list(a = .pc_status(), b = legacy)
   .pc_backend(statuses, list(), function(datasources, sent) {
     expect_error(ds.omop.dp.release("analysis_table", omop_privacy("count"),
-                                    datasources),
+                                    datasources, type = "combine"),
                  "cannot be combined")
     expect_false("omopDpReleaseDS" %in% sent$heads)
   })
@@ -418,8 +424,12 @@ test_that("typed releases of one logical source are never pooled twice", {
                              b = count(10, .pc_source(3L))),
               function(datasources, sent) {
     expect_error(ds.omop.dp.release("analysis_table", omop_privacy("count"),
-                                    datasources),
+                                    datasources, type = "combine"),
                  "Duplicate logical source: servers a and b")
+    both <- ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                               datasources)
+    expect_null(both$pooled)
+    expect_match(both$meta$pooling_reason, "Duplicate logical source")
     # The per-site results stay available without pooling.
     value <- ds.omop.dp.release("analysis_table", omop_privacy("count"),
                                 datasources, pool = FALSE)
@@ -448,7 +458,7 @@ test_that("typed releases of one logical source are never pooled twice", {
   .pc_backend(statuses, list(a = count(10, NULL), b = count(10, NULL)),
               fill_source = FALSE, function(datasources, sent) {
     expect_error(ds.omop.dp.release("analysis_table", omop_privacy("count"),
-                                    datasources),
+                                    datasources, type = "combine"),
                  "independence of the sites cannot be established")
   })
   # A single site needs no identifier to "pool" with itself.
@@ -524,8 +534,12 @@ test_that("typed releases of one logical source are never pooled twice", {
 test_that("ds.omop.analysis.run refuses to pool alias connections of one node", {
   site <- .pc_label(.pc_frame(10, c(7, 3), source = 4L))
   .pc_analysis_run(list(alpha = site, alpha_again = site), function() {
-    expect_error(ds.omop.analysis.run("dsomop:achilles.101"),
+    expect_error(ds.omop.analysis.run("dsomop:achilles.101", type = "combine"),
                  "Duplicate logical source: servers alpha and alpha_again")
+    both <- ds.omop.analysis.run("dsomop:achilles.101")
+    expect_named(both$per_site, c("alpha", "alpha_again"))
+    expect_null(both$pooled)
+    expect_match(both$meta$pooling_reason, "Duplicate logical source")
     split <- ds.omop.analysis.run("dsomop:achilles.101", type = "split")
     expect_named(split$per_site, c("alpha", "alpha_again"))
     expect_null(split$pooled)
@@ -679,7 +693,7 @@ test_that("typed views pool from their complete basis (dsOMOP 2.10.3 B05)", {
     expect_error(ds.omop.dp.release(
       "analysis_table",
       omop_privacy("categorical_histogram", "sex", levels = c("F", "M")),
-      datasources), "not compatible")
+      datasources, type = "combine"), "not compatible")
   })
 })
 
@@ -1011,7 +1025,8 @@ test_that("standard outputs of servers without DP pool by the established contra
   frames$a <- .pc_effect_frame(log(1.5), 0.2, 1L)
   .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
     expect_error(ds.omop.meta.effect_estimate(
-      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L)),
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L),
+      type = "combine"),
       "cannot be pooled together")
   })
 })
@@ -1343,7 +1358,7 @@ test_that("DP status negotiates the contract and flags pre-2.10.3 servers (R08)"
   datasources <- list(new = "FAKE_1", old = "FAKE_2")
   expect_warning(value <- ds.omop.dp.status(datasources),
                  "Server 'old' runs dsOMOP 2.10.2 or older")
-  expect_identical(attr(value, "unpatched"), "old")
+  expect_identical(attr(value$per_site, "unpatched"), "old")
   expect_identical(value$new$privacy_contract, .DP_PROTECTED_PRIVACY_CONTRACT)
   expect_identical(value$old$privacy_contract,
                    "fixed_per_release_seed_data_versioned_v1")
@@ -1355,7 +1370,8 @@ test_that("DP status negotiates the contract and flags pre-2.10.3 servers (R08)"
   expect_identical(sent[[1L]]$expr[[2L]], .DP_PROTECTED_RELEASE_PROTOCOL)
   # Releases mixing the two contracts are refused when pooled.
   expect_error(suppressWarnings(
-    ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources)),
+    ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources,
+                       type = "combine")),
     "cannot be combined")
 })
 

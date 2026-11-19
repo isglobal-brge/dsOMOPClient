@@ -11,7 +11,8 @@ ds.omop.achilles.results(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
@@ -19,26 +20,31 @@ ds.omop.achilles.results(
 (e.g., \code{c(1, 2, 400)} for total persons, gender breakdown, and
 condition frequency).}
 
-\item{scope}{Character; \code{"per_site"} returns each server's results
-separately, \code{"pooled"} additionally aggregates counts across servers.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}).}
 
-\item{pooling_policy}{Character; controls how suppressed (NA) cells are
-handled during pooling. \code{"strict"} (the default) sets the pooled
-value to NA if any server suppressed the cell. \code{"pooled_only_ok"}
-sums only the non-suppressed values.}
+\item{pooling_policy}{Character; \code{"strict"} (the default) leaves out a
+stratum absent on any server; \code{"pooled_only_ok"} sums the strata the
+servers returned. A stratum suppressed (NA) on any server is left out
+under both policies. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, returns a dry-run
 \code{dsomop_result} containing only the reproducible R code without
 contacting the servers.}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result} object. The \code{per_site} element contains
@@ -49,19 +55,19 @@ A \code{dsomop_result} object. The \code{per_site} element contains
 \description{
 Queries the \code{achilles_results} table on each connected server for
 the specified analysis IDs. These are pre-computed count-based statistics
-(e.g., person counts by gender, condition frequency). When
-\code{scope = "pooled"}, counts are summed across servers with suppression
-propagation: if any server suppressed a cell (NA), the pooled cell is also
-set to NA to prevent disclosure.
+(e.g., person counts by gender, condition frequency). By default (as
+\code{ds.table} does) the result has both views: counts are summed across
+servers with suppression propagation, and a stratum suppressed or absent on
+any server is left out of the pooled table.
 }
 \examples{
 \dontrun{
-# Get total person count (analysis 1) pooled across servers
-res <- ds.omop.achilles.results(analysis_ids = 1, scope = "pooled")
+# Total person count (analysis 1) per server and pooled
+res <- ds.omop.achilles.results(analysis_ids = 1)
 res$pooled
 
-# Get gender breakdown per site
-gender <- ds.omop.achilles.results(analysis_ids = 2)
+# Gender breakdown per site only
+gender <- ds.omop.achilles.results(analysis_ids = 2, type = "split")
 gender$per_site
 }
 }

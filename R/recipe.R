@@ -8183,8 +8183,18 @@ recipe_preview_schema <- function(recipe) {
 #' @param recipe An \code{omop_recipe} object.
 #' @param symbol Character; OMOP session symbol on the server (default
 #'   \code{"omop"}).
-#' @param conns DSI connections or \code{NULL} (uses active connections).
-#' @return A named list of server-side plan preview results.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}; see
+#'   \code{\link{ds.omop.plan.preview}}.
+#' @return A \code{dsomop_result} from \code{\link{ds.omop.plan.preview}}: its
+#'   \code{$per_site} is the named list of server-side preview results returned
+#'   by earlier versions, and \code{res$<server>} still reaches one server's
+#'   result.
 #' @examples
 #' \dontrun{
 #' preview <- recipe_preview(recipe)
@@ -8192,11 +8202,20 @@ recipe_preview_schema <- function(recipe) {
 #' @seealso \code{\link{recipe_validate}}, \code{\link{recipe_execute}},
 #'   \code{\link{recipe_to_plan}}
 #' @export
-recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
+recipe_preview <- function(recipe, symbol = "omop", conns = NULL,
+                           type = "split", datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "recipe_preview")
+  result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- "Plan previews are per server and cannot be combined."
+  .combine_unavailable(result_type, reason)
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   plan <- .recipe_plan_for_session(recipe, symbol, conns)
-  ds.omop.plan.preview(plan, symbol = symbol, conns = conns)
+  out <- .quiet_aliases(ds.omop.plan.preview(plan, symbol = symbol, conns = conns))
+  if (inherits(out, "dsomop_result") && !identical(result_type, "split")) {
+    out <- .result_type_view(out, result_type, reason)
+  }
+  out
 }
 
 # The plan a recipe compiles to without a session (A-14 selection, no
@@ -8214,7 +8233,9 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
   plan <- .recipe_select_plan(recipe)
   if (!.v2_is_plan_v2(plan)) return(plan)
   session <- .get_session(symbol)
-  .recipe_plan_for_execution(recipe, session, conns %||% session$conns, plan = plan)
+  .recipe_plan_for_execution(recipe, session,
+                             .resolve_datasources(conns, symbol, session),
+                             plan = plan)
 }
 
 #' Validate a recipe on the server
@@ -8224,8 +8245,18 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
 #' @param recipe An \code{omop_recipe} object.
 #' @param symbol Character; OMOP session symbol on the server (default
 #'   \code{"omop"}).
-#' @param conns DSI connections or \code{NULL} (uses active connections).
-#' @return A named list of server-side validation results.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}; see
+#'   \code{\link{ds.omop.plan.validate}}.
+#' @return A \code{dsomop_result} from \code{\link{ds.omop.plan.validate}}: its
+#'   \code{$per_site} is the named list of server-side validation results returned
+#'   by earlier versions, and \code{res$<server>} still reaches one server's
+#'   result.
 #' @examples
 #' \dontrun{
 #' validation <- recipe_validate(recipe)
@@ -8233,11 +8264,20 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
 #' @seealso \code{\link{recipe_preview}}, \code{\link{recipe_execute}},
 #'   \code{\link{recipe_to_plan}}
 #' @export
-recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
+recipe_validate <- function(recipe, symbol = "omop", conns = NULL,
+                           type = "split", datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "recipe_validate")
+  result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- "Plan validations are per server and cannot be combined."
+  .combine_unavailable(result_type, reason)
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   plan <- .recipe_plan_for_session(recipe, symbol, conns)
-  ds.omop.plan.validate(plan, symbol = symbol, conns = conns)
+  out <- .quiet_aliases(ds.omop.plan.validate(plan, symbol = symbol, conns = conns))
+  if (inherits(out, "dsomop_result") && !identical(result_type, "split")) {
+    out <- .result_type_view(out, result_type, reason)
+  }
+  out
 }
 
 # Formats that are computed from the person table (no concept extraction), so
@@ -8529,50 +8569,121 @@ recipe_lint <- function(recipe) {
 #' server-side datasets.
 #'
 #' @param recipe An \code{omop_recipe} object.
-#' @param scope Character; \code{"per_site"}, \code{"pooled"}, or
-#'   \code{"both"}.
+#' @param scope Deprecated alias of \code{type}: \code{"per_site"} means
+#'   \code{"split"}; \code{"pooled"} and \code{"both"} mean \code{"both"}.
 #' @param symbol Character; OMOP session symbol on the server (default
 #'   \code{"omop"}).
-#' @param conns DSI connections or \code{NULL} (uses active connections).
-#' @return A \code{dsomop_result} with aggregate stats per table.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}, as in \code{\link{ds.omop.table.stats}}.
+#' @return A \code{dsomop_result}. Each \code{$per_site} entry is one
+#'   server's data frame with one row per table referenced by the recipe
+#'   (\code{table}, banded \code{rows} and \code{persons}; \code{NA} where
+#'   the server suppressed or did not return a count). \code{$pooled} has the
+#'   same columns with the counts summed over the servers. The per-table
+#'   \code{ds.omop.table.stats()} results of earlier versions are kept in
+#'   \code{meta$by_table}.
 #' @examples
 #' \dontrun{
-#' stats <- recipe_preview_stats(recipe, scope = "pooled")
+#' stats <- recipe_preview_stats(recipe)
+#' stats$pooled
 #' }
 #' @seealso \code{\link{recipe_execute}}, \code{\link{recipe_preview_schema}}
 #' @export
 recipe_preview_stats <- function(recipe,
                                scope = c("per_site", "pooled", "both"),
-                               symbol = "omop", conns = NULL) {
+                               symbol = "omop", conns = NULL,
+                               type = "both", datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "recipe_preview_stats")
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing,
+    type_missing = missing(type), default_type = "both",
+    fn = "recipe_preview_stats"
+  )
 
   # Collect tables referenced
   tables <- unique(vapply(recipe$variables, function(v) v$table, character(1)))
 
-  results <- list()
+  by_table <- list()
+  warnings <- character(0)
   for (tbl in tables) {
-    tryCatch({
-      stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
-                                        scope = if (scope == "both") "pooled"
-                                                else scope,
-                                        symbol = symbol,
-                                        conns = conns)
-      results[[tbl]] <- stats_res
-    }, error = function(e) {
-      results[[tbl]] <<- list(error = conditionMessage(e))
-    })
+    stats_res <- tryCatch(
+      .quiet_aliases(ds.omop.table.stats(
+        tbl, stats = c("rows", "persons"),
+        type = if (identical(result_type, "split")) "split" else "both",
+        symbol = symbol, conns = conns)),
+      error = function(e) e)
+    if (inherits(stats_res, "error")) {
+      by_table[[tbl]] <- list(error = conditionMessage(stats_res))
+      warnings <- c(warnings, paste0(tbl, ": ", conditionMessage(stats_res)))
+    } else {
+      by_table[[tbl]] <- stats_res
+    }
   }
 
-  dsomop_result(
-    per_site = results,
+  # One frame per server with a `table` column (servers are not tables).
+  results <- Filter(function(x) inherits(x, "dsomop_result"), by_table)
+  count_of <- function(x, field) {
+    value <- if (is.list(x)) x[[field]] else NULL
+    if (is.null(value) || length(value) != 1L) NA_real_ else as.numeric(value)
+  }
+  servers <- unique(unlist(lapply(results, function(r) {
+    c(names(r$per_site), names(attr(r$per_site, "ds_errors")))
+  }), use.names = FALSE))
+  per_site <- lapply(stats::setNames(servers, servers), function(server) {
+    rows <- lapply(names(results), function(tbl) {
+      site <- results[[tbl]]$per_site[[server]]
+      data.frame(table = tbl, rows = count_of(site, "rows"),
+                 persons = count_of(site, "persons"),
+                 stringsAsFactors = FALSE)
+    })
+    out <- do.call(rbind, rows)
+    rownames(out) <- NULL
+    out
+  })
+  site_errors <- list()
+  for (tbl in names(results)) {
+    errors <- attr(results[[tbl]]$per_site, "ds_errors") %||% list()
+    for (server in names(errors)) {
+      site_errors[[server]] <- paste(c(site_errors[[server]],
+                                       paste0(tbl, ": ", errors[[server]])),
+                                     collapse = "; ")
+    }
+  }
+  if (length(site_errors) > 0L) attr(per_site, "ds_errors") <- site_errors
+
+  pooled <- NULL
+  if (.result_type_wants_combine(result_type) && length(results) > 0L) {
+    pooled <- do.call(rbind, lapply(names(results), function(tbl) {
+      p <- results[[tbl]]$pooled
+      data.frame(table = tbl, rows = count_of(p, "rows"),
+                 persons = count_of(p, "persons"), stringsAsFactors = FALSE)
+    }))
+    rownames(pooled) <- NULL
+    if (all(is.na(pooled$rows) & is.na(pooled$persons))) pooled <- NULL
+  }
+
+  result <- .result_type_view(dsomop_result(
+    per_site = per_site, pooled = pooled,
     meta = list(
-      call_code = .codegen_call("recipe_preview_stats",
-        scope = scope, symbol = symbol),
-      scope = scope
-    )
-  )
+      call_code = .build_code("recipe_preview_stats", recipe = "<recipe>",
+                              type = result_type, symbol = symbol),
+      warnings = warnings
+    )),
+    result_type,
+    "No complete disclosure-safe pooled table statistics were available.",
+    pooling = .pooling_meta("table_stats"))
+  result[["meta"]]$by_table <- by_table
+  result
 }
 
 #' Execute a recipe: compile to plan and run
@@ -8589,7 +8700,12 @@ recipe_preview_stats <- function(recipe,
 #'   output specifications.
 #' @param symbol Character; OMOP session symbol on the server (default
 #'   \code{"omop"}).
-#' @param conns DSI connections or \code{NULL} (uses active connections).
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param output_mode Character; \code{"memory"} (default) or \code{"staged"}.
 #'   Passed through to \code{\link{ds.omop.plan.execute}}.
 #' @param cohort Optional recipe-level scope cohort applied at execution time: a
@@ -8601,7 +8717,8 @@ recipe_preview_stats <- function(recipe,
 #' @param tables Optional character vector of \code{omop.table} symbol names to
 #'   add to the execution-time scope (their distinct persons). May be combined
 #'   with \code{cohort}.
-#' @param combine Character; how to fold the scope sources together:
+#' @param combine Deprecated alias of \code{scope_combine}.
+#' @param scope_combine Character; how to fold the scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
 #' @param on_small_site Character; \code{"error"} (default) or \code{"skip"},
 #'   passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
@@ -8623,14 +8740,21 @@ recipe_preview_stats <- function(recipe,
 #' recipe_execute(recipe, out = c(features_wide = "D_features"))
 #' # Scope every population to a cohort intersected with a workspace table:
 #' recipe_execute(recipe, cohort = my_cohort, tables = "inclusion_set",
-#'                combine = "intersect")
+#'                scope_combine = "intersect")
 #' }
 #' @seealso \code{\link{recipe_to_plan}}, \code{\link{ds.omop.plan.execute}}
 #' @export
 recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                            output_mode = "memory", cohort = NULL,
                            tables = NULL, combine = "union",
-                           on_small_site = c("error", "skip")) {
+                           on_small_site = c("error", "skip"),
+                           scope_combine = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "recipe_execute")
+  combine <- .alias_value(scope_combine, combine,
+                          new_given = !is.null(scope_combine),
+                          old_given = !missing(combine),
+                          new = "scope_combine", old = "combine",
+                          fn = "recipe_execute") %||% "union"
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   on_small_site <- match.arg(on_small_site)
@@ -8648,8 +8772,9 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
   # plan (design 5, CR-14); both go through the same publication protocol.
   plan <- .recipe_plan_for_session(recipe, symbol, conns)
   if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(recipe, plan, out)
-  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
-                       output_mode = output_mode, on_small_site = on_small_site)
+  .quiet_aliases(ds.omop.plan.execute(plan, out = out, symbol = symbol,
+                                      conns = conns, output_mode = output_mode,
+                                      on_small_site = on_small_site))
 }
 
 # Default server symbols for the plan outputs of a recipe (an output's

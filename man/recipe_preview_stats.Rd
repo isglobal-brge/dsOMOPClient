@@ -8,22 +8,39 @@ recipe_preview_stats(
   recipe,
   scope = c("per_site", "pooled", "both"),
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
 \item{recipe}{An \code{omop_recipe} object.}
 
-\item{scope}{Character; \code{"per_site"}, \code{"pooled"}, or
-\code{"both"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{"split"}; \code{"pooled"} and \code{"both"} mean \code{"both"}.}
 
 \item{symbol}{Character; OMOP session symbol on the server (default
 \code{"omop"}).}
 
-\item{conns}{DSI connections or \code{NULL} (uses active connections).}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}, as in \code{\link{ds.omop.table.stats}}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} with aggregate stats per table.
+A \code{dsomop_result}. Each \code{$per_site} entry is one
+  server's data frame with one row per table referenced by the recipe
+  (\code{table}, banded \code{rows} and \code{persons}; \code{NA} where
+  the server suppressed or did not return a count). \code{$pooled} has the
+  same columns with the counts summed over the servers. The per-table
+  \code{ds.omop.table.stats()} results of earlier versions are kept in
+  \code{meta$by_table}.
 }
 \description{
 Runs aggregate-only queries via \code{\link{ds.omop.table.stats}} to show
@@ -33,7 +50,8 @@ server-side datasets.
 }
 \examples{
 \dontrun{
-stats <- recipe_preview_stats(recipe, scope = "pooled")
+stats <- recipe_preview_stats(recipe)
+stats$pooled
 }
 }
 \seealso{

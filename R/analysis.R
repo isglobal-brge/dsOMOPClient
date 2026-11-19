@@ -84,6 +84,14 @@ utils::globalVariables(".data")
   })
 }
 
+# The cohort scope as literal call code (handles become their table names).
+.analysis_code_cohort <- function(cohort) {
+  if (is.null(cohort)) return(NULL)
+  literals <- tryCatch(.analysis_cohort_literals(cohort),
+                       error = function(e) NULL)
+  if (length(literals) == 1L) literals[[1L]] else literals
+}
+
 #' Build named server-side scope arguments for an analysis run
 #'
 #' A single cohort reference travels as the literal named argument \code{scope};
@@ -233,6 +241,16 @@ utils::globalVariables(".data")
          call. = FALSE)
   }
   reference
+}
+
+# A consensus view of server metadata that never errors: the metadata every
+# server returned identically, or NULL with the reason (catalog readers).
+.analysis_metadata_consensus <- function(raw, expected_servers, context) {
+  tryCatch(
+    list(result = .analysis_consistent_metadata(raw, expected_servers, context),
+         reason = NULL),
+    error = function(e) list(result = NULL, reason = conditionMessage(e))
+  )
 }
 
 # Public protection labels of per-server analysis results (attribute
@@ -420,21 +438,28 @@ utils::globalVariables(".data")
 #' the single registry that folds the curated QueryLibrary SQL templates, the
 #' pre-computed Achilles analyses, and the generic OHDSI result tables behind one
 #' stable, pack-prefixed naming scheme (\code{"dsomop:<id>"}). Because the
-#' catalog is defined by the server package, the client requires an identical
-#' response from every participating server before exposing a pooled view. No
-#' SQL, compute functions, or other server internals are exposed.
+#' catalog is defined by the server package, the pooled view is the catalog
+#' every participating server returned identically. When the catalogs differ
+#' or a server is unavailable, \code{$pooled} is \code{NULL} and
+#' \code{meta$pooling_reason} says why (\code{type = "combine"} stops with
+#' that reason). No SQL, compute functions, or other server internals are
+#' exposed.
 #'
 #' @param domain Character; optional clinical-domain filter (e.g.
 #'   \code{"condition"}, \code{"person"}). \code{NULL} (the default) returns
 #'   entries for all domains.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param type Result view: \code{"both"} (default), \code{"split"}, or
-#'   \code{"combine"}; dsBaseClient-style aliases are accepted. A split view
-#'   can inspect nodes whose catalogs differ; combined views require equality.
-#' @return A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
+#'   \code{"combine"}; dsBaseClient-style aliases are accepted. A pooled
+#'   view requires equal catalogs. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result} object. The pooled
 #'   element is a data frame with one row per entry: \code{name} (the id),
 #'   \code{domain}, \code{adapter}, \code{mode}, disclosure \code{unit},
 #'   \code{description} (title), parameter summary, the
@@ -453,28 +478,30 @@ utils::globalVariables(".data")
 #' @seealso \code{\link{ds.omop.analysis.get}}, \code{\link{ds.omop.analysis.run}}
 #' @export
 ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
-                                  conns = NULL, type = "both") {
+                                  conns = NULL, type = "both",
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.analysis.list")
   type <- .normalize_result_type(type)
   code <- .build_code("ds.omop.analysis.list", domain = domain, symbol = symbol,
                       type = type)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAnalysisListDS", session$res_symbol, domain)
   )
 
-  pooled <- if (.result_type_wants_combine(type)) {
-    .analysis_consistent_metadata(raw, names(conns), "analysis catalog")
-  } else NULL
+  consensus <- if (.result_type_wants_combine(type)) {
+    .analysis_metadata_consensus(raw, names(conns), "analysis catalog")
+  } else list(result = NULL, reason = NULL)
 
   .result_type_view(dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = if (.result_type_wants_combine(type)) {
-      "pooled"
-    } else "per_site", type = type)), type)
+    per_site = raw, pooled = consensus$result,
+    meta = list(call_code = code)), type,
+    consensus$reason %||% "No consistent analysis catalog was available.",
+    pooling = .pooling_meta("metadata_consensus"))
 }
 
 #' Get unified analysis catalog entry metadata
@@ -482,20 +509,27 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #' Returns full metadata for a single catalog entry: its parameter specs,
 #' compute kind, disclosure spec, and scoping capabilities. Use it to discover
 #' an entry's parameters and to check whether it accepts cohort/table scoping
-#' before running it. Execution requires identical metadata from every server;
-#' a mixed-version or partially unavailable federation fails closed.
+#' before running it. The pooled view is the metadata every server returned
+#' identically; otherwise \code{$pooled} is \code{NULL} with
+#' \code{meta$pooling_reason}. Execution requires identical metadata from
+#' every server; a mixed-version or partially unavailable federation fails
+#' closed in \code{\link{ds.omop.analysis.run}}.
 #'
 #' @param name Character; the entry id (e.g. \code{"dsomop:achilles.401"}) or a
 #'   shorthand for it (native id without the \code{"dsomop:"} prefix, or a unique
 #'   id suffix; an ambiguous shorthand errors with the candidates).
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param type Result view: \code{"both"} (default), \code{"split"}, or
-#'   \code{"combine"}; dsBaseClient-style aliases are accepted. A split view
-#'   can inspect nodes whose metadata differ; combined views require equality.
-#' @return A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
+#'   \code{"combine"}; dsBaseClient-style aliases are accepted. A pooled
+#'   view requires equal metadata. See \link{dsomop_conventions}.
+#' @return A \code{dsomop_result} object. The pooled
 #'   element is a named list with the entry's \code{name}, \code{description},
 #'   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
 #'   \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
@@ -511,30 +545,32 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #' @seealso \code{\link{ds.omop.analysis.list}}, \code{\link{ds.omop.analysis.run}}
 #' @export
 ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
-                                 type = "both") {
+                                 type = "both",
+                                 datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.analysis.get")
   type <- .normalize_result_type(type)
   code <- .build_code("ds.omop.analysis.get", name = name, symbol = symbol,
                       type = type)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAnalysisGetDS", session$res_symbol, name)
   )
 
-  pooled <- if (.result_type_wants_combine(type)) {
-    .analysis_consistent_metadata(
+  consensus <- if (.result_type_wants_combine(type)) {
+    .analysis_metadata_consensus(
       raw, names(conns), paste0("analysis metadata for '", name, "'")
     )
-  } else NULL
+  } else list(result = NULL, reason = NULL)
 
   .result_type_view(dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = if (.result_type_wants_combine(type)) {
-      "pooled"
-    } else "per_site", type = type)), type)
+    per_site = raw, pooled = consensus$result,
+    meta = list(call_code = code)), type,
+    consensus$reason %||% "No consistent analysis metadata was available.",
+    pooling = .pooling_meta("metadata_consensus"))
 }
 
 #' Run a unified analysis catalog entry
@@ -596,13 +632,15 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
 #'   combined with \code{cohort}. Each table crosses DataSHIELD as its own bare
 #'   named \code{scope_table_<n>} argument, never through a generic
 #'   \code{list()} or \code{c()} AggregateMethod.
-#' @param combine Character; how to fold multiple scope sources together:
-#'   \code{"union"} (the default) or \code{"intersect"}.
+#' @param combine Deprecated alias of \code{scope_combine}: how to fold
+#'   multiple scope sources together, \code{"union"} (the default) or
+#'   \code{"intersect"}.
 #' @param pooling_policy Character; how suppressed (NA) cells are handled when
 #'   pooling aggregate results across servers. \code{"strict"} (default)
 #'   requires each pooled group on every server; \code{"pooled_only_ok"} pools
 #'   only available disclosure-safe contributions. Kaplan-Meier curves still
 #'   require every preceding risk-set bin because their values are cumulative.
+#'   See \link{dsomop_conventions}.
 #' @param plot Logical; when \code{TRUE} AND the entry ships a plot recipe, build
 #'   a \code{ggplot} CLIENT-SIDE over the pooled, gate-passed data and attach it
 #'   to the result (also returned via the \code{"plot"} attribute and
@@ -616,15 +654,29 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
 #'   server-authorized \code{"absolute"}. Ignored for aggregate entries.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param type Result view, following dsBaseClient terminology: \code{"both"}
 #'   (default) returns per-server and correctly combined results,
 #'   \code{"split"} returns only per-server results, and \code{"combine"}
 #'   returns only the combined result. The aliases \code{"b"},
 #'   \code{"splits"}/\code{"s"}, and \code{"combined"}/\code{"c"} are
 #'   accepted. Combining is performed only from the server-owned pooling
-#'   contract; no column-name heuristics are used.
+#'   contract; no column-name heuristics are used. When the result cannot be
+#'   pooled, \code{"both"} keeps the per-server frames with
+#'   \code{pooled = NULL} and \code{meta$pooling_reason}, and
+#'   \code{"combine"} stops with the reason.
+#' @param newobj For assign-mode analyses, the name of the server-side object
+#'   to create (it must not exist on any server). \code{NULL} (the default)
+#'   generates a fresh name. Not used by aggregate analyses.
+#' @param scope_combine Character; how to fold multiple scope sources
+#'   (\code{cohort} and \code{tables}) into one population: \code{"union"}
+#'   (the default) or \code{"intersect"} on the person key. Also accepted
+#'   under its older name \code{combine}.
 #' @return A \code{dsomop_result} object. For aggregate entries, \code{per_site}
 #'   holds each server's disclosure-controlled data frame and \code{pooled} holds
 #'   the cross-server aggregation. For assign-mode entries, \code{per_site} holds
@@ -633,6 +685,9 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
 #'   \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
 #'   is attached as the \code{"plot"} attribute (and \code{meta$plot}).
 #'   \code{meta$protection} holds each server's protection label and estimand.
+#'   \code{meta$pooling} names how the pooled result was formed;
+#'   \code{meta$pooling_contract} is the contract that governed it (for
+#'   protected releases, the one their \code{meta$release_pooling} selected).
 #'   On dsOMOP 2.10.3, \code{"fixed_synopsis"} declares a bounded-vector
 #'   epsilon and delta zero before exact support gates; \code{"realised_sticky"}
 #'   is heuristic and declares neither. A \code{"mixed"} frame identifies its
@@ -667,7 +722,7 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
 #' res2 <- ds.omop.analysis.run(
 #'   entry,
 #'   tables  = c("my_cohort", "my_other_cohort"),
-#'   combine = "intersect"
+#'   scope_combine = "intersect"
 #' )
 #'
 #' # Build the entry's client-side plot over the pooled, gate-passed data.
@@ -681,20 +736,38 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                                  pooling_policy = "strict", plot = FALSE,
                                  date_handling = NULL,
                                  symbol = "omop", conns = NULL,
-                                 type = "both") {
+                                 type = "both", newobj = NULL,
+                                 scope_combine = NULL, datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.analysis.run")
   params <- .auditEffectiveSettings(name, params)
+  combine <- .alias_value(scope_combine, combine,
+                          new_given = !is.null(scope_combine),
+                          old_given = !missing(combine),
+                          new = "scope_combine", old = "combine",
+                          fn = "ds.omop.analysis.run") %||% "union"
   combine <- match.arg(combine, c("union", "intersect"))
-  pooling_policy <- match.arg(pooling_policy, c("strict", "pooled_only_ok"))
+  pooling_policy <- .pooling_policy_arg(pooling_policy)
   type <- .resolve_result_type(type = type, default_type = "both")
   if (!is.logical(plot) || length(plot) != 1L || is.na(plot)) {
     stop("plot must be TRUE or FALSE.", call. = FALSE)
   }
+  if (!is.null(newobj) &&
+      (!is.character(newobj) || length(newobj) != 1L || is.na(newobj) ||
+       !grepl("^[A-Za-z][A-Za-z0-9._]*$", newobj))) {
+    stop("newobj must be one valid R symbol name.", call. = FALSE)
+  }
 
-  code <- .build_code("ds.omop.analysis.run", name = name, symbol = symbol,
-                      type = type)
+  code <- .build_code("ds.omop.analysis.run", name = name,
+                      params = if (length(params) > 0L) params,
+                      cohort = .analysis_code_cohort(cohort), tables = tables,
+                      scope_combine = if (!identical(combine, "union")) combine,
+                      pooling_policy = .code_policy(pooling_policy),
+                      plot = if (isTRUE(plot)) TRUE,
+                      date_handling = date_handling, newobj = newobj,
+                      symbol = symbol, type = type)
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   scope_args <- .analysis_scope_expr(cohort, tables)
   contract <- .session_harmonization_for_connections(session, conns)
   if (!is.null(contract)) {
@@ -732,17 +805,30 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
          "combined client result; use type = 'split' or 'both'.",
          call. = FALSE)
   }
+  if (!is_assign && !is.null(newobj)) {
+    stop("newobj names the server-side object of an assign-mode analysis; '",
+         name, "' is an aggregate analysis and returns its result.",
+         call. = FALSE)
+  }
+  pooling_blocked <- NULL
   if (!is_assign && .result_type_wants_combine(type)) {
     # Validate before releasing any analysis result. A missing/malformed
     # contract is a deployment error, never permission to fall back to a
-    # heuristic pooler.
-    .validate_analysis_pooling_contract(entry_meta$pooling_contract)
-    if (length(conns) > 1L &&
-        .analysis_pooling_contract_uses_counts(entry_meta$pooling_contract) &&
-        !is.null(contract) && !isTRUE(contract$poolable_counts)) {
-      stop("Federated count pooling blocked: server count-band settings are ",
-           "not identical. Align dsomop.nfilter.band across servers.",
-           call. = FALSE)
+    # heuristic pooler: "combine" stops here, "both" returns the per-server
+    # results without a pooled value.
+    pooling_blocked <- tryCatch({
+      .validate_analysis_pooling_contract(entry_meta$pooling_contract)
+      if (length(conns) > 1L &&
+          .analysis_pooling_contract_uses_counts(entry_meta$pooling_contract) &&
+          !is.null(contract) && !isTRUE(contract$poolable_counts)) {
+        stop("Federated count pooling blocked: server count-band settings are ",
+             "not identical. Align dsomop.nfilter.band across servers.",
+             call. = FALSE)
+      }
+      NULL
+    }, error = function(e) conditionMessage(e))
+    if (!is.null(pooling_blocked) && identical(type, "combine")) {
+      stop(pooling_blocked, call. = FALSE)
     }
   }
 
@@ -764,17 +850,27 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
     # commit only after post-execution inventory proves complete federation
     # coverage. Any partial assignment is removed everywhere.
     inventory <- .plan_symbol_inventory(conns, "analysis assignment preflight")
-    newobj <- NULL
-    for (attempt in seq_len(10L)) {
-      candidate <- .generate_symbol("omop.analysis")
-      if (all(!vapply(inventory, function(x) candidate %in% x, logical(1)))) {
-        newobj <- candidate
-        break
+    if (!is.null(newobj)) {
+      occupied <- names(inventory)[vapply(inventory, function(x) {
+        newobj %in% x
+      }, logical(1))]
+      if (length(occupied) > 0L) {
+        stop("newobj '", newobj, "' already exists on: ",
+             paste(occupied, collapse = ", "), ". Choose another name.",
+             call. = FALSE)
       }
-    }
-    if (is.null(newobj)) {
-      stop("Could not reserve a collision-free analysis output symbol.",
-           call. = FALSE)
+    } else {
+      for (attempt in seq_len(10L)) {
+        candidate <- .generate_symbol("omop.analysis")
+        if (all(!vapply(inventory, function(x) candidate %in% x, logical(1)))) {
+          newobj <- candidate
+          break
+        }
+      }
+      if (is.null(newobj)) {
+        stop("Could not reserve a collision-free analysis output symbol.",
+             call. = FALSE)
+      }
     }
     run_expr <- .analysis_run_call(
       "omopAnalysisRunAssignDS", session$res_symbol, name, params,
@@ -839,27 +935,54 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
       intersect(names(conns), names(session$server_versions %||% list()))])
   for (message in unpatched) warning(message, call. = FALSE)
 
-  pool_out <- if (.result_type_wants_combine(type) &&
-                  identical(entry_meta$release_pooling$strategy,
-                            "protected_components")) {
-    # dsOMOP 2.10.3 protected releases: pool the signed components of
-    # compatible sites, never the projected per-site values (effects: the
-    # meta-analysis of the per-site protected estimates).
-    .pool_protected_analysis(raw, entry_meta$release_pooling,
-                             policy = pooling_policy, harmonization = contract)
-  } else if (.result_type_wants_combine(type)) {
-    out <- .pool_analysis_contract(
-      raw, entry_meta$pooling_contract, policy = pooling_policy,
-      harmonization = contract
-    )
-    if (!is.null(out$result)) {
-      out$warnings <- unique(c(out$warnings,
-                               .analysis_mixed_pool_warnings(raw)))
+  protected_path <- identical(entry_meta$release_pooling$strategy,
+                              "protected_components")
+  pool_out <- if (.result_type_wants_combine(type) && !is.null(pooling_blocked)) {
+    list(result = NULL, warnings = pooling_blocked, harmonization = contract)
+  } else if (.result_type_wants_combine(type)) tryCatch({
+    if (protected_path) {
+      # dsOMOP 2.10.3 protected releases: pool the signed components of
+      # compatible sites, never the projected per-site values (effects: the
+      # meta-analysis of the per-site protected estimates).
+      .pool_protected_analysis(raw, entry_meta$release_pooling,
+                               policy = pooling_policy, harmonization = contract)
+    } else {
+      out <- .pool_analysis_contract(
+        raw, entry_meta$pooling_contract, policy = pooling_policy,
+        harmonization = contract
+      )
+      if (!is.null(out$result)) {
+        out$warnings <- unique(c(out$warnings,
+                                 .analysis_mixed_pool_warnings(raw)))
+      }
+      out
     }
-    out
-  } else {
+  }, error = function(e) {
+    # Pooling refused (incompatible protected releases, duplicate logical
+    # sources, an invalid contract): the per-site results stay available.
+    list(result = NULL, warnings = conditionMessage(e),
+         harmonization = contract)
+  }) else {
     list(result = NULL, warnings = character(0), harmonization = contract)
   }
+  # The contract that governed the pooling actually performed.
+  used_contract <- if (protected_path) {
+    release <- entry_meta$release_pooling
+    any_protected <- any(vapply(raw, function(df) {
+      p <- attr(df, "dsomop_release", exact = TRUE)
+      is.list(p) && identical(p$protocol, .DP_PROTECTED_RELEASE_PROTOCOL)
+    }, logical(1L)))
+    if (!any_protected && is.list(release$standard_contract)) {
+      release$standard_contract
+    } else if (is.list(release$effect_estimate)) {
+      release$effect_estimate
+    } else NULL
+  } else entry_meta$pooling_contract
+  pooling_descriptor <- if (protected_path &&
+                            !identical(used_contract,
+                                       entry_meta$release_pooling$standard_contract)) {
+    .pooling_meta("protected_components")
+  } else .pooling_meta_for_contract(used_contract)
 
   # Optional client-side plot over the pooled, gate-passed data. The data is
   # already in hand; .analysis_render_plot degrades to NULL (with a warning) on
@@ -887,17 +1010,22 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   # attribute and meta$plot). NULL when plot = FALSE or no recipe was built.
   attr(result, "plot") <- gg
   result$meta$plot <- gg
-  result$meta$pooling_contract <- entry_meta$pooling_contract
+  result$meta$pooling_contract <- used_contract
+  if (protected_path) result$meta$release_pooling <- entry_meta$release_pooling
   result$meta$harmonization <- pool_out$harmonization
   result$meta$protection <- protection
-  .result_type_view(
-    result, type,
-    combine_reason = if (identical(entry_meta$pooling_contract$strategy,
-                                   "not_poolable") &&
-                         is.null(entry_meta$release_pooling)) {
-      entry_meta$pooling_contract$reason
-    } else NULL
-  )
+  reason <- if (identical(entry_meta$pooling_contract$strategy,
+                          "not_poolable") && !protected_path) {
+    entry_meta$pooling_contract$reason
+  } else {
+    if (length(pool_out$warnings) > 0L) pool_out$warnings[[1L]] else
+      "No complete disclosure-safe pooled analysis result was available."
+  }
+  if (!is.null(pool_out$result) || !.result_type_wants_combine(type)) {
+    reason <- NULL
+  }
+  .result_type_view(result, type, combine_reason = reason,
+                    pooling = pooling_descriptor)
 }
 
 # --- One-liner convenience wrappers (over ds.omop.analysis.run) --------------
@@ -989,9 +1117,15 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
 #'   (default \code{FALSE}). See \code{\link{ds.omop.analysis.run}}.
 #' @param type Result view: \code{"both"} (default), \code{"split"}, or
 #'   \code{"combine"}; dsBaseClient-style aliases are accepted.
+#' @param pooling_policy Character; \code{"strict"} (default) or
+#'   \code{"pooled_only_ok"}, passed to \code{\link{ds.omop.analysis.run}}.
 #' @param symbol Character; the session symbol (default \code{"omop"}).
-#' @param conns DSI connection object(s) or \code{NULL} to use the session
-#'   default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} (see \code{\link{ds.omop.analysis.run}}).
 #' @examples
 #' \dontrun{
@@ -1008,7 +1142,10 @@ ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
                                domain = "condition", top_n = 50,
                                tables = NULL, plot = FALSE,
                                symbol = "omop", conns = NULL,
-                               type = "both") {
+                               type = "both",
+                               pooling_policy = "strict",
+                               datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.prevalence")
   if (is.null(cohort) && is.null(tables)) {
     stop("ds.omop.prevalence() computes prevalence WITHIN a cohort: pass ",
          "cohort= (a cohort handle, cohort_definition_id, or cohort table) ",
@@ -1020,7 +1157,8 @@ ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
                  top_n = as.integer(top_n))
   res <- ds.omop.analysis.run("dsomop:fe.prevalence", params = params,
                               cohort = cohort, tables = tables, plot = plot,
-                              symbol = symbol, conns = conns, type = type)
+                              pooling_policy = pooling_policy,
+                              symbol = symbol, datasources = conns, type = type)
   .analysis_filter_concepts(res, concept_id)
 }
 
@@ -1051,9 +1189,15 @@ ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
 #' @param plot Logical; build the entry's client-side plot (default \code{FALSE}).
 #' @param type Result view: \code{"both"} (default), \code{"split"}, or
 #'   \code{"combine"}; dsBaseClient-style aliases are accepted.
+#' @param pooling_policy Character; \code{"strict"} (default) or
+#'   \code{"pooled_only_ok"}, passed to \code{\link{ds.omop.analysis.run}}.
 #' @param symbol Character; the session symbol (default \code{"omop"}).
-#' @param conns DSI connection object(s) or \code{NULL} to use the session
-#'   default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result} (see \code{\link{ds.omop.analysis.run}}).
 #' @examples
 #' \dontrun{
@@ -1069,7 +1213,10 @@ ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
                                  domain = "measurement", top_n = 50,
                                  concept_id = NULL, tables = NULL, plot = FALSE,
                                  symbol = "omop", conns = NULL,
-                                 type = "both") {
+                                 type = "both",
+                                 pooling_policy = "strict",
+                                 datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.distribution")
   if (is.null(cohort) && is.null(tables)) {
     stop("ds.omop.distribution() computes a distribution WITHIN a cohort: pass ",
          "cohort= (a cohort handle, cohort_definition_id, or cohort table) ",
@@ -1080,7 +1227,8 @@ ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
                  top_n = as.integer(top_n))
   res <- ds.omop.analysis.run("dsomop:fe.continuous", params = params,
                               cohort = cohort, tables = tables, plot = plot,
-                              symbol = symbol, conns = conns, type = type)
+                              pooling_policy = pooling_policy,
+                              symbol = symbol, datasources = conns, type = type)
   .analysis_filter_concepts(res, concept_id)
 }
 
@@ -1115,13 +1263,18 @@ ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
 #'   case population.
 #' @param tables Optional \code{omop.table} symbol scope (see
 #'   \code{\link{ds.omop.analysis.run}}).
-#' @param combine Character; \code{"union"} (default) or \code{"intersect"} for
-#'   multi-source scope folding.
+#' @param combine Deprecated alias of \code{scope_combine}.
+#' @param scope_combine Character; \code{"union"} (default) or
+#'   \code{"intersect"} for multi-source scope folding.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
 #' @param symbol Character; the session symbol (default \code{"omop"}).
-#' @param conns DSI connection object(s) or \code{NULL} to use the session
-#'   default.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @param type Result view: \code{"both"} (default), \code{"split"}, or
 #'   \code{"combine"}; see \code{\link{ds.omop.analysis.run}}.
 #' @return A \code{dsomop_result}: \code{per_site} holds each server's gated
@@ -1143,12 +1296,21 @@ ds.omop.meta.effect_estimate <- function(name = "dsomop:cm.effect_estimate",
                                          tables = NULL, combine = "union",
                                          pooling_policy = "strict",
                                          symbol = "omop", conns = NULL,
-                                         type = "both") {
+                                         type = "both",
+                                         scope_combine = NULL,
+                                         datasources = NULL) {
+  scope_combine <- .alias_value(scope_combine, combine,
+                                new_given = !is.null(scope_combine),
+                                old_given = !missing(combine),
+                                new = "scope_combine", old = "combine",
+                                fn = "ds.omop.meta.effect_estimate") %||%
+    "union"
+  conns <- .datasources_arg(datasources, conns, "ds.omop.meta.effect_estimate")
   # The catalog's server-owned effect_estimate contract selects the
   # inverse-variance dispatcher. No wrapper-side column-name inference is used.
   ds.omop.analysis.run(
     name, params = params, cohort = cohort, tables = tables,
-    combine = combine, pooling_policy = pooling_policy, plot = FALSE,
-    symbol = symbol, conns = conns, type = type
+    scope_combine = scope_combine, pooling_policy = pooling_policy,
+    plot = FALSE, symbol = symbol, datasources = conns, type = type
   )
 }

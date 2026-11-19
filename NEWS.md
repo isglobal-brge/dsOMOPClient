@@ -1,3 +1,57 @@
+# dsOMOPClient 2.10.9 (development)
+
+- dsBaseClient conventions (see `?dsomop_conventions`): every function that
+  contacts the servers accepts `datasources` (`NULL` uses the OMOP session's
+  connections, or `DSI::datashield.connections_find()`); result views use
+  `type = "split"`, `"combine"` or `"both"` with the real default in the
+  signature; single-output assigning functions accept `newobj`. Old names keep
+  working with a one-time message: `conns`, `scope`, `pool`, `policy`
+  (`ds.omop.query.pool()`, now `pooling_policy`), `new_name` (now `newobj`),
+  `type` in `ds.omop.merge()` (now `join`) and `combine` (now `scope_combine`
+  in `ds.omop.analysis.run()`, `ds.omop.meta.effect_estimate()` and
+  `recipe_execute()`).
+- Count and table readers (`ds.omop.table.stats()`, `ds.omop.domain.coverage()`,
+  `ds.omop.date.counts()`, `ds.omop.value.counts()`, `ds.omop.crosstab()`,
+  `ds.omop.concept.locate()`, `ds.omop.achilles.results()`) now return per-server
+  and pooled results by default, like `ds.dim()` and `ds.table()`; readers of
+  means and distributions stay per server. `type = "pooled"` now means
+  `"both"`, as `scope = "pooled"` always did.
+- One rule when pooling is impossible: `type = "both"` keeps the per-server
+  results with `pooled = NULL` and `meta$pooling_reason`, and `type =
+  "combine"` stops with the reason. `ds.omop.dp.release()`,
+  `ds.omop.analysis.run()`, `ds.omop.ohdsi.results()` and the catalog readers
+  used to stop for `"both"` too. Pooled results describe their method in
+  `meta$pooling`, and printing shows the view type.
+- More readers return a `dsomop_result` with `type`:
+  `ds.omop.disclosure.settings()` (pooled: the negotiated federation contract),
+  `ds.omop.tables()` and `ds.omop.columns()` (pooled: what every server has),
+  `ds.omop.cohort.list()`, `ds.omop.plan.preview()`, `ds.omop.plan.validate()`,
+  `recipe_preview()`, `recipe_validate()`, `ds.omop.cdm.source()`,
+  `ds.omop.cdm.version()`, `ds.omop.dp.status()` and the vocabulary readers.
+  The old per-server list is `$per_site`, and `res$<server>` and
+  `res[["<server>"]]` still work; code that loops over the result itself must
+  loop over `$per_site`.
+- Corrected pooled views: missingness now pools (with dsOMOP 2.10.9 servers;
+  older ones give `pooled = NULL` with the reason); value counts keep
+  `n_persons`; concept prevalence follows `metric` and `top_n` and keeps
+  `n_records`; drilldowns keep the date range and missingness; table
+  statistics keep `date_range`; cross-tabs keep their axis metadata; histogram
+  bins are matched by their edges, so bins suppressed on different servers no
+  longer shift; `ds.omop.value.histogram()` keeps the per-server histograms
+  when only the shared range fails.
+- `as.data.frame()` of a split result stacks every server with a `server`
+  column (it returned the first server only). `recipe_preview_stats()` returns
+  one frame per server with a `table` column (it listed tables as servers).
+- Smaller fixes: `ds.omop.date.counts()` accepts `cohort`;
+  `ds.omop.comorbidity()` refuses two different tables instead of ignoring
+  `tableB`, and uses the table's own concept column; `ds.omop.status()`
+  reports ping errors per server; `recipe_explain()` takes `offline`;
+  `ds.omop.prevalence()` and `ds.omop.distribution()` take `pooling_policy`;
+  `ds.omop.concept.list()` labels its summed `total_count` as an upper bound
+  and adds `total_count_max`; `pooling_policy` is validated on entry; call code
+  records non-default arguments such as `pooling_policy`;
+  `ds.omop.achilles.heel()` is documented as always refusing.
+
 # dsOMOPClient 2.10.8 (2026-11-19)
 
 - With dsOMOP 2.10.8 servers, automatic vocabulary lists are adaptive: each

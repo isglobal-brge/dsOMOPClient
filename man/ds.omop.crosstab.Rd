@@ -19,7 +19,8 @@ ds.omop.crosstab(
   symbol = "omop",
   conns = NULL,
   execute = TRUE,
-  type = NULL
+  type = "both",
+  datasources = NULL
 )
 }
 \arguments{
@@ -51,26 +52,39 @@ NULL.}
 \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 Takes precedence over \code{cohort_table}.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
+\item{scope}{Deprecated alias of \code{type}: \code{"per_site"} means
+\code{type = "split"}, \code{"pooled"} means \code{type = "both"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"}. Under \code{strict}, a cell absent or suppressed
-on any site is suppressed in the pooled table.}
+\code{"pooled_only_ok"}. Under both policies a cell absent or suppressed
+on any contributing server is \code{NA} in the pooled table;
+\code{"pooled_only_ok"} only leaves out servers whose whole cross-tab
+was suppressed or empty. See \link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{$per_site} (named list of
-  server cross-tab objects), \code{$pooled} (cell-wise summed table when
-  pooled), and \code{$meta}.
+A \code{dsomop_result}. Each \code{$per_site} entry is the server's
+  cross-tab: \code{row_col}, \code{col_col}, \code{count_mode},
+  \code{row_levels}, \code{col_levels} and \code{counts} (banded matrix,
+  \code{NA} = suppressed), or for a stratified call
+  \code{stratified = TRUE}, \code{stratify_by} and \code{strata} (one such
+  slice per level). \code{$pooled} has the same shape with cell-wise sums
+  and a \code{suppressed} flag.
 }
 \description{
 Returns a small-cell-suppressed contingency table cross-tabulating two
@@ -97,8 +111,7 @@ cell tables, which are disclosure-unsafe and lose utility on small data.
 
 \examples{
 \dontrun{
-ct <- ds.omop.crosstab("person", "gender_concept_id", "race_concept_id",
-                       scope = "pooled")
+ct <- ds.omop.crosstab("person", "gender_concept_id", "race_concept_id")
 ct$pooled$counts
 }
 }

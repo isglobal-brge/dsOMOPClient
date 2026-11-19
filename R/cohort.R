@@ -274,14 +274,24 @@
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
-#' @return Named list (one entry per server) of data frames with cohort
-#'   metadata. Each row is a cohort at or above the server's
-#'   \code{nfilter_subset} threshold; its reported size is BANDED to a multiple
-#'   of \code{nfilter_band} (never the exact subject count). Sub-threshold
-#'   cohorts are intentionally absent. Returns an empty list (or per-server empty
-#'   data frames) when no cohort clears the threshold.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
+#' @param type Result view: \code{"split"} (default) or \code{"both"}.
+#'   Cohort catalogs are site-specific: \code{"both"} returns
+#'   \code{pooled = NULL} with \code{meta$pooling_reason}, and
+#'   \code{"combine"} stops before contacting the servers.
+#' @return A \code{dsomop_result}. \code{$per_site} is the named list (one
+#'   entry per server) of data frames with cohort metadata returned by
+#'   earlier versions, and \code{res$<server>} or \code{res[["<server>"]]}
+#'   still reaches one server's frame. Each row is a cohort at or above the
+#'   server's \code{nfilter_subset} threshold; its reported size is BANDED to
+#'   a multiple of \code{nfilter_band} (never the exact subject count).
+#'   Sub-threshold cohorts are intentionally absent; a server with no cohort
+#'   above the threshold returns an empty data frame.
 #' @examples
 #' \dontrun{
 #' cohorts <- ds.omop.cohort.list()
@@ -289,14 +299,26 @@
 #' }
 #' @export
 ds.omop.cohort.list <- function(symbol = "omop",
-                                conns = NULL) {
+                                conns = NULL,
+                                type = "split",
+                                datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cohort.list")
+  result_type <- .resolve_result_type(type, default_type = "split")
+  reason <- "Cohort catalogs are site-specific and cannot be combined."
+  .combine_unavailable(result_type, reason)
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
-  .ds_safe_aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopCohortListDS", session$res_symbol)
   )
+  .result_type_view(dsomop_result(
+    per_site = raw, pooled = NULL,
+    meta = list(call_code = .build_code("ds.omop.cohort.list",
+                                        type = result_type,
+                                        symbol = symbol))),
+    result_type, reason)
 }
 
 #' Get a cohort definition by ID
@@ -324,8 +346,12 @@ ds.omop.cohort.list <- function(symbol = "omop",
 #'   \code{\link{ds.omop.cohort.list}}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Named list (one entry per server) with definition details for an
 #'   available (at- or above-threshold) cohort. For an unavailable id -- absent
 #'   OR sub-threshold -- the server returns its uniform not-available response
@@ -339,9 +365,11 @@ ds.omop.cohort.list <- function(symbol = "omop",
 #' @export
 ds.omop.cohort.definition <- function(id,
                                       symbol = "omop",
-                                      conns = NULL) {
+                                      conns = NULL,
+                                      datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cohort.definition")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   .ds_safe_aggregate(
     conns,
@@ -381,15 +409,25 @@ ds.omop.cohort.definition <- function(id,
 #'   schema for reuse across sessions. Persistent creation is restricted to one
 #'   server because DataSHIELD cannot provide a distributed database commit.
 #' @param cohort_id Integer; cohort definition ID. If \code{NULL}, an
-#'   auto-generated ID is used.
+#'   auto-generated ID is used. The server names a temporary cohort table
+#'   after it (\code{dsomop_cohort_<id>}).
 #' @param name Character; human-readable cohort name for display purposes.
 #'   Optional.
 #' @param overwrite Logical; if \code{TRUE}, an existing cohort with the
 #'   same \code{cohort_id} will be replaced. Default: \code{FALSE}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param newobj The cohort's output name, as dsBaseClient assigning
+#'   functions call it: the cohort id, or a name of the form
+#'   \code{"dsomop_cohort_<id>"} (the server names temporary cohort tables by
+#'   their id). An alternative to \code{cohort_id}; giving both with
+#'   different ids is an error.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly; a \code{dsomop_cohort_handle} object carrying the
 #'   deterministic server-side cohort TABLE name (e.g.
 #'   \code{"dsomop_cohort_1"}, or \code{"dsomop_cohort_1_ic2"} after two
@@ -415,7 +453,19 @@ ds.omop.cohort.create <- function(spec,
                                   name = NULL,
                                   overwrite = FALSE,
                                   symbol = "omop",
-                                  conns = NULL) {
+                                  conns = NULL,
+                                  newobj = NULL,
+                                  datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cohort.create")
+  if (!is.null(newobj)) {
+    newobj_id <- .cohort_id_from_newobj(newobj)
+    if (!is.null(cohort_id) &&
+        !identical(suppressWarnings(as.integer(cohort_id)), newobj_id)) {
+      stop("newobj and cohort_id name different cohorts; give one of them.",
+           call. = FALSE)
+    }
+    cohort_id <- newobj_id
+  }
   mode <- match.arg(mode, c("temporary", "persistent"))
   if (!is.list(spec)) {
     stop("Cohort spec must be a named list.", call. = FALSE)
@@ -438,7 +488,7 @@ ds.omop.cohort.create <- function(spec,
     )
   }
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   if (identical(mode, "persistent") &&
       (length(session$conns) > 1L || length(conns) > 1L)) {
     stop("Persistent cohort creation is limited to one server because no ",
@@ -573,6 +623,24 @@ ds.omop.cohort.create <- function(spec,
   ))
 }
 
+# The cohort id named by `newobj`: an id, or "dsomop_cohort_<id>" /
+# "dsOcohort_<id>" (the names the server gives a temporary cohort).
+.cohort_id_from_newobj <- function(newobj) {
+  if (is.numeric(newobj) && length(newobj) == 1L && is.finite(newobj) &&
+      newobj >= 0 && newobj == floor(newobj) &&
+      newobj <= .Machine$integer.max) {
+    return(as.integer(newobj))
+  }
+  if (is.character(newobj) && length(newobj) == 1L && !is.na(newobj) &&
+      grepl("^(dsomop_cohort_|dsOcohort_)?[0-9]+$", newobj)) {
+    id <- suppressWarnings(as.numeric(sub("^[A-Za-z_]+_", "", newobj)))
+    if (is.finite(id) && id <= .Machine$integer.max) return(as.integer(id))
+  }
+  stop("newobj names a temporary cohort by its id: the server names the ",
+       "cohort table dsomop_cohort_<id>. Use newobj = <id> or ",
+       "newobj = \"dsomop_cohort_<id>\".", call. = FALSE)
+}
+
 #' Create a cohort reference for the plan DSL (client-only)
 #'
 #' Builds a lightweight cohort reference object that can be embedded in a
@@ -636,12 +704,18 @@ ds.omop.cohort.ref <- function(cohort_definition_id) {
 #' @param cohort_b Server-side cohort TABLE name for the second cohort (the
 #'   value returned by \code{ds.omop.cohort.create()}), its
 #'   \code{dsomop_cohort_handle}, or a cohort definition ID (integer).
-#' @param new_name Character; TABLE name for the combined result. If
-#'   \code{NULL} (the default), an auto-generated name is used.
+#' @param new_name Deprecated alias of \code{newobj}.
+#' @param newobj Character; TABLE name for the combined result, as
+#'   dsBaseClient assigning functions call it. If \code{NULL} (the default),
+#'   an auto-generated name is used.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly; a \code{dsomop_cohort_handle} carrying the server-side
 #'   TABLE name for the combined cohort. The handle can itself be passed as
 #'   \code{cohort_a} / \code{cohort_b} to a further \code{ds.omop.cohort.combine()}.
@@ -660,9 +734,15 @@ ds.omop.cohort.ref <- function(cohort_definition_id) {
 ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
                                    new_name = NULL,
                                    symbol = "omop",
-                                   conns = NULL) {
+                                   conns = NULL,
+                                   newobj = NULL,
+                                   datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cohort.combine")
+  new_name <- .alias_value(newobj, new_name, new_given = !is.null(newobj),
+                           old_given = !is.null(new_name), new = "newobj",
+                           old = "new_name", fn = "ds.omop.cohort.combine")
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
 
   # Validate the operation client-side so callers fail fast instead of after a
   # server round-trip. Accept "difference" as an alias for "setdiff".
@@ -737,12 +817,19 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
 #' pre-existing cohort.
 #'
 #' @param x Character; the name of a server-side \code{omop.table} symbol.
-#' @param new_name Character; TABLE name for the cohort. If \code{NULL} (the
-#'   default), an auto-generated name is used.
+#' @param new_name Deprecated alias of \code{newobj}.
+#' @param newobj Character; TABLE name for the cohort (of the form
+#'   \code{dsomop_cohort_fromtbl_<suffix>}), as dsBaseClient assigning
+#'   functions call it. If \code{NULL} (the default), an auto-generated name
+#'   is used.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
-#' @param conns DSI connection object(s). If \code{NULL} (the default), the
-#'   connections stored in the active session are used.
+#' @param conns Deprecated alias of \code{datasources}, kept for backward
+#'   compatibility (a one-time message names the new argument).
+#' @param datasources DataSHIELD connections (a named list of
+#'   \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+#'   session's connections, or \code{DSI::datashield.connections_find()} when
+#'   no session exists. See \link{dsomop_conventions}.
 #' @return Invisibly; a \code{dsomop_cohort_handle} carrying the server-side
 #'   TABLE name. Pass it straight into the \code{cohort} argument of the
 #'   exploration wrappers (e.g. \code{ds.omop.concept.prevalence}), into
@@ -756,7 +843,13 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
 #' @seealso \code{\link{ds.omop.cohort.create}}, \code{\link{ds.omop.cohort.combine}}
 #' @export
 ds.omop.cohort.from_table <- function(x, new_name = NULL,
-                                      symbol = "omop", conns = NULL) {
+                                      symbol = "omop", conns = NULL,
+                                      newobj = NULL,
+                                      datasources = NULL) {
+  conns <- .datasources_arg(datasources, conns, "ds.omop.cohort.from_table")
+  new_name <- .alias_value(newobj, new_name, new_given = !is.null(newobj),
+                           old_given = !is.null(new_name), new = "newobj",
+                           old = "new_name", fn = "ds.omop.cohort.from_table")
   if (!is.character(x) || length(x) != 1L || is.na(x) ||
       !grepl("^[A-Za-z.][A-Za-z0-9._]*$", x) || grepl("^\\.[0-9]", x)) {
     stop("x must be the name of a server-side omop.table symbol.",
@@ -764,7 +857,7 @@ ds.omop.cohort.from_table <- function(x, new_name = NULL,
   }
 
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .resolve_datasources(conns, symbol, session)
   inventory <- .plan_symbol_inventory(conns, "cohort-from-table preflight")
 
   # Generate the result table name on the client and pass it to the server so

@@ -4,13 +4,20 @@
 \alias{ds.omop.server.version}
 \title{dsOMOP version on each server}
 \usage{
-ds.omop.server.version(conns = NULL, symbol = "omop")
+ds.omop.server.version(conns = NULL, symbol = "omop", datasources = NULL)
 }
 \arguments{
-\item{conns}{DSI connections (default: the DSI default connections).}
+\item{conns}{Deprecated alias of \code{datasources} (also accepted as the
+first positional argument), kept for backward compatibility (a one-time
+message names the new argument).}
 
 \item{symbol}{OMOP session symbol whose capability blocks (read by
 \code{\link{ds.omop.connect}}) are reported.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A data frame with one row per server: \code{server},
@@ -52,6 +59,6 @@ a server executes a language-2 plan is its \code{recipe_language} block.
 \examples{
 \dontrun{
 ds.omop.client.version()
-ds.omop.server.version(conns)
+ds.omop.server.version(datasources = conns)
 }
 }

@@ -9,7 +9,8 @@ ds.omop.plan.harmonize(
   mode = "intersection",
   strict = TRUE,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -28,8 +29,13 @@ never weakened.}
 \item{symbol}{Character; name of the OMOP session symbol on the
 server (default \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL}, uses the
-connections stored in the session.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 The harmonized \code{omop_plan} with outputs adjusted for

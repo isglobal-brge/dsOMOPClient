@@ -2,7 +2,7 @@ test_that("result type aliases follow the shared dsBaseClient-style contract", {
   aliases <- c(
     split = "split", splits = "split", s = "split", per_site = "split",
     combine = "combine", combined = "combine", c = "combine",
-    pooled = "combine", both = "both", b = "both"
+    pooled = "both", both = "both", b = "both"
   )
   for (alias in names(aliases)) {
     expect_identical(.normalize_result_type(alias), unname(aliases[[alias]]))
@@ -40,7 +40,7 @@ test_that("aggregate families expose split, combine, and both views", {
       }
       raw
     },
-    .pool_result = function(per_site, result_type, pooling_policy) {
+    .pool_result = function(per_site, result_type, pooling_policy, ...) {
       list(result = pooled, warnings = character(0))
     },
     .pool_analysis_contract = function(...) {
@@ -83,11 +83,17 @@ test_that("aggregate families expose split, combine, and both views", {
 })
 
 test_that("legacy scope defaults stay unambiguous", {
-  split <- ds.omop.table.stats("person", execute = FALSE)
+  default <- ds.omop.table.stats("person", execute = FALSE)
+  split <- ds.omop.table.stats("person", scope = "per_site", execute = FALSE)
   both <- ds.omop.table.stats("person", scope = "pooled", execute = FALSE)
 
+  # Count readers default to both views, as ds.dim and ds.table do.
+  expect_identical(default$meta$type, "both")
   expect_identical(split$meta$type, "split")
   expect_identical(both$meta$type, "both")
+  expect_identical(
+    ds.omop.column.stats("measurement", "value_as_number",
+                         execute = FALSE)$meta$type, "split")
   expect_error(
     ds.omop.table.stats(
       "person", scope = "per_site", type = "combine", execute = FALSE
@@ -121,11 +127,16 @@ test_that("non-poolable combine views fail closed with a reason", {
     .package = "dsOMOPClient"
   )
 
+  # combine stops before contacting the servers; both keeps the site results.
+  expect_error(
+    ds.omop.safe.cutpoints("measurement", "value_as_number", type = "combine"),
+    "site-specific"
+  )
   result <- ds.omop.safe.cutpoints(
-    "measurement", "value_as_number", type = "combine"
+    "measurement", "value_as_number", type = "both"
   )
   expect_s3_class(result, "dsomop_result")
-  expect_length(result$per_site, 0L)
+  expect_length(result$per_site, 2L)
   expect_null(result$pooled)
   expect_match(result$meta$pooling_reason, "site-specific")
   expect_true(any(grepl("site-specific", result$meta$warnings)))
@@ -147,6 +158,11 @@ test_that("analysis metadata supports split inspection before harmonization", {
   split <- ds.omop.analysis.list(type = "split")
   expect_named(split$per_site, c("site_a", "site_b"))
   expect_null(split$pooled)
-  expect_error(ds.omop.analysis.list(type = "both"),
+  # A catalog consensus failure is a missing pooled view, not an error.
+  both <- ds.omop.analysis.list(type = "both")
+  expect_named(both$per_site, c("site_a", "site_b"))
+  expect_null(both$pooled)
+  expect_match(both$meta$pooling_reason, "differs across servers")
+  expect_error(ds.omop.analysis.list(type = "combine"),
                "differs across servers")
 })

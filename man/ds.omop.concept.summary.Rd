@@ -12,7 +12,8 @@ ds.omop.concept.summary(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  type = NULL
+  type = "split",
+  datasources = NULL
 )
 }
 \arguments{
@@ -28,22 +29,28 @@ NULL (default), the table's columns are fetched via
 \code{c("value_as_number", "value_as_concept_id")} are present are
 summarised.}
 
-\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.
-Passed through to the underlying calls.}
+\item{scope}{Deprecated alias of \code{type} (\code{"per_site"} or
+\code{"pooled"}), passed through to the underlying calls.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
-\code{"pooled_only_ok"} (Best Effort). Passed through to the underlying
-value-counts, column-stats and quantile calls so that, when pooled,
-categories/values present on only some sites are summed across the
-available sites rather than suppressed.}
+\code{"pooled_only_ok"}, passed through to the underlying value-counts,
+column-stats and quantile calls. Value counts keep only values released
+by every server under both policies; \code{"pooled_only_ok"} lets the
+column statistics pool the servers that returned them. See
+\link{dsomop_conventions}.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
-\item{type}{Optional result view propagated to every aggregate component:
-\code{"split"}, \code{"combine"}, or \code{"both"}. When omitted,
-legacy \code{scope} behaviour is preserved.}
+\item{type}{Result view propagated to every component: \code{"split"}
+(default) or \code{"both"}. The quantiles are never pooled.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A named list with \code{table}, \code{concept_id},

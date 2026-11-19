@@ -2,14 +2,21 @@
 % Please edit documentation in R/result.R
 \name{$.dsomop_result}
 \alias{$.dsomop_result}
+\alias{[[.dsomop_result}
 \title{Access dsomop_result elements with backward compatibility}
 \usage{
 \method{$}{dsomop_result}(x, name)
+
+\method{[[}{dsomop_result}(x, i, exact = TRUE)
 }
 \arguments{
 \item{x}{A \code{dsomop_result} object.}
 
 \item{name}{Character; the element name to access.}
+
+\item{i}{Element name or position, as for \code{[[}.}
+
+\item{exact}{Passed to \code{[[}.}
 }
 \value{
 The requested element: a top-level field, or the matching entry

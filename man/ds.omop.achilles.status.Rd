@@ -4,21 +4,32 @@
 \alias{ds.omop.achilles.status}
 \title{Check Achilles availability}
 \usage{
-ds.omop.achilles.status(symbol = "omop", conns = NULL, type = NULL)
+ds.omop.achilles.status(
+  symbol = "omop",
+  conns = NULL,
+  type = "split",
+  datasources = NULL
+)
 }
 \arguments{
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
-\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
-\code{"both"}. Status is site-specific, so a combined view has no value
-and records that reason.}
+\item{type}{Result view: \code{"split"} (default) or \code{"both"}.
+Status is site-specific: \code{"both"} returns \code{pooled = NULL} with
+\code{meta$pooling_reason}, and \code{"combine"} stops before contacting
+the servers. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A \code{dsomop_result} object with \code{scope = "per_site"}.
+A \code{dsomop_result} object (per-server view).
   Each server's result is a list or data frame indicating whether the
   Achilles tables exist and how many rows they contain.
 }

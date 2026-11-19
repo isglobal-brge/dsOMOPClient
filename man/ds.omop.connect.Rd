@@ -12,7 +12,8 @@ ds.omop.connect(
   results_schema = NULL,
   temp_schema = NULL,
   strict = TRUE,
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -34,7 +35,13 @@ are immediate mapping errors (\code{TRUE}) or warnings where possible.
 Transactional connection still requires a valid resource and successful
 initialization on every requested server regardless of this value.}
 
-\item{conns}{DSI connections object (NULL uses default connections).}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 An \code{omop_session} object (invisibly).
@@ -71,7 +78,8 @@ builder <- newDSLoginBuilder()
 builder$append(server = "server1", url = "https://opal.example.org",
                resource = "project.omop_cdm", driver = "OpalDriver")
 conns <- datashield.login(builder$build())
-session <- ds.omop.connect(resource = "project.omop_cdm", conns = conns)
+session <- ds.omop.connect(resource = "project.omop_cdm",
+                           datasources = conns)
 }
 }
 \seealso{

@@ -10,7 +10,8 @@ ds.omop.safe.filter.measurement(
   max_value,
   n_bins = 10L,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -24,7 +25,13 @@ required and must lie inside the common public grid.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 An authenticated population-level \code{omop_filter}.

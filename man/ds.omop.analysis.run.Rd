@@ -15,7 +15,10 @@ ds.omop.analysis.run(
   date_handling = NULL,
   symbol = "omop",
   conns = NULL,
-  type = "both"
+  type = "both",
+  newobj = NULL,
+  scope_combine = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -37,14 +40,16 @@ combined with \code{cohort}. Each table crosses DataSHIELD as its own bare
 named \code{scope_table_<n>} argument, never through a generic
 \code{list()} or \code{c()} AggregateMethod.}
 
-\item{combine}{Character; how to fold multiple scope sources together:
-\code{"union"} (the default) or \code{"intersect"}.}
+\item{combine}{Deprecated alias of \code{scope_combine}: how to fold
+multiple scope sources together, \code{"union"} (the default) or
+\code{"intersect"}.}
 
 \item{pooling_policy}{Character; how suppressed (NA) cells are handled when
 pooling aggregate results across servers. \code{"strict"} (default)
 requires each pooled group on every server; \code{"pooled_only_ok"} pools
 only available disclosure-safe contributions. Kaplan-Meier curves still
-require every preceding risk-set bin because their values are cumulative.}
+require every preceding risk-set bin because their values are cumulative.
+See \link{dsomop_conventions}.}
 
 \item{plot}{Logical; when \code{TRUE} AND the entry ships a plot recipe, build
 a \code{ggplot} CLIENT-SIDE over the pooled, gate-passed data and attach it
@@ -62,8 +67,8 @@ server-authorized \code{"absolute"}. Ignored for aggregate entries.}
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{type}{Result view, following dsBaseClient terminology: \code{"both"}
 (default) returns per-server and correctly combined results,
@@ -71,7 +76,24 @@ connections stored in the active session are used.}
 returns only the combined result. The aliases \code{"b"},
 \code{"splits"}/\code{"s"}, and \code{"combined"}/\code{"c"} are
 accepted. Combining is performed only from the server-owned pooling
-contract; no column-name heuristics are used.}
+contract; no column-name heuristics are used. When the result cannot be
+pooled, \code{"both"} keeps the per-server frames with
+\code{pooled = NULL} and \code{meta$pooling_reason}, and
+\code{"combine"} stops with the reason.}
+
+\item{newobj}{For assign-mode analyses, the name of the server-side object
+to create (it must not exist on any server). \code{NULL} (the default)
+generates a fresh name. Not used by aggregate analyses.}
+
+\item{scope_combine}{Character; how to fold multiple scope sources
+(\code{cohort} and \code{tables}) into one population: \code{"union"}
+(the default) or \code{"intersect"} on the person key. Also accepted
+under its older name \code{combine}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 A \code{dsomop_result} object. For aggregate entries, \code{per_site}
@@ -82,6 +104,9 @@ A \code{dsomop_result} object. For aggregate entries, \code{per_site}
   \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
   is attached as the \code{"plot"} attribute (and \code{meta$plot}).
   \code{meta$protection} holds each server's protection label and estimand.
+  \code{meta$pooling} names how the pooled result was formed;
+  \code{meta$pooling_contract} is the contract that governed it (for
+  protected releases, the one their \code{meta$release_pooling} selected).
   On dsOMOP 2.10.3, \code{"fixed_synopsis"} declares a bounded-vector
   epsilon and delta zero before exact support gates; \code{"realised_sticky"}
   is heuristic and declares neither. A \code{"mixed"} frame identifies its
@@ -166,7 +191,7 @@ res$pooled
 res2 <- ds.omop.analysis.run(
   entry,
   tables  = c("my_cohort", "my_other_cohort"),
-  combine = "intersect"
+  scope_combine = "intersect"
 )
 
 # Build the entry's client-side plot over the pooled, gate-passed data.

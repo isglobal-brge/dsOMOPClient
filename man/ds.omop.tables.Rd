@@ -4,7 +4,13 @@
 \alias{ds.omop.tables}
 \title{List tables in the OMOP CDM database}
 \usage{
-ds.omop.tables(schema_category = NULL, symbol = "omop", conns = NULL)
+ds.omop.tables(
+  schema_category = NULL,
+  symbol = "omop",
+  conns = NULL,
+  type = "both",
+  datasources = NULL
+)
 }
 \arguments{
 \item{schema_category}{Character; optional filter to restrict results
@@ -13,12 +19,25 @@ to a specific category: \code{"CDM"}, \code{"Vocabulary"}, or
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s) or NULL to use the session default.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}. The pooled view lists the tables present on every
+server. See \link{dsomop_conventions}.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A named list (one element per server) of data frames with
-  table metadata columns such as \code{table_name},
-  \code{schema_category}, and \code{has_person_id}.
+A \code{dsomop_result}. \code{$per_site} is the named list (one
+  data frame per server, with \code{table_name}, \code{schema_category},
+  \code{has_person_id}, ...) returned by earlier versions, and
+  \code{res$<server>} still reaches one server's frame. \code{$pooled}
+  holds the rows of the tables present on every server (\code{NULL}, with
+  \code{meta$pooling_reason}, when a server did not answer).
 }
 \description{
 Queries each connected server for the list of OMOP CDM tables present
@@ -31,6 +50,7 @@ restricting results to a single schema category.
 \dontrun{
 tables <- ds.omop.tables()
 tables$server1
+tables$pooled$table_name   # tables present everywhere
 
 cdm_only <- ds.omop.tables(schema_category = "CDM")
 }

@@ -11,7 +11,9 @@ ds.omop.cohort.create(
   name = NULL,
   overwrite = FALSE,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  newobj = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -28,7 +30,8 @@ schema for reuse across sessions. Persistent creation is restricted to one
 server because DataSHIELD cannot provide a distributed database commit.}
 
 \item{cohort_id}{Integer; cohort definition ID. If \code{NULL}, an
-auto-generated ID is used.}
+auto-generated ID is used. The server names a temporary cohort table
+after it (\code{dsomop_cohort_<id>}).}
 
 \item{name}{Character; human-readable cohort name for display purposes.
 Optional.}
@@ -39,8 +42,19 @@ same \code{cohort_id} will be replaced. Default: \code{FALSE}.}
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
-connections stored in the active session are used.}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
+
+\item{newobj}{The cohort's output name, as dsBaseClient assigning
+functions call it: the cohort id, or a name of the form
+\code{"dsomop_cohort_<id>"} (the server names temporary cohort tables by
+their id). An alternative to \code{cohort_id}; giving both with
+different ids is an error.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 Invisibly; a \code{dsomop_cohort_handle} object carrying the

@@ -111,7 +111,7 @@ test_that("ds.omop.achilles.results generates correct call_code", {
   code <- result$meta$call_code
   expect_true(grepl("ds.omop.achilles.results", code))
   expect_true(grepl("400", code))
-  expect_true(grepl("pooled", code))
+  expect_true(grepl('type = "both"', code, fixed = TRUE))
 })
 
 # --- Pooling unit tests -------------------------------------------------------

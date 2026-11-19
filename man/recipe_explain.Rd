@@ -8,7 +8,9 @@ recipe_explain(
   recipe,
   detail = c("summary", "semantics"),
   conns = NULL,
-  symbol = "omop"
+  symbol = "omop",
+  offline = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -17,9 +19,21 @@ recipe_explain(
 \item{detail}{\code{"summary"} (one line per node) or \code{"semantics"}
 (every default and rule spelled out).}
 
-\item{conns}{Optional DSI connections (uses the active OMOP session).}
+\item{conns}{Deprecated alias of \code{datasources}, kept for backward
+compatibility (a one-time message names the new argument).}
 
 \item{symbol}{OMOP session symbol used with \code{conns}.}
+
+\item{offline}{Logical or \code{NULL}. \code{TRUE} explains the recipe
+without contacting any server; \code{FALSE} asks the servers (through
+\code{datasources}, or the default connections when it is \code{NULL}).
+\code{NULL} (the default) keeps the earlier behaviour: offline unless
+connections are given.}
+
+\item{datasources}{DataSHIELD connections (a named list of
+\code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
+session's connections, or \code{DSI::datashield.connections_find()} when
+no session exists. See \link{dsomop_conventions}.}
 }
 \value{
 An \code{omop_recipe_explain} object: \code{$text} (character
@@ -55,7 +69,7 @@ digest. A recipe that executes as its v1 plan is explained from that v1
 payload and the legacy rules it relies on; offline its lowered IR and
 digest are not available (the server lowers it), and its native rendering
 (\code{recipe_to_plan(version = 2)}) is never presented as the executed
-plan. With \code{conns}, each server whose profile publishes
+plan. With connections (\code{datasources}), each server whose profile publishes
 \code{omopPlanExplainDS} (dsOMOP 2.10.3) receives the selected wire plan
 and reports its normalised IR, compatibility variants and semantic digest
 (attached as \code{$server}). A server whose profile does not publish it,
