@@ -1,4 +1,4 @@
-# dsOMOPClient 2.10.9 (development)
+# dsOMOPClient 2.10.9 (2026-11-19)
 
 - `ds.omop.table()` returns `ds.table()`'s object: per-site and combined counts
   and proportions, the validity message and, with `report.chisq.tests`, the
