@@ -1883,6 +1883,14 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #'   site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
 #'   warning, and \code{on_small_site} does not change that call; a language-2
 #'   plan is refused before assignment.
+#' @param small_categories Character; \code{"keep"} (the default) publishes
+#'   the outputs as computed. \code{"missing"} then makes, at each site, the
+#'   values of categories held by fewer than \code{nfilter.tab} people missing
+#'   in every published factor column, with secondary suppression (see
+#'   \code{\link{ds.omop.drop_small_categories}}), so that dsBase's
+#'   \code{ds.table()} and \code{ds.summary()} accept those columns. Levels,
+#'   labels and the codebook stay as published. In-memory outputs only; every
+#'   server needs dsOMOP 2.10.9.
 #' @details Loading tables never depends on differential privacy. After a
 #'   memory execution, concept columns are converted to factors harmonized
 #'   across servers (see \code{ds.omop.plan.options}).
@@ -1927,10 +1935,78 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                                  conns = NULL,
                                  output_mode = "memory",
                                  on_small_site = c("error", "skip"),
-                                 datasources = NULL) {
+                                 datasources = NULL,
+                                 small_categories = c("keep", "missing")) {
   conns <- .datasources_arg(datasources, conns, "ds.omop.plan.execute")
-  .plan_execute_impl(plan, out = out, symbol = symbol, conns = conns,
-                     output_mode = output_mode, on_small_site = on_small_site)
+  small_categories <- match.arg(small_categories)
+  if (identical(small_categories, "missing")) .plan_small_categories_check(symbol, conns, output_mode)
+  result <- .plan_execute_impl(plan, out = out, symbol = symbol, conns = conns,
+                               output_mode = output_mode, on_small_site = on_small_site)
+  if (identical(small_categories, "missing")) .plan_small_categories(symbol, conns)
+  invisible(result)
+}
+
+# small_categories = "missing" is checked before anything is published.
+.plan_small_categories_check <- function(symbol, conns, output_mode) {
+  if (!identical(output_mode, "memory")) {
+    stop("small_categories = \"missing\" applies to in-memory outputs; staged outputs release no counts.",
+         call. = FALSE)
+  }
+  session <- .get_session(symbol)
+  conns <- .resolve_datasources(conns, symbol, session)
+  .model_levels_assert_servers(session, names(conns), "2.10.9", "small_categories = \"missing\"")
+}
+
+# After publication, each output with factor columns is replaced by its copy
+# with small categories missing (the suppression of
+# ds.omop.drop_small_categories(); levels and contracts are kept). Every site
+# that published must use the same names; skipped sites take no part.
+.plan_small_categories <- function(symbol, conns) {
+  session <- .get_session(symbol)
+  conns <- .resolve_datasources(conns, symbol, session)
+  owned <- session$last_publication
+  sites <- intersect(names(owned)[vapply(owned, function(x) length(unlist(x)) > 0L, logical(1))], names(conns))
+  symbols <- lapply(owned[sites], function(x) sort(unique(unlist(x, use.names = FALSE))))
+  if (!length(sites) || !all(vapply(symbols, identical, logical(1), symbols[[1L]]))) {
+    warning("small_categories = \"missing\" needs the same output names at every site; the outputs were ",
+            "published unchanged (use ds.omop.drop_small_categories() on each).", call. = FALSE)
+    return(invisible(character()))
+  }
+  conns <- conns[sites]
+  replaced <- character()
+  for (x in symbols[[1L]]) {
+    reports <- .ds_safe_aggregate(conns, expr = call("omopFactorLevelsDS", as.name(x)))
+    if (length(attr(reports, "ds_errors")) || !all(names(conns) %in% names(reports))) {
+      warning("small_categories = \"missing\": '", x, "' was published unchanged; its levels could not be read: ",
+              paste(unlist(attr(reports, "ds_errors"), use.names = FALSE), collapse = "; "), call. = FALSE)
+      next
+    }
+    if (!length(unlist(lapply(reports, function(r) c(names(r$levels), r$unsafe))))) next
+    inventory <- unlist(.plan_symbol_inventory(conns, "Small categories"), use.names = FALSE)
+    copy <- NULL
+    for (attempt in seq_len(10L)) {
+      candidate <- .generate_symbol("dsOsmallout")
+      if (!candidate %in% inventory) { copy <- candidate; break }
+    }
+    if (is.null(copy)) stop("Could not reserve a symbol for the small-category copy of '", x, "'.", call. = FALSE)
+    .assign_expr_atomic(conns, copy,
+      expr = call("omopAsFactorColumnsDS", as.name(x),
+                  .ds_encode(list(kind = "suppress_small", columns = list(), joint = FALSE))),
+      context = "Small categories", session_symbol = symbol, required_symbols = x)
+    # The copy takes the published name at every site.
+    done <- character(); failed <- character()
+    DSI::datashield.assign.expr(conns, x, as.symbol(copy),
+      success = function(server) done <<- c(done, server),
+      error = function(server, message) failed[[server]] <<- message)
+    tryCatch(DSI::datashield.rm(conns, copy), error = function(e) NULL)
+    if (length(failed) || !setequal(done, names(conns))) {
+      stop("small_categories = \"missing\": '", x, "' has small categories missing on ",
+           paste(done, collapse = ", "), " only (", paste(failed, collapse = "; "),
+           "). Publish it again.", call. = FALSE)
+    }
+    replaced <- c(replaced, x)
+  }
+  invisible(replaced)
 }
 
 # Shared plan executor. Loading tables uses the core method
@@ -1955,6 +2031,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   harmonize_factors <- TRUE
   session <- .get_session(symbol)
   session$concept_presentation <- NULL
+  session$last_publication <- NULL
   assign(symbol, session, envir = .dsomop_client_env)
   presentation_key <- .conceptPlanKey(plan)
   conns <- .resolve_datasources(conns, symbol, session)
@@ -2186,6 +2263,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     .record_session_outputs(symbol, unlist(owned, recursive = FALSE))
     session <- .get_session(symbol)
     session$concept_presentation <- list(key=presentation_key,sites=names(conns),components=presentation)
+    session$last_publication <- owned
     assign(symbol, session, envir=.dsomop_client_env)
     answer<-if (standard) out else inventories
     codebooks<-lapply(presentation,function(x)attr(x,"codebook"))

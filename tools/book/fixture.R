@@ -239,7 +239,7 @@ builder <- DSI::newDSLoginBuilder()
 builder$append(server = "site", url = "server", driver = "DSLiteDriver")
 if(two_sites) builder$append(server="site2",url="server2",driver="DSLiteDriver")
 conns <- DSI::datashield.login(builder$build(), assign = FALSE)
-ds.omop.connect(resource = "fixture", conns = conns, symbol = symbol)
+ds.omop.connect(resource = "fixture", datasources = conns, symbol = symbol)
 
 
  list(conns=conns, server=server, path=c(fixture_path,second_path))

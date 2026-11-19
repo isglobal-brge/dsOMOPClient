@@ -73,7 +73,7 @@ covering observation period. `select = "all"` would keep recurrent visit episode
 ```{r membership}
 visit_members <- omop_recipe(populations = list(visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-recipe_execute(visit_members, out = c(members = "D_members"), conns = conns)
+recipe_execute(visit_members, out = c(members = "D_members"), datasources = conns)
 ```
 
 Membership keeps private keys and episode dates. Count its rows:
@@ -109,7 +109,7 @@ Only TRUE survives; an unknown criterion is not evidence of eligibility.
 eligible_recipe <- omop_recipe(populations = list(eligible),
   variables = list(visits = omop_count("visit_occurrence", before = Inf)),
   outputs = omop_output("people", rows = "eligible", format = "wide"))
-recipe_execute(eligible_recipe, out = c(people = "D_eligible"), conns = conns)
+recipe_execute(eligible_recipe, out = c(people = "D_eligible"), datasources = conns)
 ```
 
 The count includes visits through the chosen index day.
@@ -148,7 +148,7 @@ cohort_population <- omop_population("saved", index = omop_index(
   list(cohort_definition_id = 1L), select = "all", end = omop_end("event_end")))
 cohort_recipe <- omop_recipe(populations = list(cohort_population),
   outputs = omop_output("members", rows = "saved", format = "membership"))
-recipe_execute(cohort_recipe, out = c(members = "D_cohort"), conns = conns)
+recipe_execute(cohort_recipe, out = c(members = "D_cohort"), datasources = conns)
 dsBaseClient::ds.dim("D_cohort", datasources = conns)
 ```
 
@@ -168,7 +168,7 @@ The medicine here is **950001**, Questionnaire study medicine. Look it up
 before selecting it:
 
 ```{r medicine-id}
-medicine <- ds.omop.concept.lookup(950001L, conns = conns)
+medicine <- ds.omop.concept.lookup(950001L, datasources = conns)
 medicine$pooled[c("concept_id", "concept_name")]
 ```
 
@@ -179,7 +179,7 @@ new_users <- omop_new_users(950001L, washout_days = 365, by = "concept")
 new_user_recipe <- omop_study(new_users, outputs = "baseline",
   baseline = list(prior_fills = omop_count("drug_exposure", 950001L,
     window = omop_window(-365, -1))))
-recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), conns = conns)
+recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), datasources = conns)
 ```
 
 The synthetic medicine uses concept grouping explicitly; ingredient grouping is
@@ -234,7 +234,7 @@ matched_recipe <- omop_recipe(populations = list(cases, controls, matched),
   variables = list(is_case = omop_population_column("is_case"),
     set = omop_population_column("set_id"), sex = omop_sex()),
   outputs = omop_output("sample", rows = "matched", format = "wide"))
-recipe_execute(matched_recipe, out = c(sample = "D_matched"), conns = conns)
+recipe_execute(matched_recipe, out = c(sample = "D_matched"), datasources = conns)
 ```
 
 The `set` column is a protected match-set key. Keep it for analyses that account
@@ -264,7 +264,7 @@ as person-time?
 all_visitors <- omop_population("visitors", index = omop_index(visits, select = "all"))
 all_recipe <- omop_recipe(populations = list(all_visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-recipe_execute(all_recipe, out = c(members = "D_all_visitors"), conns = conns)
+recipe_execute(all_recipe, out = c(members = "D_all_visitors"), datasources = conns)
 dsBaseClient::ds.dim("D_all_visitors", datasources = conns)
 ```
 
@@ -290,7 +290,7 @@ first_only <- omop_population("first_only",
     omop_has(inpatient, window = omop_window(0, 0))))
 first_recipe <- omop_recipe(populations = list(first_only),
   outputs = omop_output("members", rows = "first_only", format = "membership"))
-recipe_execute(first_recipe, out = c(members = "D_first_only"), conns = conns)
+recipe_execute(first_recipe, out = c(members = "D_first_only"), datasources = conns)
 ```
 
 Every first visit in the teaching data is outpatient, so nobody meets the

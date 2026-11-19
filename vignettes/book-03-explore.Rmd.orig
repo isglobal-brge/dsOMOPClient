@@ -59,7 +59,7 @@ the server also checks the operation and the support for each result.
 ## Separate what was observed from its value
 
 ```{r observation-columns, table.row.names = FALSE}
-columns <- ds.omop.columns("observation", conns = conns)$site
+columns <- ds.omop.columns("observation", datasources = conns)$site
 subset(columns, column_name %in% c("observation_concept_id", "value_as_concept_id",
   "value_as_number", "value_as_string", "observation_date"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
@@ -71,7 +71,7 @@ and `value_as_number` a numeric value. `value_as_string` is blocked free text.
 Selecting the observation and choosing its value field are separate decisions.
 
 ```{r observation-stats}
-ds.omop.table.stats("observation", conns = conns)
+ds.omop.table.stats("observation", datasources = conns)
 ```
 
 The bands begin at 1,475 rows and 670 people: one person can contribute several
@@ -82,7 +82,7 @@ The questionnaire chapters use a separate dataset for those answers.
 ## Find the visit date and setting
 
 ```{r visit-columns, table.row.names = FALSE}
-columns <- ds.omop.columns("visit_occurrence", conns = conns)$site
+columns <- ds.omop.columns("visit_occurrence", datasources = conns)$site
 subset(columns, column_name %in% c("visit_start_date", "visit_end_date",
   "visit_concept_id", "visit_type_concept_id"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
@@ -93,7 +93,7 @@ setting, such as inpatient or outpatient. `visit_type_concept_id` describes
 where the record came from; use the setting field to select inpatient visits.
 
 ```{r visit-statistics}
-ds.omop.table.stats("visit_occurrence", conns = conns)
+ds.omop.table.stats("visit_occurrence", datasources = conns)
 ```
 
 The bands are 1,035–1,039 visits and 890–894 people. Repeated visits explain why
@@ -107,7 +107,7 @@ a count of deaths.
 <details><summary>Solution</summary>
 
 ```{r death-columns, table.row.names = FALSE}
-columns <- ds.omop.columns("death", conns = conns)$site
+columns <- ds.omop.columns("death", datasources = conns)$site
 subset(columns, column_name %in% c("death_date", "cause_concept_id", "cause_source_value"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
@@ -118,7 +118,7 @@ does not establish that any deaths were recorded.
 
 <!-- expected-refusal:start -->
 ```{r death-support}
-ds.omop.table.stats("death", conns = conns)
+ds.omop.table.stats("death", datasources = conns)
 ```
 <!-- expected-refusal:end -->
 
@@ -136,7 +136,7 @@ that somebody took the medicine every day?
 <details><summary>Solution</summary>
 
 ```{r drug-fields, table.row.names = FALSE}
-columns <- ds.omop.columns("drug_exposure", conns = conns)$site
+columns <- ds.omop.columns("drug_exposure", datasources = conns)$site
 subset(columns, column_name %in% c("drug_exposure_start_date",
   "drug_exposure_end_date", "days_supply"),
   select = c(column_name, cdm_datatype, is_date, is_blocked))
@@ -156,14 +156,14 @@ that lab values can be analysed? Check the column itself.
 <details><summary>Solution</summary>
 
 ```{r numeric-coverage}
-ds.omop.table.stats("measurement", conns = conns)
+ds.omop.table.stats("measurement", datasources = conns)
 ```
 
 The row band begins at 44,050. The public GiBleed data have exactly 44,053
 measurement rows; this analyst call rounds down to its band.
 
 ```{r numeric-missing}
-ds.omop.column.stats("measurement", "value_as_number", conns = conns)
+ds.omop.column.stats("measurement", "value_as_number", datasources = conns)
 ```
 
 `n_missing` equals `n_persons`, both 2,685 (the band 2,685–2,689). The same

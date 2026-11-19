@@ -61,7 +61,7 @@ every later call sends its request through it.
 
 ```{r versions}
 ds.omop.client.version()
-ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+ds.omop.server.version(datasources = conns)[c("server", "published", "running", "ready")]
 ```
 
 The first line is the client package on your computer. `ready` confirms that the
@@ -117,9 +117,9 @@ you tell that you are no longer querying GiBleed?
 <details><summary>Solution</summary>
 
 ```{r numeric-exercise}
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 The person count is 25, meaning 25–29 people. That band contains Synthea27Nj's
@@ -136,7 +136,7 @@ person count, rather than checking only that a connection has a name.
 <details><summary>Solution</summary>
 
 ```{r reconnect-exercise, eval = FALSE}
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 conns <- ds.omop.login("https://localhost:8443", user = "administrator",
   password = "password", resource = "omop.gibleed", server = "site")$conns
@@ -148,7 +148,7 @@ conns <- book_connect("gibleed")$conns
 ```
 
 ```{r reconnect-count}
-ds.omop.table.stats("person", conns = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 The count is back to the 2,690–2,694 band. Disconnect releases the resource;

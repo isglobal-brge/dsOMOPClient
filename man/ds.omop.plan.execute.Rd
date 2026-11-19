@@ -11,7 +11,8 @@ ds.omop.plan.execute(
   conns = NULL,
   output_mode = "memory",
   on_small_site = c("error", "skip"),
-  datasources = NULL
+  datasources = NULL,
+  small_categories = c("keep", "missing")
 )
 }
 \arguments{
@@ -63,6 +64,15 @@ plan is refused before assignment.}
 \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
 session's connections, or \code{DSI::datashield.connections_find()} when
 no session exists. See \link{dsomop_conventions}.}
+
+\item{small_categories}{Character; \code{"keep"} (the default) publishes
+the outputs as computed. \code{"missing"} then makes, at each site, the
+values of categories held by fewer than \code{nfilter.tab} people missing
+in every published factor column, with secondary suppression (see
+\code{\link{ds.omop.drop_small_categories}}), so that dsBase's
+\code{ds.table()} and \code{ds.summary()} accept those columns. Levels,
+labels and the codebook stay as published. In-memory outputs only; every
+server needs dsOMOP 2.10.9.}
 }
 \value{
 Invisibly, the resolved \code{out} symbol mapping for a complete

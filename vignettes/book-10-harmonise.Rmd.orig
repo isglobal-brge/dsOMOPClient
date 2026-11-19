@@ -64,7 +64,7 @@ Selecting the question concept as the value would answer a different question.
 ```{r default-translation}
 categories <- omop_recipe(variables = list(education = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(categories, out = c(people = "D_categories"), conns = conns)
+recipe_execute(categories, out = c(people = "D_categories"), datasources = conns)
 ```
 
 Translation is the default. The data values become labelled factors on the server.
@@ -77,6 +77,11 @@ dsBaseClient::ds.table("D_categories$education",
 The latest education answers are Secondary education for 12 people and
 University education for 12, with 24 missing. The concept IDs used in the definition
 are vocabulary identifiers; they do not appear as numeric answers in this table.
+Published labels keep only letters, digits, `.`, `_`, `-` and `+`, so that every
+dsBase function can carry them on any DataSHIELD server: Secondary education is
+published as `Secondary_education`, and `recipe_codebook()` keeps the exact name
+([chapter 12](book-12-privacy.html#tables-when-some-categories-have-very-few-people)
+explains why).
 
 ## Recode answers to yes and no
 
@@ -89,7 +94,7 @@ First inspect the default wording:
 fever_default <- omop_variable(event = omop_event("observation", concepts = 900002L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 fever_recipe <- omop_recipe(variables = list(fever = fever_default))
-recipe_execute(fever_recipe, out = "D_fever_default", conns = conns)
+recipe_execute(fever_recipe, out = "D_fever_default", datasources = conns)
 dsBaseClient::ds.table("D_fever_default$fever",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -110,7 +115,7 @@ missing; absence of a record is not a clinical “no”.
 ```{r recode-run}
 answers <- omop_recipe(variables = list(fever = fever),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns)
+recipe_execute(answers, out = c(people = "D_category_answers"), datasources = conns)
 ```
 
 ```{r recode-table}
@@ -129,7 +134,7 @@ Name an explicit variable in the recipe list, without changing what its answers 
 ```{r column-rename}
 renamed <- omop_recipe(variables = list(schooling = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns)
+recipe_execute(renamed, out = c(people = "D_renamed_categories"), datasources = conns)
 dsBaseClient::ds.colnames("D_renamed_categories", datasources = conns)
 ```
 
@@ -138,7 +143,7 @@ change values inside that column. The visit walkthrough uses a value-preserving
 mutate alias when adding a new name to an already assigned date column.
 
 ```{r renamed-table}
-ds.omop.table("D_renamed_categories", "schooling", conns = conns)
+ds.omop.table("D_renamed_categories", "schooling", datasources = conns)
 ```
 
 The education categories and counts are unchanged. Next we address differences
@@ -161,7 +166,7 @@ panel_output <- omop_output("panel", rows = "visitors", format = "person_period"
     window = omop_window(0, 29), analyses = "count"))
 panel_recipe <- omop_recipe(events = list(visit_event),
   populations = list(visit_population), outputs = panel_output)
-panel_result <- recipe_execute(panel_recipe, out = c(panel = "D_original_panel"), conns = conns)
+panel_result <- recipe_execute(panel_recipe, out = c(panel = "D_original_panel"), datasources = conns)
 panel_columns <- recipe_codebook(panel_result)[[1]]$columns
 panel_columns[c("stable_key", "name")]
 ```
@@ -180,7 +185,7 @@ stable when a vocabulary changes its wording; your chosen column names remain
 readable. An explicit name cannot collide with a protected or another final column.
 
 ```{r generated-run}
-recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns)
+recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), datasources = conns)
 dsBaseClient::ds.colnames("D_renamed_panel", datasources = conns)
 ```
 
@@ -196,7 +201,7 @@ Search the catalogue before choosing an order or a rollup.
 
 ```{r category-discovery, table.row.names = FALSE}
 catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100,
-  conns = conns)$pooled
+  datasources = conns)$pooled
 classification <- catalogue[catalogue$vocabulary_id %in% c("ATC", "ICD10", "Language") |
   catalogue$concept_id %in% c(900101L, 900102L, 900103L, 900201L, 900202L, 950001L), ]
 classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")]
@@ -224,8 +229,8 @@ education_ordered <- omop_category(education, omop_category_spec(
   levels = education_keys, order = omop_category_order(education_keys), ordered = TRUE))
 ordered_recipe <- omop_recipe(variables = list(education = education_ordered),
   labels = setNames(c("primary", "secondary", "tertiary"), education_ids))
-ordered_result <- recipe_execute(ordered_recipe, out = "D_ordered", conns = conns)
-ds.omop.table("D_ordered", "education", conns = conns)
+ordered_result <- recipe_execute(ordered_recipe, out = "D_ordered", datasources = conns)
+ds.omop.table("D_ordered", "education", datasources = conns)
 ```
 
 The table follows primary < secondary < tertiary, with primary = 0, secondary = 12 and tertiary = 12. The 24 missing
@@ -255,8 +260,8 @@ styled <- omop_recipe(variables = list(
   code_and_name = omop_category(education, omop_category_spec(label_style = "code_name")),
   local_name = omop_category(education, omop_category_spec(
     language = omop_category_language(language_id)))))
-style_result <- recipe_execute(styled, out = "D_styled", conns = conns)
-ds.omop.table("D_styled", "local_name", conns = conns)
+style_result <- recipe_execute(styled, out = "D_styled", datasources = conns)
+ds.omop.table("D_styled", "local_name", datasources = conns)
 ```
 
 The teaching vocabulary supplies “Secondary schooling” and “Tertiary schooling”
@@ -265,7 +270,7 @@ as English synonyms, still with 12 people each. The category identity is unchang
 Display the code-and-name variant from the same extraction.
 
 ```{r category-style-table}
-ds.omop.table("D_styled", "code_and_name", conns = conns)
+ds.omop.table("D_styled", "code_and_name", datasources = conns)
 ```
 
 The counts remain 12/12; each label now includes its public vocabulary code.
@@ -286,8 +291,8 @@ missing_recipe <- omop_recipe(variables = list(
     missing = omop_category_missing(na = "level", unknown = "level"))),
   sex = omop_category(omop_variable(name = "sex", table = "person", column = "gender_concept_id"), omop_category_spec(
     missing = omop_category_missing(na = "level", unknown = "level")))))
-missing_result <- recipe_execute(missing_recipe, out = "D_missing_categories", conns = conns)
-ds.omop.table("D_missing_categories", "education", conns = conns)
+missing_result <- recipe_execute(missing_recipe, out = "D_missing_categories", datasources = conns)
+ds.omop.table("D_missing_categories", "education", datasources = conns)
 ```
 
 The 24 missing answers are now visible as Missing, alongside 12 Secondary and
@@ -299,7 +304,7 @@ remain empty.
 Check which declared sex levels are actually observed.
 
 ```{r category-unknown}
-ds.omop.table("D_missing_categories", "sex", conns = conns)
+ds.omop.table("D_missing_categories", "sex", datasources = conns)
 ```
 
 There are 20 FEMALE and 28 MALE values. A declared Unknown level
@@ -316,8 +321,8 @@ flags <- omop_recipe(variables = list(
   integer_flag = has_visit,
   logical_flag = omop_category(has_visit, omop_category_spec(binary = omop_category_binary("logical"))),
   named_flag = omop_category(has_visit, omop_category_spec(binary = omop_category_binary("factor")))))
-flag_result <- recipe_execute(flags, out = "D_flags", conns = conns)
-ds.omop.table("D_flags", "named_flag", conns = conns)
+flag_result <- recipe_execute(flags, out = "D_flags", datasources = conns)
+ds.omop.table("D_flags", "named_flag", datasources = conns)
 ```
 
 There are 12 “no” and 36 “yes” values. This “no” means no selected visit in the
@@ -343,7 +348,7 @@ relationships; a similar-looking code prefix is insufficient.
 
 ```{r category-hierarchy-discovery}
 drug_id <- ids[["Questionnaire study medicine"]]
-ancestors <- ds.omop.concept.ancestors(drug_id, conns = conns)$pooled
+ancestors <- ds.omop.concept.ancestors(drug_id, datasources = conns)$pooled
 ancestors[c("concept_id", "concept_name", "min_levels_of_separation")]
 ```
 
@@ -353,8 +358,8 @@ counts describe the links; ATC level itself comes from the vocabulary class.
 ```{r cause-links}
 icd_id <- ids[["Teaching circulatory code"]]
 links <- rbind(
-  ds.omop.concept.relationships(icd_id, relationship_id = "Maps to", conns = conns)$pooled,
-  ds.omop.concept.relationships(icd_id, relationship_id = "Is a", conns = conns)$pooled)
+  ds.omop.concept.relationships(icd_id, relationship_id = "Maps to", datasources = conns)$pooled,
+  ds.omop.concept.relationships(icd_id, relationship_id = "Is a", datasources = conns)$pooled)
 links[c("concept_id", "relationship_id", "related_concept_id", "related_concept_name")]
 ```
 
@@ -364,7 +369,7 @@ relationships used only for this lesson.
 
 ```{r rollup-occurrence}
 ds.omop.concept.locate(c(drug_id, ids[["Myocardial infarction"]]),
-  scope = "pooled", conns = conns)$pooled
+  type = "both", datasources = conns)$pooled
 classification_sets <- list(answers = education_set, drug = omop_concept_set(drug_id),
   causes = omop_concept_set(unname(ids[c("Myocardial infarction", "Pneumonia")])))
 saveRDS(classification_sets, category_file)
@@ -395,8 +400,8 @@ rollups <- omop_recipe(variables = list(
   chapter = omop_category(cause_value, omop_category_spec(rollup =
     omop_category_rollup("icd10", level = "chapter", vocabulary = "ICD10",
       domain = classification_sets$causes)))))
-rollup_result <- recipe_execute(rollups, out = "D_rollups", conns = conns)
-ds.omop.table("D_rollups", "chapter", conns = conns)
+rollup_result <- recipe_execute(rollups, out = "D_rollups", datasources = conns)
+ds.omop.table("D_rollups", "chapter", datasources = conns)
 ```
 
 There are 24 people in the circulatory chapter and 12 in the respiratory
@@ -442,7 +447,7 @@ Log in to both sites. In a real federation each site has its own server URL;
 here both resources are on our Opal:
 
 ```{r two-connections, eval = FALSE}
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
   password = "password",
@@ -457,7 +462,7 @@ conns <- book_switch("questionnaire", two_sites = TRUE)$conns
 Inspect the vocabulary wording before looking at patient counts:
 
 ```{r two-vocabularies}
-lookup <- ds.omop.concept.lookup(900102L, conns = conns)
+lookup <- ds.omop.concept.lookup(900102L, datasources = conns)
 do.call(rbind, lapply(names(lookup$per_site), function(site)
   cbind(Site = site, lookup$per_site[[site]][c("concept_id", "concept_name")])))
 ```
@@ -470,7 +475,7 @@ shared category.
 Execute the original unlabelled education recipe on both connections:
 
 ```{r two-default}
-recipe_execute(categories, out = c(people = "D_default_pair"), conns = conns)
+recipe_execute(categories, out = c(people = "D_default_pair"), datasources = conns)
 paired_counts <- dsBaseClient::ds.table("D_default_pair$education",
   useNA = "always", datasources = conns)
 paired_counts$output.list$TABLES.COMBINED_all.sources_counts
@@ -506,7 +511,7 @@ name. Does this change the counts?
 harmonised <- omop_recipe(variables = list(education = education),
   labels = c("900102" = "University education"),
   outputs = omop_output("people", format = "wide", grain = "person"))
-recipe_execute(harmonised, out = c(people = "D_shared"), conns = conns)
+recipe_execute(harmonised, out = c(people = "D_shared"), datasources = conns)
 dsBaseClient::ds.table("D_shared$education",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -526,7 +531,7 @@ pooled count and missing count before executing.
 ```{r merge-labels}
 merged <- omop_recipe(variables = list(education = education),
   labels = c("900101" = "Recorded education", "900102" = "Recorded education"))
-recipe_execute(merged, out = "D_merged_answers", conns = conns)
+recipe_execute(merged, out = "D_merged_answers", datasources = conns)
 dsBaseClient::ds.table("D_merged_answers$education",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
@@ -548,7 +553,7 @@ marginal distribution change?
 first_answers <- omop_recipe(variables = list(education = omop_variable(
   event = omop_event("observation", concepts = 900001L),
   reducer = omop_reduce("first_value", value = "value_as_concept_id"))))
-recipe_execute(first_answers, out = "D_first_pair", conns = conns)
+recipe_execute(first_answers, out = "D_first_pair", datasources = conns)
 first_counts <- dsBaseClient::ds.table("D_first_pair$education",
   useNA = "always", datasources = conns)
 first_site_counts <- first_counts$output.list$TABLE_rvar.by.study_counts

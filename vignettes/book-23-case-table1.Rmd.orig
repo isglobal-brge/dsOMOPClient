@@ -48,12 +48,12 @@ two_conns <- book_connect("numeric", two_sites = TRUE)$conns
 ## Confirm the measurement and units at both sites
 
 ```{r table-discovery, table.row.names = FALSE}
-hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = two_conns)$pooled
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", datasources = two_conns)$pooled
 selected <- hits[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood", ]
 selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 hb_id <- selected$concept_id
 unit_counts <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
-  conns = two_conns)$per_site
+  datasources = two_conns)$per_site
 do.call(rbind, lapply(names(unit_counts), function(site)
   data.frame(Site = site, unit_counts[[site]][c("value", "concept_name", "n")])))
 hb_set <- omop_concept_set(hb_id)
@@ -80,7 +80,7 @@ characterise <- omop_study(hb, outputs = "baseline", baseline = list(
     labels = c("under 18", "adult")),
   haemoglobin = omop_value_at_index("measurement", hb_set,
     tolerance = c(-90, 0), unit = omop_unit(8713L))))
-result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), conns = two_conns)
+result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), datasources = two_conns)
 columns <- recipe_codebook(result)[[1]]$columns
 age_column <- match("age_band", columns$name)
 data.frame(Age_group = columns$levels[[age_column]]$labels)
@@ -150,9 +150,9 @@ over all history, keeping the same first-haemoglobin population. Quantify the di
 all_history <- omop_study(hb, outputs = "baseline", baseline = list(
   baseline = omop_value_at_index("measurement", hb_set, tolerance = c(0, 0), unit = omop_unit(8713L)),
   history = omop_variable(event = hb, reducer = omop_reduce("mean"))))
-recipe_execute(all_history, out = c(baseline = "D_history"), conns = two_conns)
+recipe_execute(all_history, out = c(baseline = "D_history"), datasources = two_conns)
 ds.omop.mutate("D_history", difference = history - baseline,
-  newobj = "D_history_difference", conns = two_conns)
+  newobj = "D_history_difference", datasources = two_conns)
 dsBaseClient::ds.mean("D_history_difference$difference", type = "combine", datasources = two_conns)$Global.Mean
 ```
 
@@ -171,7 +171,7 @@ bands <- omop_study(hb, outputs = "baseline", baseline = list(
   band = omop_number_bins(omop_value_at_index("measurement", hb_set,
     tolerance = c(0, 0), unit = omop_unit(8713L)),
     breaks = c(-Inf, 14, Inf), labels = c("below 14", "14 or above"))))
-recipe_execute(bands, out = c(baseline = "D_baseline_bands"), conns = two_conns)
+recipe_execute(bands, out = c(baseline = "D_baseline_bands"), datasources = two_conns)
 dsBaseClient::ds.table("D_baseline_bands$band",
   datasources = two_conns)$output.list$TABLE_rvar.by.study_counts
 ```

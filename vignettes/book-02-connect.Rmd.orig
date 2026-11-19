@@ -54,7 +54,7 @@ Under `site`, `omop` is the private handle that `ds.omop.login()` created. Later
 ## Use a handle explicitly
 
 ```{r explicit-handle}
-ds.omop.table.stats("person", symbol = "omop", conns = conns)
+ds.omop.table.stats("person", symbol = "omop", datasources = conns)
 ```
 
 The request goes to GiBleed through `omop`: its person count is in the
@@ -68,9 +68,9 @@ available methods, independently of any database handle.
 Release the attached resource, then attach another one through the same login:
 
 ```{r switch-to-numeric}
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.synthea", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.synthea", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 The person band is now 25–29, containing Synthea27Nj's 28 people. The handle is
@@ -78,9 +78,9 @@ still called `omop` even though its database changed. Switching does not combine
 the two populations.
 
 ```{r switch-back}
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "omop.gibleed", conns = conns)
-ds.omop.table.stats("person", conns = conns)
+ds.omop.disconnect(datasources = conns)
+ds.omop.connect(resource = "omop.gibleed", datasources = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 The 2,690–2,694 band confirms that GiBleed is attached again. Choosing the
@@ -94,16 +94,16 @@ names and count people through each. Does attaching `labs` combine them?
 <details><summary>Solution</summary>
 
 ```{r two-handles}
-ds.omop.connect(resource = "omop.synthea", symbol = "labs", conns = conns)
+ds.omop.connect(resource = "omop.synthea", symbol = "labs", datasources = conns)
 DSI::datashield.symbols(conns)
 ```
 
 `labs` and `omop` are two distinct handles in the same session.
 
 ```{r two-counts}
-ds.omop.table.stats("person", stats = "persons", symbol = "omop", conns = conns)
-ds.omop.table.stats("person", stats = "persons", symbol = "labs", conns = conns)
-ds.omop.disconnect(symbol = "labs", conns = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "omop", datasources = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "labs", datasources = conns)
+ds.omop.disconnect(symbol = "labs", datasources = conns)
 ```
 
 `omop` gives 2690 and `labs` gives 25. Each is a separate protected count; the
@@ -120,7 +120,7 @@ name or the handle name?
 
 <!-- expected-refusal:start -->
 ```{r unknown-handle, error = TRUE}
-ds.omop.table.stats("person", symbol = "missing_handle", conns = conns)
+ds.omop.table.stats("person", symbol = "missing_handle", datasources = conns)
 ```
 <!-- expected-refusal:end -->
 
@@ -133,7 +133,7 @@ you intend to query.
 ## End the session
 
 ```{r logout}
-ds.omop.disconnect(conns = conns)
+ds.omop.disconnect(datasources = conns)
 DSI::datashield.logout(conns)
 ```
 

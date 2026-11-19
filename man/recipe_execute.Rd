@@ -15,7 +15,8 @@ recipe_execute(
   combine = "union",
   on_small_site = c("error", "skip"),
   scope_combine = NULL,
-  datasources = NULL
+  datasources = NULL,
+  small_categories = c("keep", "missing")
 )
 }
 \arguments{
@@ -59,6 +60,11 @@ person support is skippable: skip keeps successful sites and returns
 \code{DSConnection} objects). \code{NULL} (the default) uses the OMOP
 session's connections, or \code{DSI::datashield.connections_find()} when
 no session exists. See \link{dsomop_conventions}.}
+
+\item{small_categories}{Character; \code{"keep"} (the default) or
+\code{"missing"}: after publication, the values of categories held by
+fewer than \code{nfilter.tab} people at a site are missing there, in
+every published factor column (see \code{\link{ds.omop.plan.execute}}).}
 }
 \value{
 Invisibly, the output symbol mapping (a named character vector)

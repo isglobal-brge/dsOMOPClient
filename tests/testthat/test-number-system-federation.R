@@ -38,7 +38,7 @@ test_that("N41 N42 N43 N65 N66 numeric and complete public domains reconcile at 
     }
     if(mode=="memory")for(n in 2:3) {
       conns<-ctx$conns[seq_len(n)];f<-do.call(rbind,lapply(frames[seq_len(n)],as.data.frame))
-      tab<-ds.omop.table("Number_memory","table_band",conns=conns)
+      tab<-as.table(ds.omop.table("Number_memory","table_band",conns=conns))
       expect_equal(as.numeric(tab),as.numeric(table(f$table_band)))
       expect_identical(dimnames(tab)[[1]],levels(f$table_band))
       mean<-dsBaseClient::ds.mean("Number_memory$value",type="combine",datasources=conns)

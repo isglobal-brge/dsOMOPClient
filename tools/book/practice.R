@@ -29,7 +29,7 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
   builder<-DSI::newDSLoginBuilder()
   builder$append(server="site",url="server",driver="DSLiteDriver")
   conns<-DSI::datashield.login(builder$build(),assign=FALSE)
-  ds.omop.connect(resource=resource_names[[resource]],conns=conns,symbol=symbol)
+  ds.omop.connect(resource=resource_names[[resource]],datasources=conns,symbol=symbol)
   # The permanent public database is not a temporary per-chapter fixture.
   list(conns=conns,server=server,path=character(),database=paths[[resource]],resource=resource,symbol=symbol)
 }
@@ -40,7 +40,7 @@ book_numeric_pair <- function(env=parent.frame(), resource=c("numeric", "gibleed
   resource <- match.arg(resource)
   force(env)
   base <- book_practice(resource, env=env, symbol=symbol)
-  ds.omop.disconnect(conns=base$conns, symbol=symbol)
+  ds.omop.disconnect(datasources=base$conns, symbol=symbol)
   DSI::datashield.logout(base$conns)
   source_db <- DBI::dbConnect(RSQLite::SQLite(), base$database)
   ids <- sort(DBI::dbReadTable(source_db, "person")$person_id)
@@ -72,7 +72,7 @@ book_numeric_pair <- function(env=parent.frame(), resource=c("numeric", "gibleed
   builder <- DSI::newDSLoginBuilder()
   for (site in names(groups)) builder$append(server=site, url=site, driver="DSLiteDriver")
   conns <- DSI::datashield.login(builder$build(), assign=FALSE)
-  ds.omop.connect(resource="numeric", conns=conns, symbol=symbol)
+  ds.omop.connect(resource="numeric", datasources=conns, symbol=symbol)
   complete <- TRUE
   list(conns=conns, path=paths, groups=groups)
 }

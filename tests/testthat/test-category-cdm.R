@@ -56,8 +56,8 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
         symbol<-destinations[["wide"]]
         expected<-Reduce(`+`,lapply(frames$wide,function(f)table(f$flag_factor)))
         names(dimnames(expected))<-paste0(symbol,"$flag_factor")
-        expect_equal(ds.omop.table(symbol,"flag_factor",ctx$conns),expected)
-        expect_equal(ds.omop.table(symbol,"flag_factor",rev(ctx$conns)),expected)
+        expect_equal(as.table(ds.omop.table(symbol,"flag_factor",ctx$conns)),expected)
+        expect_equal(as.table(ds.omop.table(symbol,"flag_factor",rev(ctx$conns))),expected)
         expected_mean<-mean(unlist(lapply(frames$wide,function(f)f$count),use.names=FALSE))
         fit<-dsBaseClient::ds.glm(formula="count ~ 1",data=symbol,family="gaussian",datasources=ctx$conns)
         expect_equal(unname(fit$coefficients[1L,1L]),expected_mean,tolerance=1e-6)

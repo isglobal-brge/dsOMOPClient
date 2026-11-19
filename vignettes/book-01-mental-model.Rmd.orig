@@ -44,7 +44,7 @@ holds other observations, which can include questionnaire answers. A *concept*
 is a coded meaning, such as a diagnosis. Its vocabulary supplies a name.
 
 ```{r tables, table.row.names = FALSE}
-tables <- ds.omop.tables(conns = conns)$site
+tables <- ds.omop.tables(datasources = conns)$site
 tables[tables$table_name %in% c("person", "visit_occurrence",
   "condition_occurrence", "drug_exposure", "measurement", "observation", "death"),
   c("table_name", "has_person_id")]
@@ -71,7 +71,7 @@ object behind it. Later, a recipe will create a private analysis table such as
 ## Send a question to the data
 
 ```{r safe-size}
-ds.omop.table.stats("person", conns = conns)
+ds.omop.table.stats("person", datasources = conns)
 ```
 
 `2690` is the lower end of a five-person band: 2690–2694 people. This endpoint
@@ -96,7 +96,7 @@ contribute more than one visit?
 <details><summary>Solution</summary>
 
 ```{r visit-exercise}
-ds.omop.table.stats("visit_occurrence", conns = conns)
+ds.omop.table.stats("visit_occurrence", datasources = conns)
 ```
 
 There are 1,035–1,039 visit rows from 890–894 people. Even allowing for banding,
@@ -114,7 +114,7 @@ that nobody died?
 
 <!-- expected-refusal:start -->
 ```{r death-exercise}
-ds.omop.table.stats("death", conns = conns)
+ds.omop.table.stats("death", datasources = conns)
 ```
 <!-- expected-refusal:end -->
 

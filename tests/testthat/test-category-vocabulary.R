@@ -87,7 +87,7 @@ test_that("C10 C15 C16 C19 C60 hierarchy ambiguity and exact separation are publ
   pooled<-omop_recipe(variables=list(a=bool(flags$a),b=bool(flags$b),total=omop_category_reduce(flags$a,omop_reduce("sum"))))
   recipe_execute(pooled,out="Overlapping",symbol="labels",conns=ctx$conns)
   for(column in c("a","b")) {
-    tab<-ds.omop.table("Overlapping",column,ctx$conns)
+    tab<-as.table(ds.omop.table("Overlapping",column,ctx$conns))
     expect_equal(as.integer(tab),c(0L,54L))
   }
   fit<-dsBaseClient::ds.glm(formula="total ~ 1",data="Overlapping",family="gaussian",datasources=ctx$conns)

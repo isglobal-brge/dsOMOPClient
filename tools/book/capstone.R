@@ -38,5 +38,5 @@ book_capstone_recipe <- function(education_question_id = 900001L,
 book_capstone_execute <- function(conns, education_question_id = 900001L,
                               fever_question_id = 900002L) {
   recipe_execute(book_capstone_recipe(education_question_id, fever_question_id),
-                 out = c(people = "D_va"), conns = conns)
+                 out = c(people = "D_va"), datasources = conns)
 }

@@ -39,7 +39,7 @@ book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop"
     complete <- FALSE
     on.exit(if (!complete) DSI::datashield.logout(conns), add = TRUE)
     dsOMOPClient::ds.omop.connect(resource = as.list(resources),
-      conns = conns, symbol = symbol)
+      datasources = conns, symbol = symbol)
     practice <- list(conns = conns, path = character())
     complete <- TRUE
   } else if (book_driver == "DSLite") {
@@ -71,7 +71,7 @@ book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop"
     conns <- DSI::datashield.login(builder$build(), assign = FALSE)
     connected <- FALSE
     on.exit(if (!connected) DSI::datashield.logout(conns), add = TRUE)
-    dsOMOPClient::ds.omop.connect(resource = resources[[name]], conns = conns, symbol = symbol)
+    dsOMOPClient::ds.omop.connect(resource = resources[[name]], datasources = conns, symbol = symbol)
     connected <- TRUE
     practice <- list(conns = conns, path = character())
   }
@@ -88,7 +88,7 @@ book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop"
 book_disconnect <- function(session = "default") {
   previous <- .book_connection_state[[session]]
   if (!is.null(previous)) {
-    tryCatch(dsOMOPClient::ds.omop.disconnect(conns = previous$conns,
+    tryCatch(dsOMOPClient::ds.omop.disconnect(datasources = previous$conns,
       symbol = previous$symbol), finally = {
         tryCatch(DSI::datashield.logout(previous$conns), finally = {
           unlink(previous$path)

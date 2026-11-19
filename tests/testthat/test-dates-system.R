@@ -57,7 +57,7 @@ test_that("D40 date factors pool through real ds.table with missing public perio
   expect_identical(levels(d$site$month),c("2020-03","2020-04","2020-05","2020-06","2020-07"))
   expect_identical(levels(d$site$month),levels(d$site2$month))
   expect_identical(as.integer(table(d$site2$month)),c(0L,0L,0L,12L,6L))
-  pooled<-ds.omop.table("D_month","month",conns)
+  pooled<-as.table(ds.omop.table("D_month","month",conns))
   expect_equal(as.numeric(pooled),c(6,0,0,18,12))
   expect_identical(dimnames(pooled)[[1L]],levels(d$site$month))
   expect_identical(contrasts(d$site$month),contrasts(d$site2$month))

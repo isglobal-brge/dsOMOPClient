@@ -237,8 +237,8 @@ test_that("the appended language-2 arguments include approved label, date, numbe
                    c("rows", "grain", "columns", "format", "sources", "collapse", "number_columns", "category_columns"))
   expect_identical(appended(omop_recipe, 10L),
                    c("concept_sets", "events", "intervals", "coverage", "publish", "labels", "column_names", "date_spec", "number_spec", "category_spec"))
-  expect_identical(appended(recipe_execute, 3L),
-                   c("on_small_site", "scope_combine", "datasources"))
+  expect_identical(appended(recipe_execute, 4L),
+                   c("on_small_site", "scope_combine", "datasources", "small_categories"))
   expect_identical(names(formals(recipe_to_plan)), c("recipe", "version"))
   expect_identical(formals(recipe_to_plan)$version, 2L)
   expect_null(formals(omop_output)$type)

@@ -39,7 +39,7 @@ conns <- book_connect("questionnaire")$conns
 
 ```{r va-discovery}
 catalogue <- ds.omop.concept.lookup(c(900001L, 900002L, 900101L, 900102L,
-  900201L, 900202L), conns = conns)$pooled
+  900201L, 900202L), datasources = conns)$pooled
 catalogue[c("concept_id", "concept_name", "domain_id")]
 ```
 
@@ -87,7 +87,7 @@ variables <- list(
   visit_year = omop_date(first_visit, omop_date_spec(precision = "year", representation = "number")))
 capstone <- omop_recipe(variables = variables,
   outputs = omop_output("people", format = "wide", grain = "person"))
-result <- recipe_execute(capstone, out = c(people = "D_capstone"), conns = conns)
+result <- recipe_execute(capstone, out = c(people = "D_capstone"), datasources = conns)
 ```
 
 The table stays on the server with a pseudonymous person key. Exact visit dates
@@ -161,7 +161,7 @@ before_death <- omop_variable(event = education_event,
   reducer = omop_reduce("last_value", value = "value_as_concept_id",
     window = omop_window(NULL, 0, anchor = omop_anchor(omop_event("death"), which = "first"))))
 restricted <- omop_recipe(variables = list(education = before_death))
-recipe_execute(restricted, out = "D_before_death", conns = conns)
+recipe_execute(restricted, out = "D_before_death", datasources = conns)
 dsBaseClient::ds.table("D_before_death$education",
   useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```

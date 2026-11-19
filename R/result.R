@@ -213,6 +213,9 @@ print.dsomop_result <- function(x, ...) {
   meta   <- .subset2(x, "meta")
   warns  <- meta$warnings
   servers <- meta$servers %||% names(ps)
+  # With one server, a pooled result equal to its answer is not repeated.
+  same <- !is.null(pooled) && length(ps) == 1L && is.null(setdiff(oldClass(ps), "list")) &&
+    isTRUE(all.equal(pooled, ps[[1L]], check.attributes = FALSE))
 
   cat("<dsomop_result>\n")
   cat("Servers: ", if (length(servers) > 0L) {
@@ -227,13 +230,14 @@ print.dsomop_result <- function(x, ...) {
     combine = "pooled result",
     both = "per-server and pooled results",
     type), ")\n", sep = "")
-  if (is.list(meta$pooling) && !is.null(pooled)) {
+  if (is.list(meta$pooling) && !is.null(pooled) && !same) {
     cat("Pooling: ", meta$pooling$method,
         if (!is.null(meta$pooling$estimand)) paste0(" (", meta$pooling$estimand, ")"),
         "\n", sep = "")
   }
   if (!is.null(meta$pooling_reason) && is.null(pooled)) {
     cat("Not pooled: ", meta$pooling_reason, "\n", sep = "")
+    warns <- setdiff(warns, meta$pooling_reason)
   }
   cat("\n")
 
@@ -249,7 +253,9 @@ print.dsomop_result <- function(x, ...) {
       cat("\n")
     }
   }
-  if (!is.null(pooled)) {
+  if (same) {
+    cat("$pooled: the same as $", names(ps)[[1L]], " (one server)\n\n", sep = "")
+  } else if (!is.null(pooled)) {
     cat("$pooled\n")
     print(pooled, ...)
     cat("\n")

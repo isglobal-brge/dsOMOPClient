@@ -19,6 +19,11 @@
 #' a total minus the table never gives a small count; a zero can then mean
 #' "fewer than nfilter.tab" at that site.
 #'
+#' Factor columns without a published contract, such as the copies made by
+#' \code{\link{ds.omop.drop_empty_levels}} or
+#' \code{\link{ds.omop.drop_small_categories}}, are passed to
+#' \code{ds.table()} as they are.
+#'
 #' @param data Character; a published table on every site.
 #' @param column Character; a published factor column of \code{data} (the
 #'   \code{rvar} of \code{ds.table()}).
@@ -45,8 +50,8 @@
 #' ds.omop.table("D", "cause_of_death_first_value", by = "sex", small = "missing")
 #' }
 #' @export
-ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "always"),
-                          report.chisq.tests = FALSE, small = c("refuse", "missing"), conns = NULL,
+ds.omop.table <- function(data, column, conns = NULL, by = NULL, useNA = c("no", "ifany", "always"),
+                          report.chisq.tests = FALSE, small = c("refuse", "missing"),
                           datasources = NULL) {
   useNA <- match.arg(useNA)
   small <- match.arg(small)
@@ -71,6 +76,24 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
     stop("Incomplete concept level reports; table refused.", call. = FALSE)
   }
   spec <- .conceptUnionReports(reports[names(conns)])
+  columns <- c(column, by)
+  # Copies for models and tables (drop_empty_levels, drop_small_categories)
+  # leave the presentation contract: ds.table() takes their factors as they are.
+  mentioned <- unique(unlist(lapply(reports, function(r) c(names(r$levels), r$unsafe)), use.names = FALSE))
+  contracted <- vapply(columns, function(col) col %in% c(mentioned, unlist(spec$names), names(spec$columns)), logical(1))
+  if (!any(contracted)) {
+    if (identical(small, "missing")) {
+      stop("small = \"missing\" works on published concept columns; '", data, "' has no contract for them ",
+           "(the copies of ds.omop.drop_small_categories() already have small categories missing).", call. = FALSE)
+    }
+    result <- dsBaseClient::ds.table(rvar = paste0(data, "$", column),
+                                     cvar = if (!is.null(by)) paste0(data, "$", by),
+                                     useNA = useNA, report.chisq.tests = report.chisq.tests,
+                                     datasources = conns)
+    attr(result, "variables") <- columns
+    class(result) <- c("dsomop_table", "list")
+    return(result)
+  }
   key_of <- function(col) {
     key <- col
     if (length(spec$names)) key <- names(spec$names)[unlist(spec$names) == col]
@@ -79,7 +102,6 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
     }
     key
   }
-  columns <- c(column, by)
   keys <- vapply(columns, key_of, "")
   # The labels the published columns carry (dsBase-safe ones when published so).
   levels <- lapply(keys, function(key) {
@@ -193,6 +215,18 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
   out <- do.call(`[<-`, c(list(out), index, list(value = unclass(x))))
   if (is.table(x)) class(out) <- class(x)
   out
+}
+
+#' The combined counts of a ds.omop.table() result, as the plain table that
+#' dsOMOPClient 2.10.8 and earlier returned.
+#' @param x A \code{dsomop_table}.
+#' @param ... Unused.
+#' @export
+as.table.dsomop_table <- function(x, ...) {
+  counts <- x$output.list$TABLES.COMBINED_all.sources_counts
+  if (is.null(counts)) stop(paste(x$validity.message, collapse = " "), call. = FALSE)
+  if (!is.table(counts)) counts <- as.table(counts)
+  counts
 }
 
 #' @export

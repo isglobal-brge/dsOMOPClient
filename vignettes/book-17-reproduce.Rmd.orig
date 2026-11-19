@@ -45,8 +45,8 @@ Keep the vocabulary and source information returned by these connections.
 A record for another dataset would not document this study.
 
 ```{r source-record, table.row.names = FALSE}
-vocabularies <- ds.omop.vocab.vocabularies(conns = conns)$per_site
-sources <- ds.omop.cdm.source(conns = conns)$per_site
+vocabularies <- ds.omop.vocab.vocabularies(datasources = conns)$per_site
+sources <- ds.omop.cdm.source(datasources = conns)$per_site
 vocabulary_rows <- do.call(rbind, lapply(names(vocabularies), function(site) {
   x <- vocabularies[[site]]
   x <- x[x$vocabulary_id == "Questionnaire", c("vocabulary_id", "vocabulary_version"), drop = FALSE]
@@ -76,7 +76,7 @@ check <- omop_recipe(variables = list(education = education,
   age = omop_age_at("death"),
   death_period = omop_date("death", omop_date_spec(precision = "year"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns["site"])
+result <- recipe_execute(check, out = c(people = "D_documented"), datasources = conns["site"])
 published <- recipe_codebook(result)
 published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")]
 ```
@@ -106,7 +106,7 @@ package_versions <- vapply(c("dsOMOPClient", "DSI", "dsBaseClient"),
   function(p) as.character(packageVersion(p)), character(1))
 write.csv(data.frame(Package = names(package_versions), Release = unname(package_versions)),
   file.path(record_dir, "client-packages.csv"), row.names = FALSE)
-saveRDS(ds.omop.server.version(conns = conns), file.path(record_dir, "server-packages.rds"))
+saveRDS(ds.omop.server.version(datasources = conns), file.path(record_dir, "server-packages.rds"))
 list.files(record_dir)
 ```
 
@@ -118,7 +118,7 @@ a database has stayed unchanged.
 
 ```{r rerun-study}
 restored <- recipe_load(file.path(record_dir, "recipe.json"))
-second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
+second_result <- recipe_execute(restored, out = c(people = "D_repeated"), datasources = conns["site2"])
 saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
 dsBaseClient::ds.table("D_repeated$death_period",
   useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
@@ -203,7 +203,7 @@ For a small successful example, the person-count analysis needs no settings:
 
 ```{r prebuilt-analysis, warning=FALSE, table.row.names = FALSE}
 person_counts <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
-  conns = conns["site"])
+  datasources = conns["site"])
 person_counts$pooled[c("gender_name", "n_persons")]
 ```
 
@@ -221,7 +221,7 @@ which scientific rule must the alternative preserve?
 
 ```{r unsupported-analysis-setting, error = TRUE}
 ds.omop.analysis.run("dsomop:incidence.rate",
-  params = list(clean_window = 365), conns = conns)
+  params = list(clean_window = 365), datasources = conns)
 ```
 
 `unsupported_clean_window` means this analysis cannot implement the required

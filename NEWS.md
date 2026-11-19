@@ -5,12 +5,19 @@
   tests, with the exact published labels and the declared categories that no
   site has. New arguments `by` (two-way tables), `useNA`,
   `report.chisq.tests` and `small = "missing"`. The pooled counts it returned
-  before are `$output.list$TABLES.COMBINED_all.sources_counts`; printing shows
-  the combined and per-site tables.
+  before are `$output.list$TABLES.COMBINED_all.sources_counts`, also given by
+  `as.table()`; printing shows the combined and per-site tables. Positional
+  calls `ds.omop.table(data, column, conns)` keep working. Factor columns of
+  copies without a published contract (made by `ds.omop.drop_empty_levels()` or
+  `ds.omop.drop_small_categories()`) go to `ds.table()` as they are.
 - `ds.omop.drop_small_categories()`: a copy where categories held by fewer than
   `nfilter.tab` people at a site are missing (with secondary suppression), then
   without levels no site uses, so `ds.summary()` and `ds.table()` work on it.
   Use it for descriptive tables; group rare categories for models.
+- `recipe_execute()` and `ds.omop.plan.execute()` gain `small_categories =
+  "missing"`: the published outputs then have those categories missing at each
+  site in every factor column, keeping their levels, labels and codebook
+  (in-memory outputs, dsOMOP 2.10.9 servers).
 - Published factor labels work in every dsBase function on Opal by default
   (for example `Acute_myocardial_infarction`, `Neumonia`): spaces, accents and
   punctuation that Opal's parser or `ds.table()` reject are replaced, the same
@@ -43,7 +50,8 @@
   "combine"` stops with the reason. `ds.omop.dp.release()`,
   `ds.omop.analysis.run()`, `ds.omop.ohdsi.results()` and the catalog readers
   used to stop for `"both"` too. Pooled results describe their method in
-  `meta$pooling`, and printing shows the view type.
+  `meta$pooling`, and printing shows the view type. With one server, a pooled
+  result equal to that server's answer is not printed twice.
 - More readers return a `dsomop_result` with `type`:
   `ds.omop.disclosure.settings()` (pooled: the negotiated federation contract),
   `ds.omop.tables()` and `ds.omop.columns()` (pooled: what every server has),

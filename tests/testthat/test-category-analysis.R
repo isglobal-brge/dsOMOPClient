@@ -24,8 +24,8 @@ test_that("C08 C60 protected tables and GLMs honor nominal reference and ordinal
     conns<-ctx$conns[seq_len(n)]
     expected<-Reduce(`+`,lapply(frames[seq_len(n)],function(f)table(f$education)))
     names(dimnames(expected))<-"CategoriesModel$education"
-    expect_equal(ds.omop.table("CategoriesModel","education",conns),expected)
-    expect_equal(ds.omop.table("CategoriesModel","education",rev(conns)),expected)
+    expect_equal(as.table(ds.omop.table("CategoriesModel","education",conns)),expected)
+    expect_equal(as.table(ds.omop.table("CategoriesModel","education",rev(conns))),expected)
     combined<-do.call(rbind,lapply(frames[seq_len(n)],as.data.frame))
     for(column in c("education","ordinal","band","flag_integer","flag_logical","flag_factor")) {
       # Base rbind drops custom contrast attributes; preserve the released

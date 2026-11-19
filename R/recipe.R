@@ -8724,6 +8724,10 @@ recipe_preview_stats <- function(recipe,
 #'   passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
 #'   person support is skippable: skip keeps successful sites and returns
 #'   \code{NULL} for sites whose publication fails final person support.
+#' @param small_categories Character; \code{"keep"} (the default) or
+#'   \code{"missing"}: after publication, the values of categories held by
+#'   fewer than \code{nfilter.tab} people at a site are missing there, in
+#'   every published factor column (see \code{\link{ds.omop.plan.execute}}).
 #' @return Invisibly, the output symbol mapping (a named character vector)
 #'   for a complete ordinary execution. When sites publish different outputs
 #'   or fresh names (the server allocates fresh names for occupied
@@ -8748,8 +8752,10 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                            output_mode = "memory", cohort = NULL,
                            tables = NULL, combine = "union",
                            on_small_site = c("error", "skip"),
-                           scope_combine = NULL, datasources = NULL) {
+                           scope_combine = NULL, datasources = NULL,
+                           small_categories = c("keep", "missing")) {
   conns <- .datasources_arg(datasources, conns, "recipe_execute")
+  small_categories <- match.arg(small_categories)
   combine <- .alias_value(scope_combine, combine,
                           new_given = !is.null(scope_combine),
                           old_given = !missing(combine),
@@ -8774,7 +8780,8 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
   if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(recipe, plan, out)
   .quiet_aliases(ds.omop.plan.execute(plan, out = out, symbol = symbol,
                                       conns = conns, output_mode = output_mode,
-                                      on_small_site = on_small_site))
+                                      on_small_site = on_small_site,
+                                      small_categories = small_categories))
 }
 
 # Default server symbols for the plan outputs of a recipe (an output's

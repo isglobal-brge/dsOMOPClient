@@ -7,11 +7,11 @@
 ds.omop.table(
   data,
   column,
+  conns = NULL,
   by = NULL,
   useNA = c("no", "ifany", "always"),
   report.chisq.tests = FALSE,
   small = c("refuse", "missing"),
-  conns = NULL,
   datasources = NULL
 )
 }
@@ -21,6 +21,8 @@ ds.omop.table(
 \item{column}{Character; a published factor column of \code{data} (the
 \code{rvar} of \code{ds.table()}).}
 
+\item{conns}{Deprecated name of \code{datasources}.}
+
 \item{by}{Optional character; a second published factor column for a
 two-way table (the \code{cvar} of \code{ds.table()}).}
 
@@ -29,8 +31,6 @@ two-way table (the \code{cvar} of \code{ds.table()}).}
 \item{small}{\code{"refuse"} (default) leaves DataSHIELD's small-cell
 refusal as it is; \code{"missing"} suppresses small categories or cells in
 the temporary copy.}
-
-\item{conns}{Deprecated name of \code{datasources}.}
 
 \item{datasources}{DSI connections for the retained sites, as in
 dsBaseClient. \code{NULL} uses the OMOP session's connections, or every
@@ -63,6 +63,11 @@ filled with zeros). With \code{small = "missing"}, categories (or, with
 made missing in the temporary copy first, with secondary suppression so that
 a total minus the table never gives a small count; a zero can then mean
 "fewer than nfilter.tab" at that site.
+
+Factor columns without a published contract, such as the copies made by
+\code{\link{ds.omop.drop_empty_levels}} or
+\code{\link{ds.omop.drop_small_categories}}, are passed to
+\code{ds.table()} as they are.
 }
 \examples{
 \dontrun{

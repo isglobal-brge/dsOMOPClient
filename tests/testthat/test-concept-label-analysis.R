@@ -23,13 +23,13 @@ test_that('A27 pooled ds.table and protected-object ds.glm use aligned categorie
         paste(capture.output(print(DSI::datashield.errors())),collapse='; ')))
     })
   },.package='DSI')
-  pooled <- ds.omop.table('Analysis','education',conns=ctx$conns)
+  pooled <- as.table(ds.omop.table('Analysis','education',conns=ctx$conns))
   expected <- Reduce('+',lapply(frames,function(x) table(x$education)))
   names(dimnames(expected)) <- 'Analysis$education'
   expect_equal(pooled,expected)
   expect_equal(as.numeric(pooled),c(24,24,6,0))
   expect_identical(dimnames(pooled)[[1L]],levels(frames[[1L]]$education))
-  expect_equal(ds.omop.table('Analysis','education',conns=rev(ctx$conns)),pooled)
+  expect_equal(as.table(ds.omop.table('Analysis','education',conns=rev(ctx$conns))),pooled)
   # No key extraction or class/seal stripping: dsBase receives the published
   # protected table through its normal data= route.
   # A category absent globally is not estimable. The declared recode can
@@ -112,12 +112,12 @@ test_that('A27 public pooled tables preserve free text and delimiter collisions'
       FreeText = setNames(c(22,22,4,0), unlist(cases[[symbol]], use.names=FALSE)),
       MergedComma = c('comma,label'=44, Same=4, comma=0, label=0))
     inventory <- DSI::datashield.symbols(ctx$conns)
-    pooled <- ds.omop.table(symbol, 'education', ctx$conns)
+    pooled <- as.table(ds.omop.table(symbol, 'education', ctx$conns))
     expect_equal(pooled, expected, info = symbol)
     expect_equal(setNames(as.numeric(pooled), dimnames(pooled)[[1L]]), explicit, info = symbol)
     expect_equal(sum(pooled), 48, info = symbol)
     expect_identical(vapply(frames, function(f) sum(is.na(f$education)), 0L), c(site1=6L,site2=0L,site3=0L))
-    expect_equal(ds.omop.table(symbol, 'education', rev(ctx$conns)), pooled)
+    expect_equal(as.table(ds.omop.table(symbol, 'education', rev(ctx$conns))), pooled)
     expect_identical(.clf_frames(ctx, symbol), frames)
     expect_equal(DSI::datashield.symbols(ctx$conns), inventory)
   }
@@ -137,7 +137,11 @@ test_that('A27 public pooled tables preserve free text and delimiter collisions'
     }
     list(validity.message='At least one study failed')
   }, .package='dsBaseClient')
-  expect_error(ds.omop.table('DelimiterCollision', 'education', ctx$conns), 'Every retained site')
+  # As ds.table(): a failed site is reported in the validity message, never zero-filled.
+  refused <- ds.omop.table('DelimiterCollision', 'education', ctx$conns)
+  expect_identical(refused$validity.message, 'At least one study failed')
+  expect_null(refused$output.list)
+  expect_error(as.table(refused), 'At least one study failed')
   expect_equal(DSI::datashield.symbols(ctx$conns), inventory)
   expect_identical(.clf_frames(ctx, 'DelimiterCollision'), frames)
 })
