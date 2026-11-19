@@ -1989,10 +1989,12 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       if (!candidate %in% inventory) { copy <- candidate; break }
     }
     if (is.null(copy)) stop("Could not reserve a symbol for the small-category copy of '", x, "'.", call. = FALSE)
-    .assign_expr_atomic(conns, copy,
+    tryCatch(.assign_expr_atomic(conns, copy,
       expr = call("omopAsFactorColumnsDS", as.name(x),
                   .ds_encode(list(kind = "suppress_small", columns = list(), joint = FALSE))),
-      context = "Small categories", session_symbol = symbol, required_symbols = x)
+      context = "Small categories", session_symbol = symbol, required_symbols = x),
+      error = function(e) stop("small_categories = \"missing\": '", x, "' was published, but its small ",
+                               "categories could not be made missing: ", conditionMessage(e), call. = FALSE))
     # The copy takes the published name at every site.
     done <- character(); failed <- character()
     DSI::datashield.assign.expr(conns, x, as.symbol(copy),
