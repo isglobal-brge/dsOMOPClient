@@ -593,6 +593,30 @@ data.frame(
 The first and second levels have different labels even though the same drug
 records contribute to both. Neither level is selected by counting observed drugs.
 
+## Many categories at one site
+
+DataSHIELD lets a site release the categories it observes only when they are
+few: at most 40 by default, and fewer than a third of the rows. A site that
+records 60 different causes of death is above that rule. When a short public
+list in the vocabulary holds the observed categories, for example a
+cause-of-death vocabulary, the servers declare that whole list themselves. The
+recipe needs no change, and every site gets the same levels, including causes
+nobody has. Dates by month, quarter or week work the same way: every period of
+the observed years becomes a level.
+
+A longer list, such as a large clinical terminology, is refused with the
+remedies. Group the codes with `omop_category_rollup()` or
+`omop_category_recode()`, narrow the events with `concepts =`, or declare the
+codes you study with `omop_concept_levels()`.
+
+Levels that no site uses show as zero counts in tables, but a pooled model
+cannot estimate them. Before `ds.glm()`, make a copy that keeps only the levels
+that some site uses:
+
+``` r
+ds.omop.drop_empty_levels("D_rollups", newobj = "D_rollups_model", conns = conns)
+```
+
 ## Read the codebook of each table
 
 Keep the execution result: it carries the admitted table metadata. Calling
