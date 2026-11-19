@@ -9,7 +9,8 @@ ds.omop.drop_empty_levels(
   columns = NULL,
   newobj = paste0(x, "_model"),
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -24,7 +25,10 @@ reconciled; other factors, such as legacy age bands, are left as they are).}
 
 \item{symbol}{Character; the OMOP session symbol.}
 
-\item{conns}{DSI connections; defaults to the session's connections.}
+\item{conns}{Deprecated name of \code{datasources}.}
+
+\item{datasources}{DSI connections, as in dsBaseClient; defaults to the
+session's connections.}
 }
 \value{
 Invisibly, a data frame with one row per column: \code{levels}

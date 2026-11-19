@@ -11,7 +11,8 @@ ds.omop.table(
   useNA = c("no", "ifany", "always"),
   report.chisq.tests = FALSE,
   small = c("refuse", "missing"),
-  conns = NULL
+  conns = NULL,
+  datasources = NULL
 )
 }
 \arguments{
@@ -29,8 +30,11 @@ two-way table (the \code{cvar} of \code{ds.table()}).}
 refusal as it is; \code{"missing"} suppresses small categories or cells in
 the temporary copy.}
 
-\item{conns}{DSI connections for the retained sites. Defaults to the active
-DataSHIELD connections.}
+\item{conns}{Deprecated name of \code{datasources}.}
+
+\item{datasources}{DSI connections for the retained sites, as in
+dsBaseClient. \code{NULL} uses the OMOP session's connections, or every
+DataSHIELD connection when there is no session.}
 }
 \value{
 \code{ds.table()}'s object (\code{output.list} with

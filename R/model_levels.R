@@ -24,7 +24,9 @@
 #'   reconciled; other factors, such as legacy age bands, are left as they are).
 #' @param newobj Character; the server-side name of the copy.
 #' @param symbol Character; the OMOP session symbol.
-#' @param conns DSI connections; defaults to the session's connections.
+#' @param conns Deprecated name of \code{datasources}.
+#' @param datasources DSI connections, as in dsBaseClient; defaults to the
+#'   session's connections.
 #' @return Invisibly, a data frame with one row per column: \code{levels}
 #'   before, \code{kept} and \code{status}.
 #' @examples
@@ -35,9 +37,9 @@
 #' }
 #' @export
 ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_model"),
-                                      symbol = "omop", conns = NULL) {
+                                      symbol = "omop", conns = NULL, datasources = NULL) {
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .connections(datasources, conns, symbol, session, "ds.omop.drop_empty_levels")
   .model_levels_assert_servers(session, names(conns))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.null(columns) && (!is.character(columns) || !length(columns) || anyNA(columns) ||
@@ -162,9 +164,9 @@ ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_mo
 #' }
 #' @export
 ds.omop.drop_small_categories <- function(x, columns = NULL, newobj = paste0(x, "_small"),
-                                          symbol = "omop", conns = NULL) {
+                                          symbol = "omop", conns = NULL, datasources = NULL) {
   session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  conns <- .connections(datasources, conns, symbol, session, "ds.omop.drop_small_categories")
   .model_levels_assert_servers(session, names(conns), "2.10.9", "ds.omop.drop_small_categories()")
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.null(columns) && (!is.character(columns) || !length(columns) || anyNA(columns) ||
@@ -184,5 +186,6 @@ ds.omop.drop_small_categories <- function(x, columns = NULL, newobj = paste0(x, 
     expr = call("omopAsFactorColumnsDS", as.name(x),
                 .ds_encode(list(kind = "suppress_small", columns = as.list(columns %||% character()), joint = FALSE))),
     context = "Small categories", session_symbol = symbol, required_symbols = x)
-  invisible(ds.omop.drop_empty_levels(staging, columns = columns, newobj = newobj, symbol = symbol, conns = conns))
+  invisible(ds.omop.drop_empty_levels(staging, columns = columns, newobj = newobj, symbol = symbol,
+                                      datasources = conns))
 }

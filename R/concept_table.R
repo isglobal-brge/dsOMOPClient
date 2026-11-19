@@ -28,8 +28,10 @@
 #' @param small \code{"refuse"} (default) leaves DataSHIELD's small-cell
 #'   refusal as it is; \code{"missing"} suppresses small categories or cells in
 #'   the temporary copy.
-#' @param conns DSI connections for the retained sites. Defaults to the active
-#'   DataSHIELD connections.
+#' @param conns Deprecated name of \code{datasources}.
+#' @param datasources DSI connections for the retained sites, as in
+#'   dsBaseClient. \code{NULL} uses the OMOP session's connections, or every
+#'   DataSHIELD connection when there is no session.
 #' @return \code{ds.table()}'s object (\code{output.list} with
 #'   \code{TABLE_rvar.by.study_counts}, \code{TABLES.COMBINED_all.sources_counts}
 #'   and their proportions for one column; per-site and combined counts and
@@ -44,7 +46,8 @@
 #' }
 #' @export
 ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "always"),
-                          report.chisq.tests = FALSE, small = c("refuse", "missing"), conns = NULL) {
+                          report.chisq.tests = FALSE, small = c("refuse", "missing"), conns = NULL,
+                          datasources = NULL) {
   useNA <- match.arg(useNA)
   small <- match.arg(small)
   for (x in c(list(data, column), if (!is.null(by)) list(by))) {
@@ -57,7 +60,7 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
   if (!requireNamespace("dsBaseClient", quietly = TRUE)) {
     stop("ds.omop.table requires dsBaseClient.", call. = FALSE)
   }
-  if (is.null(conns)) conns <- DSI::datashield.connections_find()
+  conns <- .connections(datasources, conns, fn = "ds.omop.table")
   if (!length(conns) || is.null(names(conns)) || anyDuplicated(names(conns))) {
     stop("Supply named connections for the retained sites.", call. = FALSE)
   }
