@@ -215,8 +215,74 @@ and `D_small_group` are absent. A refused request did not create a usable table.
 A schema or object name is metadata, not access to its patient rows.
 
 </details>
+
+## Tables when some categories have very few people
+
+A table is released only when every category it shows at a site holds at least
+`nfilter.tab = 3` people there. Otherwise `ds.table()` refuses the whole table
+and `ds.summary()` answers "INVALID object!". The two GiBleed sites hold a few
+rare conditions; log in to them as a second analysis:
+
+```{r rare-setup, eval = FALSE}
+rare_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password", server = c("north", "south"),
+  resource = c(north = "omop.gibleed_north", south = "omop.gibleed_south"),
+  symbol = "rare")$conns
+```
+
+```{r rare-setup-local, include = FALSE}
+rare_conns <- book_connect("gibleed", two_sites = TRUE, session = "rare", symbol = "rare")$conns
+```
+
+Publish each person's first rare condition and their sex, and tabulate it:
+
+```{r rare-recipe}
+rare <- omop_concept_set(c(4066995, 44782520, 317009, 198199, 80809, 4043241))
+first_rare <- omop_variable(event = omop_event("condition_occurrence", name = "rare",
+  concepts = rare), reducer = omop_reduce("first_value", value = "condition_concept_id"))
+sex <- omop_variable(name = "sex", table = "person", column = "gender_concept_id",
+  type = "categorical", format = "raw")
+recipe_execute(omop_recipe(variables = list(condition = first_rare, sex = sex),
+    outputs = omop_output("rare", format = "wide", grain = "person")),
+  out = c(rare = "D_rare"), symbol = "rare", conns = rare_conns)
+ds.omop.table("D_rare", "condition", conns = rare_conns)
+```
+
+Some condition is held by one or two people at a site, so no count of that
+table is released there. For a descriptive table, make a copy in which, at each
+site, the categories held by fewer than three people are missing. dsBase's own
+table and summary then work on it:
+
+```{r rare-copy}
+ds.omop.drop_small_categories("D_rare", newobj = "D_rare_tables", symbol = "rare",
+  conns = rare_conns)
+copy <- dsBaseClient::ds.table("D_rare_tables$condition", datasources = rare_conns)
+copy$output.list$TABLE_rvar.by.study_counts
+dsBaseClient::ds.summary("D_rare_tables$condition", datasources = rare_conns)
+```
+
+A zero now means "fewer than three people" at that site. When the people made
+missing at a site would be only one or two, the next smallest category is made
+missing too, so that subtracting the table from a total never reveals a small
+count. The copy is for descriptive tables: those people's conditions are missing
+in it. For models, group rare categories instead (`omop_category_recode()`,
+`omop_category_rollup()`).
+
+For a two-way table, `ds.omop.table()` can make the small cells missing in its
+temporary copy; the published table is unchanged:
+
+```{r rare-two-way}
+ds.omop.table("D_rare", "condition", by = "sex", small = "missing", conns = rare_conns)
+```
+
+The labels, such as `Chronic_paralysis_due_to_lesion_of_spinal_cord`, keep only
+letters, digits, `.`, `_`, `-` and `+`: Opal's DataSHIELD parser refuses spaces,
+accents and most punctuation inside the requests that dsBase's functions send,
+so published labels are written that way, identically at every site.
+`recipe_codebook()` keeps the exact vocabulary names.
+
 ## Recap
 
-A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused.
+A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused. A table with categories held by one or two people at a site is refused there; a copy without them serves descriptive tables.
 
 **Next:** [13. Visit dates, one idea at a time](book-13-visits.html).

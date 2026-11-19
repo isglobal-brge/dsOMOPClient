@@ -195,7 +195,9 @@ ds.omop.table("D_people", "cause_of_death", conns = conns)
 ```
 
 The table shows 24 myocardial infarctions and 12 pneumonias. `ds.omop.table()`
-is a shortcut that also retains categories with zero people. Missing causes are excluded here; the exercise below will include them.
+returns the same object as dsBase's `ds.table()` (counts and proportions for
+each site and combined), with the exact published labels and the categories
+that nobody has; printing shows the combined table and each site's. Missing causes are excluded here; the exercise below will include them.
 Absence of a death record is not proof of survival.
 
 ## Give a question your own yes/no labels

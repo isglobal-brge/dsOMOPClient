@@ -121,10 +121,15 @@ ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "alw
                     .ds_encode(list(kind = "suppress_small", columns = as.list(columns), joint = TRUE))),
                "Small-category suppression")
   }
-  result <- dsBaseClient::ds.table(rvar = paste0(temporary, "$", column),
+  # ds.table() stops, rather than reporting, when a site has no value left
+  # (for example every cell suppressed); answer as its other refusals do.
+  result <- tryCatch(dsBaseClient::ds.table(rvar = paste0(temporary, "$", column),
                                   cvar = if (!is.null(by)) paste0(temporary, "$", by),
                                   useNA = useNA, report.chisq.tests = report.chisq.tests,
-                                  datasources = conns)
+                                  datasources = conns),
+    error = function(e) list(validity.message = paste0("ds.table() could not tabulate at every site",
+      if (identical(small, "missing")) " (a site may have no category left once small ones are missing)", ": ",
+      conditionMessage(e)), error.messages = conditionMessage(e)))
   out <- .conceptTableComplete(result, setNames(levels, c("C", "D")[seq_along(levels)]),
                                rename = setNames(paste0(data, "$"), paste0(temporary, "$")))
   attr(out, "variables") <- columns
