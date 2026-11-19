@@ -82,9 +82,13 @@
     } else resolved <- .conceptResolve(records)
     # Vocabulary names by identity, gathered once for every decision.
     named <- Filter(function(x) !is.null(x$name), records)
-    names_by_id <- split(vapply(named, function(x) x$name, ""), vapply(named, function(x) x$id, ""))
+    named_ids <- vapply(named, function(x) x$id, "")
+    named_keys <- unique(named_ids)
+    names_by_id <- split(vapply(named, function(x) x$name, ""),
+                         factor(match(named_ids, named_keys), levels = seq_along(named_keys)))
     for (decision in resolved$decisions) {
-      candidates <- sort(unique(names_by_id[[decision$id]] %||% character()), method="radix")
+      at <- match(decision$id, named_keys)
+      candidates <- sort(unique(if (is.na(at)) character() else names_by_id[[at]]), method="radix")
       explanation <<- c(explanation, paste0(col, ": ", decision$id, " -> ", decision$label,
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))

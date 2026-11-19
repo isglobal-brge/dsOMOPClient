@@ -20,7 +20,8 @@
 #' @param x Character; a published in-memory table on every site (a
 #'   \code{recipe_execute()} output, for example).
 #' @param columns Optional character vector of factor columns; by default every
-#'   published factor column.
+#'   published concept, category or calendar column (the columns the servers
+#'   reconciled; other factors, such as legacy age bands, are left as they are).
 #' @param newobj Character; the server-side name of the copy.
 #' @param symbol Character; the OMOP session symbol.
 #' @param conns DSI connections; defaults to the session's connections.
@@ -52,22 +53,25 @@ ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_mo
          paste(unlist(attr(raw, "ds_errors"), use.names = FALSE), collapse = "; "), call. = FALSE)
   }
   reports <- raw[names(conns)]
-  cols <- names(reports[[1L]]$levels)
-  for (site in names(reports)) {
-    if (!setequal(names(reports[[site]]$levels), cols) ||
-        any(!vapply(cols, function(col) identical(as.character(unlist(reports[[site]]$levels[[col]])),
-          as.character(unlist(reports[[1L]]$levels[[col]]))), logical(1)))) {
+  # A site reports a column either with its level set or as refused.
+  cols <- unique(unlist(lapply(reports, function(r) c(names(r$levels), r$unsafe)), use.names = FALSE))
+  shared <- list()
+  for (col in cols) {
+    sets <- Filter(Negate(is.null), lapply(reports, function(r) r$levels[[col]]))
+    if (length(sets) && any(!vapply(sets, function(s) identical(as.character(unlist(s)),
+        as.character(unlist(sets[[1L]]))), logical(1)))) {
       stop("ds.omop.drop_empty_levels(): '", x, "' has different factor levels across sites; ",
            "publish it with recipe_execute() first.", call. = FALSE)
     }
+    shared[[col]] <- if (length(sets)) as.character(unlist(sets[[1L]], use.names = FALSE)) else character()
   }
   kept <- list()
   summary <- data.frame(column = cols, levels = integer(length(cols)), kept = integer(length(cols)),
                         status = character(length(cols)), stringsAsFactors = FALSE)
   for (i in seq_along(cols)) {
     col <- cols[[i]]
-    levels <- as.character(unlist(reports[[1L]]$levels[[col]], use.names = FALSE))
-    summary$levels[[i]] <- summary$kept[[i]] <- length(levels)
+    levels <- shared[[col]]
+    summary$levels[[i]] <- summary$kept[[i]] <- if (length(levels)) length(levels) else NA_integer_
     blocked <- names(reports)[vapply(reports, function(r) col %in% r$unsafe, logical(1))]
     if (length(blocked)) {
       summary$status[[i]] <- paste0("kept: its levels in use fail the DataSHIELD level rule on ",
@@ -87,7 +91,7 @@ ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_mo
     kept[[col]] <- as.list(keep)
     summary$kept[[i]] <- length(keep)
     summary$status[[i]] <- "dropped levels empty at every site"
-    reference <- unlist(reports[[1L]]$reference[[col]], use.names = FALSE)
+    reference <- unlist(Filter(Negate(is.null), lapply(reports, function(r) r$reference[[col]]))[1L], use.names = FALSE)
     if (length(reference) && !is.na(reference[[1L]]) && !reference[[1L]] %in% keep) {
       summary$status[[i]] <- paste0(summary$status[[i]], "; the reference '", reference[[1L]],
                                     "' was one of them, so the first kept category is the reference")
