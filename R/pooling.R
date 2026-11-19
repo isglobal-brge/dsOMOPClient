@@ -264,6 +264,12 @@
 }
 
 #' Pool histograms by bin-wise sum
+#'
+#' Bins are matched by their edges (\code{bin_start}, \code{bin_end}), the
+#' way date counts are matched by period: servers drop suppressed bins, so
+#' positions differ between sites. A bin absent or suppressed on a server is
+#' unknown there, never zero. Servers whose bins overlap other servers' bins
+#' without matching them use different edges and cannot be pooled.
 #' @param per_site_histograms Named list of histogram data frames
 #'   (each with bin_start, bin_end, count, suppressed)
 #' @param policy Character; pooling policy
@@ -295,35 +301,35 @@
     return(list(result = NULL, warnings = c(warnings, "No valid histograms to pool")))
   }
 
-  # Use first server's bins as reference
-  ref <- valid[[1]]
-  pooled <- data.frame(
-    bin_start = ref$bin_start,
-    bin_end = ref$bin_end,
-    count = rep(0, nrow(ref)),
-    suppressed = rep(FALSE, nrow(ref)),
-    stringsAsFactors = FALSE
-  )
-
-  eps <- 1e-6  # tolerance for floating point bin edge comparison
-
+  tolerance <- function(a, b) 1e-6 * pmax(1, abs(a), abs(b))
+  same <- function(a, b) abs(a - b) < tolerance(a, b)
+  grid_start <- numeric(0)
+  grid_end <- numeric(0)
+  accepted <- list()
   for (srv in names(valid)) {
     df <- valid[[srv]]
-    # Validate bin count match
-    if (nrow(df) != nrow(pooled)) {
-      if (policy == "strict") {
-        return(list(
-          result = NULL,
-          warnings = paste0("Strict pooling failed: mismatched bin count from server ", srv)
-        ))
+    starts <- suppressWarnings(as.numeric(df$bin_start))
+    ends <- suppressWarnings(as.numeric(df$bin_end))
+    ok <- all(is.finite(starts) & is.finite(ends) & ends >= starts)
+    new_start <- numeric(0)
+    new_end <- numeric(0)
+    if (ok) {
+      for (j in seq_along(starts)) {
+        matched <- same(grid_start, starts[[j]]) & same(grid_end, ends[[j]])
+        if (any(matched)) next
+        cand_start <- c(grid_start, new_start)
+        cand_end <- c(grid_end, new_end)
+        overlaps <- starts[[j]] < cand_end - tolerance(cand_end, starts[[j]]) &
+          ends[[j]] > cand_start + tolerance(cand_start, ends[[j]])
+        if (any(overlaps)) {
+          ok <- FALSE
+          break
+        }
+        new_start <- c(new_start, starts[[j]])
+        new_end <- c(new_end, ends[[j]])
       }
-      warnings <- c(warnings, paste0("Skipped server with mismatched bins: ", srv))
-      next
     }
-    # Validate bin edges match within epsilon tolerance
-    edges_ok <- all(abs(df$bin_start - pooled$bin_start) < eps) &&
-                all(abs(df$bin_end - pooled$bin_end) < eps)
-    if (!edges_ok) {
+    if (!ok) {
       if (policy == "strict") {
         return(list(
           result = NULL,
@@ -333,13 +339,36 @@
       warnings <- c(warnings, paste0("Skipped server with mismatched bin edges: ", srv))
       next
     }
-    pooled$count <- pooled$count + ifelse(is.na(df$count), 0, df$count)
-    # Propagate suppressed flags (TRUE if any server suppressed that bin)
-    if ("suppressed" %in% names(df)) {
-      pooled$suppressed <- pooled$suppressed | (df$suppressed %in% TRUE)
-    }
-    pooled$suppressed <- pooled$suppressed | is.na(df$count)
+    grid_start <- c(grid_start, new_start)
+    grid_end <- c(grid_end, new_end)
+    accepted[[srv]] <- df
   }
+
+  ordering <- order(grid_start, grid_end)
+  grid_start <- grid_start[ordering]
+  grid_end <- grid_end[ordering]
+  counts <- vapply(accepted, function(df) {
+    starts <- as.numeric(df$bin_start)
+    ends <- as.numeric(df$bin_end)
+    values <- suppressWarnings(as.numeric(df$count))
+    if ("suppressed" %in% names(df)) values[df$suppressed %in% TRUE] <- NA_real_
+    vapply(seq_along(grid_start), function(i) {
+      at <- which(same(starts, grid_start[[i]]) & same(ends, grid_end[[i]]))
+      if (length(at) == 1L) values[[at]] else NA_real_
+    }, numeric(1L))
+  }, numeric(length(grid_start)))
+  if (is.null(dim(counts))) {
+    counts <- matrix(counts, nrow = length(grid_start))
+  }
+  known <- !is.na(counts)
+  suppressed <- rowSums(known) < ncol(counts)
+  pooled <- data.frame(
+    bin_start = grid_start,
+    bin_end = grid_end,
+    count = rowSums(counts, na.rm = TRUE),
+    suppressed = suppressed,
+    stringsAsFactors = FALSE
+  )
 
   # A suppressed site contribution is unknown, not zero.  Under the default
   # strict policy the corresponding pooled cell must therefore remain unknown;
@@ -357,20 +386,33 @@
 }
 
 #' Pool top-K concept results using two-pass merge
-#' @param per_site_dfs Named list of data frames with concept_id and a metric column
-#' @param metric_col Character; name of the metric column to sum
+#'
+#' Rows are matched by \code{key_cols}. The ranking metric and every other
+#' additive count column in \code{sum_cols} are summed; a key must be released
+#' by every server (its absence or suppression anywhere drops it, so a rare
+#' key is never surfaced). A count suppressed on a server leaves that pooled
+#' count \code{NA}. Labels such as \code{concept_name} are carried from the
+#' first server that has them.
+#' @param per_site_dfs Named list of data frames with the key columns and a
+#'   metric column
+#' @param metric_col Character; name of the metric column used for ranking
 #' @param k Integer; number of top results to return
 #' @param policy Character; pooling policy
+#' @param key_cols Character; the columns identifying a row
+#'   (default \code{"concept_id"}).
+#' @param sum_cols Character; further additive count columns to sum when every
+#'   server returns them.
 #' @return List with $result (data.frame) and $warnings
 #' @keywords internal
-.pool_top_k <- function(per_site_dfs, metric_col, k, policy = "strict") {
+.pool_top_k <- function(per_site_dfs, metric_col, k, policy = "strict",
+                        key_cols = "concept_id", sum_cols = character(0)) {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
   warnings <- character(0)
 
   valid <- list()
   for (srv in names(per_site_dfs)) {
     df <- per_site_dfs[[srv]]
-    if (is.data.frame(df) && nrow(df) > 0 && "concept_id" %in% names(df) &&
+    if (is.data.frame(df) && nrow(df) > 0 && all(key_cols %in% names(df)) &&
         metric_col %in% names(df)) {
       valid[[srv]] <- df
     } else {
@@ -388,37 +430,61 @@
     return(list(result = NULL, warnings = c(warnings, "No valid data for top-K pooling")))
   }
 
-  # Pass 1: Union all concept_ids
-  all_ids <- unique(unlist(lapply(valid, function(df) df$concept_id)))
+  # Additive columns: the metric plus every requested count column that all
+  # contributing servers return.
+  sum_cols <- unique(c(metric_col, intersect(
+    sum_cols, Reduce(intersect, lapply(valid, names))
+  )))
+  label_cols <- setdiff(
+    unique(unlist(lapply(valid, names), use.names = FALSE)),
+    c(key_cols, sum_cols)
+  )
+  label_cols <- intersect(label_cols, c("concept_name", "domain_id",
+                                        "vocabulary_id"))
 
-  # Build merged data frame
-  merged <- data.frame(concept_id = all_ids, stringsAsFactors = FALSE)
-  merged[[metric_col]] <- 0
-
-  # Carry concept_name from any server that has it
-  has_names <- any(vapply(valid, function(df) "concept_name" %in% names(df), logical(1)))
-  if (has_names) merged$concept_name <- NA_character_
-
-  # Track which concepts appear in each server (for suppression propagation)
-  n_servers <- length(valid)
-  concept_server_count <- rep(0L, nrow(merged))
-  names(concept_server_count) <- as.character(merged$concept_id)
-
-  for (srv in names(valid)) {
-    df <- valid[[srv]]
-    idx <- match(df$concept_id, merged$concept_id)
-    vals <- as.numeric(df[[metric_col]])
-    has_na <- is.na(vals)
-    vals[has_na] <- 0
-    merged[[metric_col]][idx] <- merged[[metric_col]][idx] + vals
-    # Count servers that have this concept with a non-NA value
-    present_idx <- idx[!has_na]
-    concept_server_count[as.character(merged$concept_id[present_idx])] <-
-      concept_server_count[as.character(merged$concept_id[present_idx])] + 1L
-    if (has_names && "concept_name" %in% names(df)) {
-      na_names <- is.na(merged$concept_name[idx])
-      merged$concept_name[idx[na_names]] <- as.character(df$concept_name[na_names])
+  # Pass 1: union of keys, in first-seen order.
+  site_keys <- lapply(valid, .analysis_pooling_key, key_columns = key_cols)
+  all_keys <- unique(unlist(site_keys, use.names = FALSE))
+  key_rows <- lapply(all_keys, function(key) {
+    for (srv in names(valid)) {
+      at <- match(key, site_keys[[srv]])
+      if (!is.na(at)) return(valid[[srv]][at, key_cols, drop = FALSE])
     }
+  })
+  merged <- do.call(rbind, key_rows)
+  rownames(merged) <- NULL
+
+  # Pass 2: sum each additive column; a key must carry a released metric on
+  # every server.
+  site_values <- function(column) {
+    values <- vapply(names(valid), function(srv) {
+      at <- match(all_keys, site_keys[[srv]])
+      out <- suppressWarnings(as.numeric(valid[[srv]][[column]]))[at]
+      out[is.na(at)] <- NA_real_
+      out
+    }, numeric(length(all_keys)))
+    if (is.null(dim(values))) matrix(values, nrow = length(all_keys)) else values
+  }
+  metric_values <- site_values(metric_col)
+  present <- rowSums(!is.na(metric_values)) >= length(valid)
+  for (column in sum_cols) {
+    values <- if (identical(column, metric_col)) metric_values else
+      site_values(column)
+    merged[[column]] <- ifelse(rowSums(is.na(values)) > 0L, NA_real_,
+                               rowSums(values))
+  }
+  for (column in label_cols) {
+    merged[[column]] <- vapply(all_keys, function(key) {
+      for (srv in names(valid)) {
+        if (!column %in% names(valid[[srv]])) next
+        at <- match(key, site_keys[[srv]])
+        if (!is.na(at)) {
+          value <- as.character(valid[[srv]][[column]][[at]])
+          if (!is.na(value)) return(value)
+        }
+      }
+      NA_character_
+    }, character(1L), USE.NAMES = FALSE)
   }
 
   # Strict pooling: keep ONLY concepts present (above the per-site gate) on every
@@ -427,11 +493,15 @@
   # because a concept's mere appearance would itself reveal it exists with too
   # few people. (Disclosure is enforced server-side; the client never constructs
   # or exposes a suppressed marker.)
-  cnt <- concept_server_count[as.character(merged$concept_id)]
-  merged <- merged[!is.na(cnt) & cnt >= n_servers, , drop = FALSE]
-  merged <- merged[order(-merged[[metric_col]], na.last = TRUE), ]
+  merged <- merged[present, , drop = FALSE]
+  merged <- merged[order(-merged[[metric_col]], na.last = TRUE), , drop = FALSE]
   n <- min(nrow(merged), k)
   merged <- merged[seq_len(n), , drop = FALSE]
+  # Keep the servers' column order.
+  reference <- names(valid[[1L]])
+  ordered <- c(intersect(reference, names(merged)),
+               setdiff(names(merged), reference))
+  merged <- merged[, ordered, drop = FALSE]
   rownames(merged) <- NULL
 
   list(result = merged, warnings = warnings)
@@ -1192,10 +1262,13 @@
 #' @param per_site Named list of per-server results
 #' @param result_type Character; one of the recognized result types
 #' @param policy Character; "strict" or "pooled_only_ok"
+#' @param harmonization Optional negotiated federation contract.
+#' @param options Named list of request options that shape the pooled view
+#'   (\code{metric} and \code{top_n} for concept prevalence).
 #' @return List with $result and $warnings
 #' @keywords internal
 .pool_result <- function(per_site, result_type, policy = "strict",
-                         harmonization = NULL) {
+                         harmonization = NULL, options = list()) {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
   aggregate_errors <- attr(per_site, "ds_errors") %||% list()
   if (policy == "strict" && length(aggregate_errors) > 0L) {
@@ -1233,27 +1306,60 @@
   out <- switch(result_type,
 
     "table_stats" = {
-      # per_site[[srv]] is a list with $rows, $persons, etc.
-      row_counts <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$rows) && !isTRUE(s$rows_suppressed)) s$rows
-        else NA_real_
-      }, numeric(1))
-      names(row_counts) <- names(per_site)
-      pool_rows <- .pool_counts(row_counts, policy)
+      # per_site[[srv]] is a list with $rows, $persons and optionally
+      # $date_range. Each statistic is pooled on its own: a statistic a server
+      # did not release (suppressed or not requested) is unknown there.
+      warnings <- character(0)
+      result <- list()
+      for (stat in c("rows", "persons")) {
+        requested <- any(vapply(per_site, function(s) {
+          is.list(s) && (stat %in% names(s) ||
+                           isTRUE(s[[paste0(stat, "_suppressed")]]))
+        }, logical(1)))
+        if (!requested) next
+        counts <- vapply(per_site, function(s) {
+          if (is.list(s) && !is.null(s[[stat]]) &&
+              !isTRUE(s[[paste0(stat, "_suppressed")]])) {
+            as.numeric(s[[stat]])
+          } else NA_real_
+        }, numeric(1))
+        names(counts) <- names(per_site)
+        pooled_stat <- .pool_counts(counts, policy)
+        warnings <- c(warnings, pooled_stat$warnings)
+        if (!is.null(pooled_stat$result)) result[[stat]] <- pooled_stat$result
+      }
+      ranges <- lapply(per_site, function(s) {
+        if (is.list(s) && is.list(s$date_range)) s$date_range else NULL
+      })
+      has_range <- !vapply(ranges, is.null, logical(1))
+      if (any(has_range)) {
+        columns <- unique(vapply(ranges[has_range], function(r) {
+          as.character(r$column %||% NA_character_)
+        }, character(1)))
+        if (!all(has_range) && identical(policy, "strict")) {
+          warnings <- c(warnings, paste0(
+            "date_range was not pooled: not every server released one."))
+        } else if (length(columns) != 1L) {
+          warnings <- c(warnings, paste0(
+            "date_range was not pooled: servers use different date columns."))
+        } else {
+          months <- function(field) {
+            unlist(lapply(ranges[has_range], `[[`, field), use.names = FALSE)
+          }
+          result$date_range <- list(
+            column = columns,
+            min_month = min(as.character(months("min_month"))),
+            max_month = max(as.character(months("max_month")))
+          )
+          if (!all(has_range)) {
+            warnings <- c(warnings, paste0(
+              "date_range spans only the servers that released one."))
+          }
+        }
+      }
 
-      person_counts <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$persons) && !isTRUE(s$persons_suppressed)) s$persons
-        else NA_real_
-      }, numeric(1))
-      names(person_counts) <- names(per_site)
-      pool_persons <- .pool_counts(person_counts, policy)
-
-      warnings <- c(pool_rows$warnings, pool_persons$warnings)
-      result <- if (!is.null(pool_rows$result)) {
-        list(rows = pool_rows$result, persons = pool_persons$result)
-      } else NULL
-
-      list(result = result, warnings = warnings)
+      list(result = if (length(result) > 0L) result else NULL,
+           warnings = warnings)
     },
 
     "column_stats" = {
@@ -1396,7 +1502,26 @@
     },
 
     "missingness" = {
-      # per_site[[srv]] is a data.frame with column_name, n_total, n_missing, missing_rate
+      # per_site[[srv]] is a data.frame with column_name, n_total, n_missing,
+      # missing_rate. Servers older than dsOMOP 2.10.9 return the rate only:
+      # a rate cannot be pooled without the counts behind it.
+      older <- names(per_site)[vapply(per_site, function(df) {
+        is.data.frame(df) && "missing_rate" %in% names(df) &&
+          !all(c("n_total", "n_missing") %in% names(df))
+      }, logical(1))]
+      older_warning <- character(0)
+      if (length(older) > 0L) {
+        older_warning <- paste0(
+          "Missingness from server(s) ", paste(older, collapse = ", "),
+          " has rates without the banded counts behind them (dsOMOP 2.10.8 ",
+          "or older), so it cannot be pooled; dsOMOP 2.10.9 servers return ",
+          "the counts.")
+        if (identical(policy, "strict") ||
+            length(older) == length(per_site)) {
+          return(list(result = NULL, warnings = older_warning))
+        }
+        per_site <- per_site[setdiff(names(per_site), older)]
+      }
       all_dfs <- list()
       for (srv in names(per_site)) {
         df <- per_site[[srv]]
@@ -1448,53 +1573,44 @@
           "as zero: ", paste(unique(incomplete), collapse = ", "), "."
         )
       } else character(0)
-      list(result = result, warnings = warnings)
+      list(result = result, warnings = c(older_warning, warnings))
     },
 
     "value_counts" = {
-      # Top-K value counts (data frames with value, n columns)
+      # Top values (data frames with value, n, n_persons, concept_name). Every
+      # count column is summed per value.
       metric <- if (any(vapply(per_site, function(df) {
         is.data.frame(df) && "n" %in% names(df)
       }, logical(1)))) "n" else "count"
-
-      # Need concept_id for pool_top_k; value_counts use "value" instead
-      # Convert to concept_id temporarily
-      adapted <- list()
-      for (srv in names(per_site)) {
-        df <- per_site[[srv]]
-        if (is.data.frame(df) && nrow(df) > 0) {
-          if ("value" %in% names(df) && !"concept_id" %in% names(df)) {
-            df$concept_id <- df$value
-          }
-          adapted[[srv]] <- df
-        }
-      }
-
+      adapted <- Filter(function(df) is.data.frame(df) && nrow(df) > 0,
+                        per_site)
       k <- if (length(adapted) > 0) max(vapply(adapted, nrow, integer(1))) else 20
-      pool_out <- .pool_top_k(adapted, metric, k, policy)
-
-      # Rename back
-      if (!is.null(pool_out$result) && "concept_id" %in% names(pool_out$result)) {
-        pool_out$result$value <- pool_out$result$concept_id
-        pool_out$result$concept_id <- NULL
-      }
-      pool_out
+      .pool_top_k(adapted, metric, k, policy, key_cols = "value",
+                  sum_cols = c("n", "n_persons", "n_records", "count"))
     },
 
     "concept_prevalence" = {
-      metric <- "n_persons"
-      # Check if any per_site has n_persons column
-      has_persons <- any(vapply(per_site, function(df) {
-        is.data.frame(df) && "n_persons" %in% names(df)
+      # Rank by the requested metric and cut at the requested top_n; both
+      # n_persons and n_records are summed per concept (and per source table
+      # for a global ranking).
+      metric <- if (identical(options$metric, "records")) "n_records" else
+        "n_persons"
+      has_metric <- any(vapply(per_site, function(df) {
+        is.data.frame(df) && metric %in% names(df)
       }, logical(1)))
-      if (!has_persons) metric <- "n_records"
-
-      k <- 50
-      if (length(per_site) > 0) {
-        first_valid <- per_site[[which(vapply(per_site, is.data.frame, logical(1)))[1]]]
-        if (!is.null(first_valid)) k <- nrow(first_valid)
+      if (!has_metric) {
+        metric <- setdiff(c("n_persons", "n_records"), metric)[[1L]]
       }
-      .pool_top_k(per_site, metric, k, policy)
+      frames <- Filter(is.data.frame, per_site)
+      k <- suppressWarnings(as.integer(options$top_n %||% NA_integer_))
+      if (length(k) != 1L || is.na(k) || k < 1L) {
+        k <- if (length(frames) > 0L) max(vapply(frames, nrow, integer(1))) else 50L
+      }
+      keys <- c("concept_id", if (any(vapply(frames, function(df) {
+        "source_table" %in% names(df)
+      }, logical(1)))) "source_table")
+      .pool_top_k(per_site, metric, k, policy, key_cols = keys,
+                  sum_cols = c("n_persons", "n_records"))
     },
 
     "histogram" = {
@@ -1581,28 +1697,47 @@
     },
 
     "concept_drilldown" = {
-      # Composite: pool summary counts; skip quantiles
+      # Composite: pool the additive parts (summary counts, histogram bins,
+      # categorical values, yearly counts), span the date range, and carry the
+      # non-additive parts as NA with a reason.
       warnings <- character(0)
-
-      # Pool summary (n_records, n_persons)
-      rec_counts <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$summary) && !is.null(s$summary$n_records))
-          s$summary$n_records else NA_real_
-      }, numeric(1))
-      names(rec_counts) <- names(per_site)
-      pool_rec <- .pool_counts(rec_counts, policy)
-
-      per_counts <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$summary) && !is.null(s$summary$n_persons))
-          s$summary$n_persons else NA_real_
-      }, numeric(1))
-      names(per_counts) <- names(per_site)
-      pool_per <- .pool_counts(per_counts, policy)
-
-      pooled_summary <- if (!is.null(pool_rec$result)) {
-        list(n_records = pool_rec$result, n_persons = pool_per$result)
-      } else NULL
+      summaries <- lapply(per_site, function(s) {
+        if (is.list(s) && is.list(s$summary)) s$summary else NULL
+      })
+      summary_count <- function(field) {
+        values <- vapply(summaries, function(x) {
+          if (is.null(x) || is.null(x[[field]])) NA_real_ else
+            as.numeric(x[[field]])
+        }, numeric(1))
+        names(values) <- names(per_site)
+        values
+      }
+      pool_rec <- .pool_counts(summary_count("n_records"), policy)
+      pool_per <- .pool_counts(summary_count("n_persons"), policy)
       warnings <- c(warnings, pool_rec$warnings, pool_per$warnings)
+      consensus <- function(field) {
+        values <- unique(unlist(lapply(summaries, `[[`, field)))
+        if (length(values) == 1L) values else NA
+      }
+      pooled_summary <- if (!is.null(pool_rec$result)) {
+        n_persons <- pool_per$result %||% NA_real_
+        list(
+          concept_id = consensus("concept_id"),
+          concept_name = consensus("concept_name"),
+          n_records = pool_rec$result,
+          n_persons = n_persons,
+          records_per_person_mean = if (is.finite(n_persons) && n_persons > 0) {
+            round(pool_rec$result / n_persons, 2)
+          } else NA_real_,
+          pct_persons_multi = NA_real_
+        )
+      } else NULL
+      if (!is.null(pooled_summary)) {
+        warnings <- c(warnings, paste0(
+          "pct_persons_multi is not additive across servers and is NA in the ",
+          "pooled summary; records_per_person_mean is the ratio of the pooled ",
+          "counts."))
+      }
 
       # Pool histograms if present
       hist_data <- list()
@@ -1633,16 +1768,76 @@
       if (length(cat_data) > 0) {
         metric <- if ("n" %in% names(cat_data[[1]])) "n" else "count"
         k <- max(vapply(cat_data, nrow, integer(1)))
-        # Need concept_id column for pool_top_k
-        for (srv in names(cat_data)) {
-          if (!"concept_id" %in% names(cat_data[[srv]]) &&
-              "value_as_concept_id" %in% names(cat_data[[srv]])) {
-            cat_data[[srv]]$concept_id <- cat_data[[srv]]$value_as_concept_id
-          }
-        }
-        pc <- .pool_top_k(cat_data, metric, k, policy)
+        key <- if (all(vapply(cat_data, function(df) {
+          "value_as_concept_id" %in% names(df)
+        }, logical(1)))) "value_as_concept_id" else "concept_id"
+        pc <- .pool_top_k(cat_data, metric, k, policy, key_cols = key,
+                          sum_cols = c("n", "n_persons"))
         pooled_categorical <- pc$result
         warnings <- c(warnings, pc$warnings)
+      }
+
+      # Date coverage: the span of the servers' supported months, with the
+      # yearly counts summed per period.
+      ranges <- lapply(per_site, function(s) {
+        if (is.list(s) && is.list(s$date_range)) s$date_range else NULL
+      })
+      has_range <- !vapply(ranges, is.null, logical(1))
+      pooled_range <- NULL
+      if (any(has_range)) {
+        columns <- unique(vapply(ranges[has_range], function(r) {
+          as.character(r$column %||% NA_character_)
+        }, character(1)))
+        if (!all(has_range) && identical(policy, "strict")) {
+          warnings <- c(warnings,
+            "date_range was not pooled: not every server released one.")
+        } else if (length(columns) != 1L) {
+          warnings <- c(warnings,
+            "date_range was not pooled: servers use different date columns.")
+        } else {
+          months <- function(field) {
+            as.character(unlist(lapply(ranges[has_range], `[[`, field),
+                                use.names = FALSE))
+          }
+          yearly <- lapply(ranges[has_range], `[[`, "date_counts")
+          pooled_years <- if (all(vapply(yearly, is.data.frame, logical(1)))) {
+            years <- .pool_result(yearly, "date_counts", policy)
+            warnings <- c(warnings, years$warnings)
+            years$result
+          } else NULL
+          pooled_range <- list(
+            column = columns,
+            min_month_safe = min(months("min_month_safe")),
+            max_month_safe = max(months("max_month_safe")),
+            date_counts = pooled_years
+          )
+        }
+      }
+
+      # Missingness: a ratio of sums needs the counts behind each rate.
+      miss <- Filter(function(df) is.data.frame(df) && nrow(df) > 0,
+                     lapply(per_site, function(s) {
+                       if (is.list(s)) s$missingness else NULL
+                     }))
+      pooled_missingness <- NULL
+      if (length(miss) > 0L) {
+        if (all(vapply(miss, function(df) {
+          all(c("n_total", "n_missing") %in% names(df))
+        }, logical(1)))) {
+          pm <- .pool_result(miss, "missingness", policy)
+          pooled_missingness <- pm$result
+          warnings <- c(warnings, pm$warnings)
+        } else {
+          columns <- unique(unlist(lapply(miss, function(df) {
+            as.character(df$column_name)
+          }), use.names = FALSE))
+          pooled_missingness <- data.frame(
+            column_name = columns, missing_rate = rep(NA_real_, length(columns)),
+            stringsAsFactors = FALSE)
+          warnings <- c(warnings, paste0(
+            "Drilldown missingness rates are NA in the pooled profile: the ",
+            "servers return rates without the counts behind them."))
+        }
       }
 
       # Quantiles: NOT pooled
@@ -1652,9 +1847,12 @@
         summary = pooled_summary,
         numeric_summary = if (!is.null(pooled_histogram))
           list(histogram = pooled_histogram, quantiles = NULL) else NULL,
-        categorical_values = pooled_categorical
+        categorical_values = pooled_categorical,
+        date_range = pooled_range,
+        missingness = pooled_missingness
       )
-      list(result = result, warnings = warnings)
+      list(result = if (is.null(pooled_summary)) NULL else result,
+           warnings = warnings)
     },
 
     "concept_locate" = {
@@ -2054,9 +2252,34 @@
   suppressed <- present < n_sites
   pooled[suppressed] <- NA_real_
 
+  # Axis metadata: identical on every contributing site, else NA with a reason.
+  axis <- list()
+  for (field in c("row_col", "col_col", "count_mode")) {
+    values <- unique(unlist(lapply(valid, `[[`, field), use.names = FALSE))
+    if (length(values) == 1L) {
+      axis[[field]] <- values
+    } else if (length(values) > 1L) {
+      axis[[field]] <- NA_character_
+      warnings <- c(warnings, paste0("Cross-tab ", field,
+                                     " differs across servers."))
+    }
+  }
+
   list(
-    result = list(counts = pooled, suppressed = any(suppressed)),
+    result = c(axis, list(row_levels = row_keys, col_levels = col_keys,
+                          counts = pooled, suppressed = any(suppressed))),
     warnings = warnings)
+}
+
+# Every server answered with an empty frame: the union is empty, not unknown.
+.empty_metadata_union <- function(per_site) {
+  frames <- Filter(is.data.frame, per_site)
+  if (length(per_site) == 0L || length(frames) != length(per_site)) {
+    return(NULL)
+  }
+  out <- frames[[1L]][0, , drop = FALSE]
+  rownames(out) <- NULL
+  out
 }
 
 #' Pool vocabulary / concept METADATA rows across servers (de-duplicated union)
@@ -2074,7 +2297,7 @@
 .pool_concept_metadata <- function(per_site) {
   if (length(attr(per_site, "ds_errors")) > 0L) return(NULL)
   dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
-  if (length(dfs) == 0) return(NULL)
+  if (length(dfs) == 0) return(.empty_metadata_union(per_site))
   cols <- Reduce(intersect, lapply(dfs, names))
   if (length(cols) == 0) return(NULL)
   combined <- do.call(rbind, lapply(dfs, function(d) d[, cols, drop = FALSE]))

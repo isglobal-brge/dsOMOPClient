@@ -194,11 +194,27 @@ test_that(".pool_histograms propagates suppressed flags", {
 test_that(".pool_histograms strict fails on mismatched bins", {
   h1 <- data.frame(bin_start = c(0, 10), bin_end = c(10, 20),
                     count = c(5, 10), suppressed = c(FALSE, FALSE))
-  h2 <- data.frame(bin_start = c(0, 10, 20), bin_end = c(10, 20, 30),
-                    count = c(8, 12, 7), suppressed = c(FALSE, FALSE, FALSE))
+  h2 <- data.frame(bin_start = c(0, 15), bin_end = c(15, 30),
+                    count = c(8, 12), suppressed = c(FALSE, FALSE))
   result <- .pool_histograms(list(a = h1, b = h2), "strict")
   expect_null(result$result)
   expect_true(any(grepl("mismatched", result$warnings)))
+})
+
+test_that(".pool_histograms matches bins by edges, not position", {
+  # Servers drop suppressed bins, so the same shared grid arrives with
+  # different rows. A bin missing on a server is unknown there, never zero.
+  h1 <- data.frame(bin_start = c(0, 20), bin_end = c(10, 30),
+                   count = c(5, 7))
+  h2 <- data.frame(bin_start = c(0, 10, 20), bin_end = c(10, 20, 30),
+                   count = c(8, 12, 3))
+  strict <- .pool_histograms(list(a = h1, b = h2), "strict")$result
+  expect_equal(strict$bin_start, c(0, 10, 20))
+  expect_equal(strict$count, c(13, NA, 10))
+  expect_equal(strict$suppressed, c(FALSE, TRUE, FALSE))
+  # Positional matching would have added the (20, 30) bin of a to the
+  # (10, 20) bin of b.
+  expect_false(isTRUE(strict$count[[2L]] == 19))
 })
 
 # --- .pool_top_k --------------------------------------------------------------
