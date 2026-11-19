@@ -50,7 +50,10 @@ The copy loses those people's values in these columns: use it for
 descriptive tables and summaries. For models, group rare categories instead
 (\code{omop_category_recode()}, \code{omop_category_rollup()}). Each column is
 treated on its own, so a two-way table of the copy can still have small
-cells; \code{ds.omop.table(by = , small = "missing")} handles those.
+cells; \code{ds.omop.table(by = , small = "missing")} handles those. As with
+dsBase's own tables, the suppression protects each table on its own: tables
+of the same people suppressed differently, or counts from other
+publications, can still be compared with it.
 }
 \examples{
 \dontrun{
