@@ -2,36 +2,69 @@
 % Please edit documentation in R/concept_table.R
 \name{ds.omop.table}
 \alias{ds.omop.table}
-\title{Pool a published concept category with its complete level contract}
+\title{Tables of published categories, as \code{ds.table()} returns them}
 \usage{
-ds.omop.table(data, column, conns = NULL)
+ds.omop.table(
+  data,
+  column,
+  by = NULL,
+  useNA = c("no", "ifany", "always"),
+  report.chisq.tests = FALSE,
+  small = c("refuse", "missing"),
+  conns = NULL
+)
 }
 \arguments{
-\item{data}{Character; published server-side data frame symbol.}
+\item{data}{Character; a published table on every site.}
 
-\item{column}{Character; concept factor column in that data frame.}
+\item{column}{Character; a published factor column of \code{data} (the
+\code{rvar} of \code{ds.table()}).}
+
+\item{by}{Optional character; a second published factor column for a
+two-way table (the \code{cvar} of \code{ds.table()}).}
+
+\item{useNA, report.chisq.tests}{As in \code{ds.table()}.}
+
+\item{small}{\code{"refuse"} (default) leaves DataSHIELD's small-cell
+refusal as it is; \code{"missing"} suppresses small categories or cells in
+the temporary copy.}
 
 \item{conns}{DSI connections for the retained sites. Defaults to the active
 DataSHIELD connections.}
 }
 \value{
-A one-dimensional \code{table} of pooled counts, including unused
-  declared categories with count zero.
+\code{ds.table()}'s object (\code{output.list} with
+  \code{TABLE_rvar.by.study_counts}, \code{TABLES.COMBINED_all.sources_counts}
+  and their proportions for one column; per-site and combined counts and
+  proportions for two; \code{validity.message}), of class
+  \code{dsomop_table} for printing.
 }
 \description{
-Calls the real \code{dsBaseClient::ds.table} on a published in-memory
-concept factor through a temporary protected copy with lossless category
-tokens. Uses the existing disclosure-checked factor harmonisation transport
-and maps counts back to the exact public labels, restoring unused declared
-categories as zero cells in federation level order. All sites
-must return valid counts; failed or suppressed tables are never zero-filled.
+Calls \code{dsBaseClient::ds.table()} on published dsOMOP factor columns
+(concepts, categories, calendars, number bins) through a temporary copy whose
+labels are plain tokens, and returns \code{ds.table()}'s own object with the
+exact labels back: per-site counts and proportions, combined counts and
+proportions, the validity message and, when asked, the chi-squared tests.
+Labels with spaces, commas or any other characters work; declared categories
+that no site has are shown with zero counts, in the shared level order. The
+temporary copy is removed afterwards, including on failure; the published
+table is unchanged.
 }
 \details{
-dsBase rebuilds factors from observed values, so a direct \code{ds.table}
-call can omit globally unused levels. Use this integration when the pooled
-table must retain the complete declared category contract. Counts exclude
-actual missing values; a literal label \code{"NA"} remains a category.
-Commas and other free text are preserved. The temporary copy is removed
-after analysis, including on failure; the published object is unchanged.
-Requires the matching server implementation of the table analysis transport.
+DataSHIELD's rules apply as in \code{ds.table()}: a site whose table has a
+non-empty cell below \code{nfilter.tab}, or more categories in use than the
+level rule allows, is reported in the validity message and left out (never
+filled with zeros). With \code{small = "missing"}, categories (or, with
+\code{by}, cells) held by fewer than \code{nfilter.tab} people at a site are
+made missing in the temporary copy first, with secondary suppression so that
+a total minus the table never gives a small count; a zero can then mean
+"fewer than nfilter.tab" at that site.
+}
+\examples{
+\dontrun{
+tab <- ds.omop.table("D", "cause_of_death_first_value")
+tab$output.list$TABLES.COMBINED_all.sources_counts
+tab$output.list$TABLE_rvar.by.study_counts
+ds.omop.table("D", "cause_of_death_first_value", by = "sex", small = "missing")
+}
 }

@@ -4,7 +4,12 @@
 \alias{.harmonizeOneSymbol}
 \title{Harmonize the concept-id columns of one server-side symbol}
 \usage{
-.harmonizeOneSymbol(sym, conns, .retry = TRUE)
+.harmonizeOneSymbol(
+  sym,
+  conns,
+  .retry = TRUE,
+  .fingerprint = getOption("dsomop.fingerprint_levels", TRUE)
+)
 }
 \arguments{
 \item{sym}{Character; per-site server symbols of one retained component.}
