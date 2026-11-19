@@ -30,7 +30,7 @@ recipe_codebook <- function(x,output=NULL,component=NULL) {
       category<-entry$categories[[r$stable_key]]
       if(field=="levels") {
         if(is.null(category))return(r$levels)
-        return(list(keys=category$keys %||% category$ids,labels=category$levels,provenance=category$provenance,completeness=if(status=="published")"reconciled" else "declared"))
+        return(list(keys=category$keys %||% category$ids,labels=category$levels,names=category$names,provenance=category$provenance,completeness=if(status=="published")"reconciled" else "declared"))
       }
       category[[field]] %||% r[[field]]
     }))

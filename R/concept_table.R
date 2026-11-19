@@ -1,34 +1,59 @@
-#' Pool a published concept category with its complete level contract
+#' Tables of published categories, as \code{ds.table()} returns them
 #'
-#' Calls the real \code{dsBaseClient::ds.table} on a published in-memory
-#' concept factor through a temporary protected copy with lossless category
-#' tokens. Uses the existing disclosure-checked factor harmonisation transport
-#' and maps counts back to the exact public labels, restoring unused declared
-#' categories as zero cells in federation level order. All sites
-#' must return valid counts; failed or suppressed tables are never zero-filled.
+#' Calls \code{dsBaseClient::ds.table()} on published dsOMOP factor columns
+#' (concepts, categories, calendars, number bins) through a temporary copy whose
+#' labels are plain tokens, and returns \code{ds.table()}'s own object with the
+#' exact labels back: per-site counts and proportions, combined counts and
+#' proportions, the validity message and, when asked, the chi-squared tests.
+#' Labels with spaces, commas or any other characters work; declared categories
+#' that no site has are shown with zero counts, in the shared level order. The
+#' temporary copy is removed afterwards, including on failure; the published
+#' table is unchanged.
 #'
-#' dsBase rebuilds factors from observed values, so a direct \code{ds.table}
-#' call can omit globally unused levels. Use this integration when the pooled
-#' table must retain the complete declared category contract. Counts exclude
-#' actual missing values; a literal label \code{"NA"} remains a category.
-#' Commas and other free text are preserved. The temporary copy is removed
-#' after analysis, including on failure; the published object is unchanged.
-#' Requires the matching server implementation of the table analysis transport.
+#' DataSHIELD's rules apply as in \code{ds.table()}: a site whose table has a
+#' non-empty cell below \code{nfilter.tab}, or more categories in use than the
+#' level rule allows, is reported in the validity message and left out (never
+#' filled with zeros). With \code{small = "missing"}, categories (or, with
+#' \code{by}, cells) held by fewer than \code{nfilter.tab} people at a site are
+#' made missing in the temporary copy first, with secondary suppression so that
+#' a total minus the table never gives a small count; a zero can then mean
+#' "fewer than nfilter.tab" at that site.
 #'
-#' @param data Character; published server-side data frame symbol.
-#' @param column Character; concept factor column in that data frame.
+#' @param data Character; a published table on every site.
+#' @param column Character; a published factor column of \code{data} (the
+#'   \code{rvar} of \code{ds.table()}).
+#' @param by Optional character; a second published factor column for a
+#'   two-way table (the \code{cvar} of \code{ds.table()}).
+#' @param useNA,report.chisq.tests As in \code{ds.table()}.
+#' @param small \code{"refuse"} (default) leaves DataSHIELD's small-cell
+#'   refusal as it is; \code{"missing"} suppresses small categories or cells in
+#'   the temporary copy.
 #' @param conns DSI connections for the retained sites. Defaults to the active
 #'   DataSHIELD connections.
-#' @return A one-dimensional \code{table} of pooled counts, including unused
-#'   declared categories with count zero.
+#' @return \code{ds.table()}'s object (\code{output.list} with
+#'   \code{TABLE_rvar.by.study_counts}, \code{TABLES.COMBINED_all.sources_counts}
+#'   and their proportions for one column; per-site and combined counts and
+#'   proportions for two; \code{validity.message}), of class
+#'   \code{dsomop_table} for printing.
+#' @examples
+#' \dontrun{
+#' tab <- ds.omop.table("D", "cause_of_death_first_value")
+#' tab$output.list$TABLES.COMBINED_all.sources_counts
+#' tab$output.list$TABLE_rvar.by.study_counts
+#' ds.omop.table("D", "cause_of_death_first_value", by = "sex", small = "missing")
+#' }
 #' @export
-ds.omop.table <- function(data, column, conns = NULL) {
-  for (x in list(data, column)) {
+ds.omop.table <- function(data, column, by = NULL, useNA = c("no", "ifany", "always"),
+                          report.chisq.tests = FALSE, small = c("refuse", "missing"), conns = NULL) {
+  useNA <- match.arg(useNA)
+  small <- match.arg(small)
+  for (x in c(list(data, column), if (!is.null(by)) list(by))) {
     if (!is.character(x) || length(x) != 1L || is.na(x) ||
         !isTRUE(.conceptValidNames(x))) {
-      stop("data and column must be single valid R names.", call. = FALSE)
+      stop("data, column and by must be single valid R names.", call. = FALSE)
     }
   }
+  if (identical(by, column)) stop("by must be another column.", call. = FALSE)
   if (!requireNamespace("dsBaseClient", quietly = TRUE)) {
     stop("ds.omop.table requires dsBaseClient.", call. = FALSE)
   }
@@ -40,26 +65,35 @@ ds.omop.table <- function(data, column, conns = NULL) {
     call("omopFactorLevelsDS", as.symbol(data)))
   if (!setequal(names(reports), names(conns)) ||
       any(vapply(reports, is.null, logical(1)))) {
-    stop("Incomplete concept level reports; pooled table refused.", call. = FALSE)
+    stop("Incomplete concept level reports; table refused.", call. = FALSE)
   }
   spec <- .conceptUnionReports(reports[names(conns)])
-  key <- column
-  if (length(spec$names)) key <- names(spec$names)[unlist(spec$names) == column]
-  if (length(key) != 1L || is.null(spec$columns[[key]])) {
-    stop("column must have a published concept level contract.", call. = FALSE)
-  }
-  levels <- as.character(unlist(spec$columns[[key]]$levels, use.names = FALSE))
-  # Reserve a fresh symbol on every site; never overwrite the publication.
-  inventory <- .plan_symbol_inventory(conns, "concept table analysis")
-  temporary <- NULL
-  for (attempt in seq_len(10L)) {
-    candidate <- .generate_symbol("dsOtable")
-    if (candidate != data && !candidate %in% unlist(inventory, use.names = FALSE)) {
-      temporary <- candidate
-      break
+  key_of <- function(col) {
+    key <- col
+    if (length(spec$names)) key <- names(spec$names)[unlist(spec$names) == col]
+    if (length(key) != 1L || is.null(spec$columns[[key]])) {
+      stop("Column '", col, "' must have a published concept level contract.", call. = FALSE)
     }
+    key
   }
-  if (is.null(temporary)) stop("Could not reserve a table analysis symbol.", call. = FALSE)
+  columns <- c(column, by)
+  keys <- vapply(columns, key_of, "")
+  # The labels the published columns carry (dsBase-safe ones when published so).
+  levels <- lapply(keys, function(key) {
+    column <- spec$columns[[key]]
+    safe <- any(vapply(reports, function(r) identical(unlist(r$styles[[key]]), "safe"), logical(1)))
+    as.character(unlist((if (safe) .conceptSafeColumn(column) else column)$levels, use.names = FALSE))
+  })
+  # Reserve fresh symbols on every site; never overwrite the publication.
+  inventory <- unlist(.plan_symbol_inventory(conns, "concept table analysis"), use.names = FALSE)
+  fresh <- function() {
+    for (attempt in seq_len(10L)) {
+      candidate <- .generate_symbol("dsOtable")
+      if (candidate != data && !candidate %in% inventory) return(candidate)
+    }
+    stop("Could not reserve a table analysis symbol.", call. = FALSE)
+  }
+  temporary <- fresh()
   on.exit({
     for (site in names(conns)) {
       tryCatch(DSI::datashield.rm(conns[site], temporary),
@@ -67,40 +101,108 @@ ds.omop.table <- function(data, column, conns = NULL) {
                                     ": ", conditionMessage(e), call. = FALSE))
     }
   }, add = TRUE)
-  succeeded <- character()
-  failed <- character()
-  DSI::datashield.assign.expr(conns, temporary,
-    # The appended formal also makes older servers refuse instead of silently
-    # ignoring the request and passing public labels to the lossy dsBase codec.
-    call("omopAsFactorColumnsDS", as.symbol(data), .ds_encode(.conceptSpecForServers(spec)), key),
-    success = function(server) succeeded <<- c(succeeded, server),
-    error = function(server, message) failed[[server]] <<- message)
-  if (length(failed) || !setequal(succeeded, names(conns))) {
-    stop("Concept table analysis copy failed; matching servers are required. ",
-         paste(failed, collapse = "; "), call. = FALSE)
+  assign_all <- function(expr, what) {
+    succeeded <- character()
+    failed <- character()
+    DSI::datashield.assign.expr(conns, temporary, expr,
+      success = function(server) succeeded <<- c(succeeded, server),
+      error = function(server, message) failed[[server]] <<- message)
+    if (length(failed) || !setequal(succeeded, names(conns))) {
+      stop(what, " failed; matching servers are required. ", paste(failed, collapse = "; "), call. = FALSE)
+    }
   }
-  tokens <- paste0("C", seq_along(levels))
+  # The appended formal also makes older servers refuse instead of silently
+  # ignoring the request and passing public labels to the lossy dsBase codec.
+  table_column <- if (length(keys) == 1L) unname(keys) else .ds_encode(unname(keys))
+  assign_all(call("omopAsFactorColumnsDS", as.symbol(data), .ds_encode(spec), table_column),
+             "Concept table analysis copy")
+  if (identical(small, "missing")) {
+    assign_all(call("omopAsFactorColumnsDS", as.symbol(temporary),
+                    .ds_encode(list(kind = "suppress_small", columns = as.list(columns), joint = TRUE))),
+               "Small-category suppression")
+  }
   result <- dsBaseClient::ds.table(rvar = paste0(temporary, "$", column),
-                                  useNA = "no", datasources = conns)
-  complete <- .conceptCompleteTable(result, tokens, paste0(data, "$", column))
-  dimnames(complete)[[1L]] <- levels
-  complete
+                                  cvar = if (!is.null(by)) paste0(temporary, "$", by),
+                                  useNA = useNA, report.chisq.tests = report.chisq.tests,
+                                  datasources = conns)
+  out <- .conceptTableComplete(result, setNames(levels, c("C", "D")[seq_along(levels)]))
+  attr(out, "variables") <- columns
+  if (identical(small, "missing")) attr(out, "small") <- "missing"
+  class(out) <- c("dsomop_table", "list")
+  out
 }
 
-.conceptCompleteTable <- function(result, levels, variable) {
-  if (!identical(result$validity.message, "Data in all studies were valid")) {
-    stop("Every retained site must release a valid ds.table; pooled table refused.", call. = FALSE)
+# ds.table()'s object with the tokens of the temporary copy (C1.. for the first
+# column, D1.. for the second) back to labels, and the declared categories that
+# no valid site has added: zero counts; for proportions, zero along the other
+# margin and NA where the added category is the one normalised. Dimensions are
+# known by position (first column, second column, sites), never by their names.
+.conceptTableComplete <- function(result, maps) {
+  if (!is.list(result) || is.null(result$output.list)) return(result)
+  bad <- function() stop("ds.table counts do not match the permitted concept contract; rerun publication.", call. = FALSE)
+  two_way <- length(maps) == 2L
+  complete <- function(x, name) {
+    if (!(is.array(x) || is.table(x)) || is.null(dimnames(x))) return(x)
+    kind <- if (grepl("counts", name, fixed = TRUE)) "counts" else
+      if (grepl("row.props", name, fixed = TRUE)) "row" else "col"
+    values <- unclass(x)
+    if (identical(kind, "counts") && (anyNA(values) || any(!is.finite(values)) || any(values < 0))) bad()
+    # One-way tables by site have the sites second; two-way tables, the second column.
+    for (d in if (two_way && !grepl("by.study", name, fixed = TRUE)) seq_len(min(2L, length(dim(x)))) else 1L) {
+      prefix <- names(maps)[[d]]
+      tokens <- paste0(prefix, seq_along(maps[[prefix]]))
+      current <- dimnames(x)[[d]]
+      missing_level <- is.na(current) | current == "NA"
+      if (!all(current[!missing_level] %in% tokens)) bad()
+      fill <- if (identical(kind, "counts")) 0 else
+        if ((identical(kind, "row") && d == 1L) || (identical(kind, "col") && d == 2L)) NA_real_ else 0
+      x <- .tableExpand(x, d, c(tokens, current[missing_level]), fill)
+      labelled <- dimnames(x)
+      labelled[[d]] <- c(maps[[prefix]], current[missing_level])
+      dimnames(x) <- labelled
+    }
+    x
   }
-  counts <- result$output.list$TABLES.COMBINED_all.sources_counts
-  observed <- dimnames(counts)[[1L]]
-  if (!is.numeric(counts) || length(dim(counts)) != 1L ||
-      length(observed) != length(counts) || anyNA(observed) ||
-      anyDuplicated(observed) || any(!observed %in% levels) ||
-      anyNA(counts) || any(!is.finite(counts) | counts < 0)) {
-    stop("ds.table counts do not match the permitted concept contract; rerun publication.", call. = FALSE)
+  result$output.list <- Map(complete, result$output.list, names(result$output.list))
+  result
+}
+
+# x with dimension d laid out as `target` (existing entries kept, new ones `fill`).
+.tableExpand <- function(x, d, target, fill) {
+  dims <- dim(x)
+  names_x <- dimnames(x)
+  new_names <- names_x
+  new_names[[d]] <- target
+  dims[[d]] <- length(target)
+  out <- array(fill, dim = dims, dimnames = new_names)
+  index <- rep(list(TRUE), length(dims))
+  index[[d]] <- match(names_x[[d]], target)
+  out <- do.call(`[<-`, c(list(out), index, list(value = unclass(x))))
+  if (is.table(x)) class(out) <- class(x)
+  out
+}
+
+#' @export
+print.dsomop_table <- function(x, ...) {
+  variables <- attr(x, "variables")
+  ol <- x$output.list
+  if (is.null(ol)) {
+    cat(paste(x$validity.message, collapse = "\n"), "\n")
+    return(invisible(x))
   }
-  complete <- array(0, dim = length(levels), dimnames = setNames(list(levels), variable))
-  complete[match(observed, levels)] <- as.numeric(counts)
-  class(complete) <- "table"
-  complete
+  cat("Combined (all valid sites):", paste(variables, collapse = " by "), "\n")
+  print(ol$TABLES.COMBINED_all.sources_counts)
+  by_site <- if (length(variables) == 1L) ol$TABLE_rvar.by.study_counts else
+    ol[grepl("^TABLE[._]STUDY.*_counts$", names(ol))]
+  if (!is.null(by_site) && length(by_site)) {
+    cat("\nBy site:\n")
+    if (is.list(by_site) && !is.array(by_site)) for (n in names(by_site)) { cat(n, "\n"); print(by_site[[n]]) } else print(by_site)
+  }
+  if (identical(attr(x, "small"), "missing")) {
+    cat("\nCategories held by fewer than nfilter.tab people at a site are missing at that site.\n")
+  }
+  if (!identical(x$validity.message, "Data in all studies were valid")) {
+    cat("\n", paste(x$validity.message, collapse = "\n"), "\n", sep = "")
+  }
+  invisible(x)
 }

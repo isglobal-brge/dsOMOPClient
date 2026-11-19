@@ -116,17 +116,73 @@ ds.omop.drop_empty_levels <- function(x, columns = NULL, newobj = paste0(x, "_mo
 }
 
 # Level reports and model copies need dsOMOP 2.10.7 on every site.
-.model_levels_assert_servers <- function(session, servers) {
+.model_levels_assert_servers <- function(session, servers, needed = "2.10.7",
+                                         what = "ds.omop.drop_empty_levels()") {
   versions <- session$server_versions %||% character()
   old <- servers[!vapply(servers, function(site) {
     version <- if (site %in% names(versions)) versions[[site]] else NULL
     is.character(version) && length(version) == 1L && !is.na(version) &&
       grepl("^[0-9]+([.][0-9]+)+$", version) &&
-      tryCatch(utils::compareVersion(version, "2.10.7") >= 0L, error = function(e) FALSE)
+      tryCatch(utils::compareVersion(version, needed) >= 0L, error = function(e) FALSE)
   }, logical(1))]
   if (length(old)) {
-    stop("ds.omop.drop_empty_levels() needs dsOMOP 2.10.7 or later on: ",
+    stop(what, " needs dsOMOP ", needed, " or later on: ",
          paste(old, collapse = ", "), ". Upgrade the server and publish its methods.", call. = FALSE)
   }
   invisible(TRUE)
+}
+
+#' Make categories held by very few people missing, for tables
+#'
+#' DataSHIELD refuses a table or a summary of a factor at any site where a
+#' non-empty category has fewer than \code{nfilter.tab} people (dsBase's
+#' \code{ds.summary()} answers "INVALID object!"); those counts are never
+#' released. This makes a copy where, at each site, the values of such
+#' categories are missing, so that tables and summaries of the other
+#' categories work. While the people made missing number between 1 and
+#' \code{nfilter.tab - 1}, the next smallest category is made missing too, so
+#' that a total minus a table never gives a small count. Levels that no site
+#' uses are then dropped, as \code{ds.omop.drop_empty_levels()} does.
+#'
+#' The copy loses those people's values in these columns: use it for
+#' descriptive tables and summaries. For models, group rare categories instead
+#' (\code{omop_category_recode()}, \code{omop_category_rollup()}). Each column is
+#' treated on its own, so a two-way table of the copy can still have small
+#' cells; \code{ds.omop.table(by = , small = "missing")} handles those.
+#'
+#' @inheritParams ds.omop.drop_empty_levels
+#' @param newobj Character; the server-side name of the copy.
+#' @return Invisibly, the summary of \code{ds.omop.drop_empty_levels()} for the
+#'   copy.
+#' @examples
+#' \dontrun{
+#' ds.omop.drop_small_categories("D", newobj = "D_small")
+#' dsBaseClient::ds.summary("D_small$cause_of_death_first_value")
+#' ds.omop.table("D_small", "cause_of_death_first_value")
+#' }
+#' @export
+ds.omop.drop_small_categories <- function(x, columns = NULL, newobj = paste0(x, "_small"),
+                                          symbol = "omop", conns = NULL) {
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+  .model_levels_assert_servers(session, names(conns), "2.10.9", "ds.omop.drop_small_categories()")
+  x <- .resolve_target_symbol(x, session, "x")
+  if (!is.null(columns) && (!is.character(columns) || !length(columns) || anyNA(columns) ||
+      anyDuplicated(columns))) {
+    stop("ds.omop.drop_small_categories(): columns must be distinct column names.", call. = FALSE)
+  }
+  inventory <- unlist(.plan_symbol_inventory(conns, "Small categories"), use.names = FALSE)
+  staging <- NULL
+  for (attempt in seq_len(10L)) {
+    candidate <- .generate_symbol("dsOsmall")
+    if (!candidate %in% c(inventory, x, newobj)) { staging <- candidate; break }
+  }
+  if (is.null(staging)) stop("Could not reserve a symbol for the small-category copy.", call. = FALSE)
+  on.exit(for (site in names(conns)) tryCatch(DSI::datashield.rm(conns[site], staging),
+    error = function(e) NULL), add = TRUE)
+  .assign_expr_atomic(conns, staging,
+    expr = call("omopAsFactorColumnsDS", as.name(x),
+                .ds_encode(list(kind = "suppress_small", columns = as.list(columns %||% character()), joint = FALSE))),
+    context = "Small categories", session_symbol = symbol, required_symbols = x)
+  invisible(ds.omop.drop_empty_levels(staging, columns = columns, newobj = newobj, symbol = symbol, conns = conns))
 }

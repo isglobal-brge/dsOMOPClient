@@ -2738,6 +2738,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     return(invisible(NULL))
   }
   broadcast <- .conceptSpecForServers(spec)
+  # dsBase-safe labels (dsOMOP 2.10.9), only when every site applies them.
+  safe_labels <- !identical(getOption("dsomop.label_style", "safe"), "names") &&
+    all(vapply(per_server, function(x) "safe" %in% unlist(x$label_styles), logical(1)))
+  if (safe_labels) broadcast$label_style <- "safe"
   if (fingerprinted) {
     broadcast$fingerprint <- TRUE
     for (col in names(compact)) broadcast$columns[[col]] <- .conceptCompactShared(broadcast$columns[[col]], compact[[col]])
@@ -2771,7 +2775,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
          paste(failed, collapse = ", "), ". ", detail, call. = FALSE)
   }
   lines<-attr(spec,"concept_explain") %||% character()
-  if(!is.null(spec$schema))attr(lines,"codebook")<-list(schema=spec$schema,categories=spec$columns)
+  categories<-if(isTRUE(safe_labels))lapply(spec$columns,.conceptSafeColumn) else spec$columns
+  if(!is.null(spec$schema))attr(lines,"codebook")<-list(schema=spec$schema,categories=categories)
   invisible(lines)
 }
 
