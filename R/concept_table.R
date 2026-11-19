@@ -235,6 +235,13 @@ print.dsomop_table <- function(x, ...) {
   ol <- x$output.list
   if (is.null(ol)) {
     cat(paste(x$validity.message, collapse = "\n"), "\n")
+    # As ds.table() reports them: each site's reason.
+    reasons <- x$error.messages
+    if (is.list(reasons) && length(reasons)) {
+      for (n in names(reasons)) cat(n, ": ", paste(unlist(reasons[[n]]), collapse = " "), "\n", sep = "")
+    } else if (length(reasons) && !identical(reasons, x$validity.message)) {
+      cat(paste(reasons, collapse = "\n"), "\n")
+    }
     return(invisible(x))
   }
   cat("Combined (all valid sites):", paste(variables, collapse = " by "), "\n")

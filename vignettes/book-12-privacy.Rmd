@@ -298,7 +298,9 @@ ds.omop.table("D_rare", "condition", datasources = rare_conns)
 ```
 
 ```
-#> All studies failed for reasons identified below
+#> All studies failed for reasons identified below 
+#> north: Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3
+#> south: Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3
 ```
 
 Some condition is held by one or two people at a site, so no count of that
