@@ -9,7 +9,8 @@
   rebuild the shared levels from it (checked by digest). Naming provenance stays
   on the client. Results equal the full transport, which older servers keep.
 - Corrected: `ds.omop.filter()` and `ds.omop.bind_rows()` work on reconciled
-  recipe outputs and keep their shared levels (needs dsOMOP 2.10.8).
+  recipe outputs and keep their shared levels, and `ds.omop.table()` and
+  `ds.omop.drop_empty_levels()` work on their results (needs dsOMOP 2.10.8).
 
 # dsOMOPClient 2.10.7 (2026-11-19)
 

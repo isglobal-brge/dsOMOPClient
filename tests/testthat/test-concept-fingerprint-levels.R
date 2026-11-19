@@ -20,11 +20,13 @@
   ctx
 }
 
+# The shared levels and every site's row values (staged rows read back).
 .fp_levels <- function(ctx, target, mode, translate, fingerprint) {
   withr::local_options(list(dsomop.fingerprint_levels = fingerprint))
   recipe_execute(.cvl_wide(.cvl_event, options = list(translate_concepts = translate)),
     out = c(study = target), symbol = "cvl", conns = ctx$conns, output_mode = mode)
-  .cvl_shared(ctx, target, "cause_of_death_first_value")
+  list(levels = .cvl_shared(ctx, target, "cause_of_death_first_value"),
+       values = lapply(.cvl_frames(ctx, target), function(frame) as.character(frame$cause_of_death_first_value)))
 }
 
 test_that("identical lists rebuild from fingerprints and equal the full path", {
@@ -36,15 +38,17 @@ test_that("identical lists rebuild from fingerprints and equal the full path", {
     compacted <<- compacted + 1L
     real(full, listed)
   }, .package = "dsOMOPClient")
-  for (run in list(list("memory", FALSE), list("staged", FALSE), list("memory", TRUE))) {
+  for (run in list(list("memory", FALSE), list("staged", FALSE), list("memory", TRUE), list("staged", TRUE))) {
     mode <- run[[1L]]; translate <- run[[2L]]
     before <- compacted
     fast <- .fp_levels(ctx, paste0("Fast_", mode, translate), mode, translate, TRUE)
     expect_identical(compacted, before + 1L)
     full <- .fp_levels(ctx, paste0("Full_", mode, translate), mode, translate, FALSE)
     expect_identical(compacted, before + 1L)
-    expect_length(fast, 1000L)
+    expect_length(fast$levels, 1000L)
+    # Same levels and the same value on every row (every person has a cause).
     expect_identical(fast, full)
+    expect_false(anyNA(unlist(fast$values)), info = paste(mode, translate))
   }
 })
 
@@ -61,5 +65,6 @@ test_that("sites with different lists are read one by one", {
   ctx2 <- .fp_setup(list(sixty(0L), sixty(100L), sixty(200L)), rename = 3L)
   fast <- .fp_levels(ctx2, "Versions", "memory", TRUE, TRUE)
   expect_identical(fast, .fp_levels(ctx2, "VersionsFull", "memory", TRUE, FALSE))
-  expect_length(fast, 1000L)
+  expect_length(fast$levels, 1000L)
+  expect_false(anyNA(unlist(fast$values)))
 })
