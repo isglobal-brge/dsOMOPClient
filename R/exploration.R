@@ -262,7 +262,8 @@ ds.omop.safe.filter.measurement <- function(concept_id, min_value, max_value,
 #'   ranking. \code{$pooled} sums \code{n_persons} and \code{n_records} per
 #'   concept (and source table) over the servers, ranks by \code{metric}
 #'   and keeps the first \code{top_n}; a concept must be released by every
-#'   server.
+#'   server. An optional count column absent on any site remains \code{NA}
+#'   in the pooled frame.
 #' @examples
 #' \dontrun{
 #' result <- ds.omop.concept.prevalence("condition_occurrence")
@@ -754,7 +755,8 @@ ds.omop.value.quantiles <- function(table, value_col,
 #'   frame with \code{period}, \code{n_records} and \code{n_persons}
 #'   (banded; periods below the threshold are left out). \code{$pooled} sums
 #'   the counts per period; a period missing on a server is not treated as
-#'   zero.
+#'   zero. An optional count column unavailable on a server is retained as
+#'   \code{NA}; the released record counts can still be summed.
 #' @examples
 #' \dontrun{
 #' monthly <- ds.omop.date.counts("condition_occurrence",
@@ -847,8 +849,10 @@ ds.omop.date.counts <- function(table, date_col = NULL,
 #'   \code{$pooled} has the same parts: counts, histogram bins, categorical
 #'   values and yearly counts summed, the date range spanned, and the
 #'   non-additive parts (quantiles, \code{pct_persons_multi}, and missing
-#'   rates the servers return without counts) left \code{NULL} or \code{NA}
-#'   with a warning.
+#'   rates the servers return without counts) left as typed \code{NA} with a
+#'   warning. A component absent on a server is unavailable to strict pooling;
+#'   it is never silently pooled over fewer servers. \code{as.data.frame()}
+#'   keeps the nested parts in list columns.
 #' @examples
 #' \dontrun{
 #' profile <- ds.omop.concept.drilldown("condition_occurrence",
@@ -951,12 +955,14 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 #'   no session exists. See \link{dsomop_conventions}.
 #' @param type Result view propagated to every component: \code{"split"}
 #'   (default) or \code{"both"}. The quantiles are never pooled.
-#' @return A named list with \code{table}, \code{concept_id},
+#' @return A named \code{dsomop_summary} list with \code{table}, \code{concept_id},
 #'   \code{numeric} (named-by-column list where each element is a list with
 #'   \code{stats} and \code{quantiles} \code{dsomop_result} objects, or
 #'   NULL when no numeric value column applies), and \code{categorical}
 #'   (named-by-column list of \code{dsomop_result} objects from value
 #'   counts, or NULL when no categorical value column applies).
+#'   \code{as.data.frame()} returns one row with the nested summaries in
+#'   list columns and \code{NA} for an inapplicable component.
 #' @examples
 #' \dontrun{
 #' # Distribution of value_as_number for an HbA1c measurement concept
@@ -1028,11 +1034,12 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
     }
   }
 
-  list(
+  structure(list(
     table = table,
     concept_id = concept_id,
     numeric = if (length(numeric) > 0) numeric else NULL,
-    categorical = if (length(categorical) > 0) categorical else NULL)
+    categorical = if (length(categorical) > 0) categorical else NULL),
+    class = c("dsomop_summary", "list"))
 }
 
 #' Locate concept across all CDM tables

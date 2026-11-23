@@ -62,8 +62,10 @@ A \code{dsomop_result}. Each \code{$per_site} entry is a list
   \code{$pooled} has the same parts: counts, histogram bins, categorical
   values and yearly counts summed, the date range spanned, and the
   non-additive parts (quantiles, \code{pct_persons_multi}, and missing
-  rates the servers return without counts) left \code{NULL} or \code{NA}
-  with a warning.
+  rates the servers return without counts) left as typed \code{NA} with a
+  warning. A component absent on a server is unavailable to strict pooling;
+  it is never silently pooled over fewer servers. \code{as.data.frame()}
+  keeps the nested parts in list columns.
 }
 \description{
 Returns a comprehensive drilldown profile for a single concept within

@@ -44,6 +44,14 @@
 #' (\code{method} and \code{estimand}). Pooled counts are sums of the servers'
 #' banded counts: a person present in several databases counts once per
 #' database.
+#' A present pooled result keeps released fields with typed \code{NA} when
+#' no complete statistic or pooling rule is available. Such fields are never
+#' implicitly summed. The metadata warnings explain unavailable fields;
+#' individual readers document non-additive statistics and bounds.
+#' \code{as.data.frame()} converts scalar summaries to one row, named vectors
+#' to one-row summaries and matrices to frames. Nested components are preserved
+#' in list columns. Split views stack these conversions with a \code{server}
+#' column. The same conversion works directly on pooled list summaries.
 #'
 #' @section Pooling policy:
 #' \code{pooling_policy = "strict"} (the default) releases a pooled value only
@@ -166,7 +174,8 @@ NULL
     method = "weighted mean and pooled SD",
     estimand = paste0("mean weighted by each server's contributing persons; ",
                       "SD from within- and between-server sums of squares; ",
-                      "counts summed")),
+                      "counts summed; distinct cardinality is NA with ",
+                      "max/sum bounds from the released site cardinalities")),
   domain_coverage = c(
     method = "sum of banded counts",
     estimand = "persons (and records) per table summed over the servers"),
@@ -263,27 +272,17 @@ NULL
     NULL)
 }
 
-# Stack per-site data frames into one frame with a leading `server` column.
-# Columns missing from a site are filled with NA; non-frame entries are left
-# out.
+# Convert and stack every site's result with a leading `server` column.
 .stack_per_site <- function(per_site) {
-  frames <- Filter(is.data.frame, per_site)
+  frames <- lapply(per_site, .result_frame)
   if (length(frames) == 0L) return(data.frame())
-  columns <- unique(unlist(lapply(frames, names), use.names = FALSE))
-  columns <- setdiff(columns, "server")
   rows <- lapply(names(frames), function(server) {
     frame <- frames[[server]]
     if ("server" %in% names(frame)) frame$server <- NULL
-    for (column in setdiff(columns, names(frame))) {
-      frame[[column]] <- rep(NA, nrow(frame))
-    }
-    frame <- frame[, columns, drop = FALSE]
     cbind(data.frame(server = rep(server, nrow(frame)),
                      stringsAsFactors = FALSE), frame)
   })
-  out <- do.call(rbind, rows)
-  rownames(out) <- NULL
-  out
+  .bind_result_frames(rows)
 }
 
 # The standard tail of an aggregate reader: pool when the view wants it,

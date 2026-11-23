@@ -53,7 +53,9 @@ A \code{dsomop_result}. Each \code{$per_site} entry is a list with
   suppressed is absent) and, when requested, \code{date_range}
   (\code{column}, \code{min_month}, \code{max_month}). \code{$pooled} has
   the same fields: counts summed over the servers and the date range
-  spanning them.
+  spanning them. A field released by only some sites remains \code{NA}
+  under strict pooling. Scalar summaries convert to one-row data frames;
+  nested date ranges are retained in list columns.
 }
 \description{
 Returns row counts and person counts for the specified OMOP CDM table.

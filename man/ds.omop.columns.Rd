@@ -36,7 +36,8 @@ A \code{dsomop_result}. \code{$per_site} is the named list (one
   \code{is_nullable}, \code{is_concept}, \code{is_date}, ...) returned by
   earlier versions, and \code{res$<server>} still reaches one server's
   frame. \code{$pooled} holds the rows of the columns present on every
-  server.
+  server, retaining all released metadata fields. Fields whose values
+  differ between servers, or are absent on one server, are \code{NA}.
 }
 \description{
 Queries each connected server for the list of columns present in the

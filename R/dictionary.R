@@ -29,7 +29,9 @@
 #'   \code{has_person_id}, ...) returned by earlier versions, and
 #'   \code{res$<server>} still reaches one server's frame. \code{$pooled}
 #'   holds the rows of the tables present on every server (\code{NULL}, with
-#'   \code{meta$pooling_reason}, when a server did not answer).
+#'   \code{meta$pooling_reason}, when a server did not answer). All released
+#'   metadata columns are retained; a field that differs between servers or
+#'   is absent on one server is \code{NA} in the pooled row.
 #' @examples
 #' \dontrun{
 #' tables <- ds.omop.tables()
@@ -82,8 +84,9 @@ ds.omop.tables <- function(schema_category = NULL,
     pooling = .pooling_meta("common_tables")))
 }
 
-# The rows (from the first server) whose key is present on every requested
-# server; NULL when a server did not answer.
+# The keys present on every requested server. Metadata describes the whole
+# federation only when every server agrees; missing/conflicting fields are NA.
+# NULL when a server did not answer.
 .dictionary_common_rows <- function(per_site, key, expected_servers) {
   if (length(attr(per_site, "ds_errors")) > 0L ||
       !all(expected_servers %in% names(per_site))) {
@@ -99,8 +102,19 @@ ds.omop.tables <- function(schema_category = NULL,
   common <- Reduce(intersect, lapply(frames, function(df) {
     as.character(df[[key]])
   }))
-  first <- frames[[1L]]
-  out <- first[as.character(first[[key]]) %in% common, , drop = FALSE]
+  combined <- .bind_result_frames(frames)
+  out <- combined[match(common, as.character(combined[[key]])), , drop = FALSE]
+  for (column in setdiff(names(out), key)) {
+    for (i in seq_along(common)) {
+      values <- lapply(frames, function(frame) {
+        if (!column %in% names(frame)) return(.result_na_like(out[[column]]))
+        frame[[column]][match(common[[i]], as.character(frame[[key]]))]
+      })
+      if (!all(vapply(values, identical, logical(1), values[[1L]]))) {
+        out[[column]][i] <- .result_na_like(out[[column]])
+      }
+    }
+  }
   rownames(out) <- NULL
   out
 }
@@ -130,7 +144,8 @@ ds.omop.tables <- function(schema_category = NULL,
 #'   \code{is_nullable}, \code{is_concept}, \code{is_date}, ...) returned by
 #'   earlier versions, and \code{res$<server>} still reaches one server's
 #'   frame. \code{$pooled} holds the rows of the columns present on every
-#'   server.
+#'   server, retaining all released metadata fields. Fields whose values
+#'   differ between servers, or are absent on one server, are \code{NA}.
 #' @examples
 #' \dontrun{
 #' cols <- ds.omop.columns("condition_occurrence")

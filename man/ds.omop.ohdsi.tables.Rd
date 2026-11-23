@@ -29,6 +29,8 @@ no session exists. See \link{dsomop_conventions}.}
 A \code{dsomop_result}. \code{$pooled} stacks the servers'
   catalogs with a \code{.server} column; it is \code{NULL} (with
   \code{meta$pooling_reason}) when a server is unavailable.
+  All released columns are retained, with typed \code{NA} where a server's
+  catalog omits a field.
 }
 \description{
 Returns a catalog of all OHDSI result tables found across connected servers,

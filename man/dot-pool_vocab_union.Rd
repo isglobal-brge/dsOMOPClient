@@ -16,9 +16,9 @@ A single de-duplicated data frame, or \code{NULL}.
 Vocabulary/CDM metadata is reference data: a given concept, vocabulary,
 domain, or concept class exists independently on each server, so the cross-
 site view is simply their set union (not a sum). This helper row-binds the
-per-site data frames (intersecting on common columns so heterogeneous schemas
-still combine) and drops duplicate rows. Empty / non-data-frame entries are
-skipped. A partial server response returns \code{NULL} rather than claiming
+per-site data frames (retaining every column and filling absent fields with
+typed \code{NA}) and drops duplicate rows. Empty frames retain their schema.
+A partial or malformed server response returns \code{NULL} rather than claiming
 an incomplete union is federation-wide. Returns \code{NULL} when there is
 nothing to pool.
 }

@@ -1,3 +1,25 @@
+# dsOMOPClient 2.10.10 (2026-11-23)
+
+- Pooled column statistics retain the fields for the column type. Non-numeric
+  summaries no longer contain a NULL mean. The cross-site distinct count is
+  `n_distinct = NA`: `n_distinct_max` is the largest site cardinality (a lower
+  bound), and `n_distinct_sum` is their sum (an upper bound). Both bounds are
+  NA when any site cardinality is unavailable; `n_distinct_basis` explains them.
+- Pooled count frames retain optional count columns such as `n_persons` when
+  some sites omit them, with NA for unavailable totals. Empty sites and absent
+  drilldown components no longer silently become partial strict pools.
+- `as.data.frame()` handles scalar summaries, matrices and nested results for
+  split, combine and both views, including direct pooled list summaries.
+  Nested components use list columns. Unavailable fields within pooled results
+  use typed NA, with a reason, instead of NULL or silently disappearing.
+- Vocabulary unions retain metadata columns supplied by only some sites.
+  Common table and column listings show NA for metadata that differs between
+  sites. Concept-list bounds require every site's page and total.
+- Pooling continues to use only released summaries. Non-additive statistics
+  without a pooling rule remain NA; counts and weighted summaries retain their
+  existing banded-count interpretation. Site-specific outputs and refused
+  whole pooled views retain their documented behavior.
+
 # dsOMOPClient 2.10.9 (2026-11-19)
 
 - `ds.omop.table()` returns `ds.table()`'s object: per-site and combined counts

@@ -33,8 +33,12 @@ summaries gate on distinct persons; counts/cells may then be banded, omitted or
 blocked (see the *Security* vignette). This is not a blanket guarantee for
 unrestricted adaptive queries or for methods exported by other server packages.
 Client wrappers return a `dsomop_result` object with a `$per_site`
-list (one entry per server), an optional `$pooled` slot (when `scope = "pooled"`),
+list (one entry per server), an optional `$pooled` slot (`type = "combine"`
+or `"both"`),
 and a `$meta` slot that records the generated call and any server warnings.
+`as.data.frame()` converts scalar summaries as well as tables. A split view
+stacks the site results with a `server` column; a combined view converts its
+pooled result. Composite results retain their nested parts as list columns.
 
 ## Prerequisites
 
@@ -48,11 +52,17 @@ library(dsOMOPClient)
 
 ```{r tables}
 tables <- ds.omop.tables(symbol = "omop", conns = conns)
-# Per-site character vectors of discovered table names
+# Per-site and common-table metadata frames
 
 cols <- ds.omop.columns("condition_occurrence", symbol = "omop", conns = conns)
 # Per-site column metadata: name, type, nullability
 ```
+
+The pooled table and column listings contain names present on every server.
+Metadata fields that disagree between servers, or are absent on one, are `NA`;
+inspect `$per_site` for the individual definitions. Vocabulary catalog unions
+retain all released metadata columns, including when one server falls back to
+IDs from its `concept` table because a dedicated vocabulary table is absent.
 
 dsOMOP combines runtime schema introspection with an authorized OHDSI CDM
 specification. Standard tables/columns outside the recognized version fail
@@ -70,7 +80,7 @@ joins <- ds.omop.joins(symbol = "omop", conns = conns)
 
 ```{r stats}
 ts <- ds.omop.table.stats("measurement", symbol = "omop", conns = conns)
-# row_count and person_count (COUNT(DISTINCT person_id)); suppressed if small
+# rows and persons (COUNT(DISTINCT person_id)); suppressed if small
 
 cs <- ds.omop.column.stats("measurement", "value_as_number",
   concept_id = 3004410, symbol = "omop", conns = conns)
@@ -83,6 +93,19 @@ contributor. The mean and standard deviation have different minimum-support
 floors. Raw minima/maxima and quantiles are deliberately absent; request the
 separately gated quantile or histogram endpoints when their estimand is
 appropriate.
+
+For a pooled numeric or categorical summary, `n_distinct` is `NA`: the sites'
+counts do not identify how many values they share. `n_distinct_max` is the
+largest released site cardinality (a lower bound), and `n_distinct_sum` is
+their sum (an upper bound). Both bounds are `NA` if any site did not release
+its cardinality; `n_distinct_basis` explains the estimand. Categorical summaries
+retain their count fields without an inapplicable `NULL` mean.
+
+```{r pooled-column-stats}
+categorical <- ds.omop.column.stats("person", "gender_concept_id",
+  type = "both", datasources = conns)
+as.data.frame(categorical)
+```
 
 ## Concept Prevalence
 
@@ -158,6 +181,11 @@ number of distinct levels (see *Security*). Profiling a clinical/results table
 also requires a reviewed direct route to `person_id`; dsOMOP does not silently
 treat repeated event rows as independent people or ignore an inapplicable
 cohort scope.
+
+Pooled value-count frames keep `n` and every released `n_persons` column.
+If a contributing server has no `n_persons` field, that pooled count is `NA`;
+it is never a partial sum presented as a complete federation count. When every
+server's table lacks a person column, the result contains record counts only.
 
 ## Other Profiling
 

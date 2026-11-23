@@ -37,7 +37,9 @@ A \code{dsomop_result}. \code{$per_site} is the named list (one
   \code{has_person_id}, ...) returned by earlier versions, and
   \code{res$<server>} still reaches one server's frame. \code{$pooled}
   holds the rows of the tables present on every server (\code{NULL}, with
-  \code{meta$pooling_reason}, when a server did not answer).
+  \code{meta$pooling_reason}, when a server did not answer). All released
+  metadata columns are retained; a field that differs between servers or
+  is absent on one server is \code{NA} in the pooled row.
 }
 \description{
 Queries each connected server for the list of OMOP CDM tables present

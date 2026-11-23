@@ -519,7 +519,7 @@
     as.numeric(p$mechanism_epsilon %||% NA_real_)
   }, numeric(1L))
   result <- dsomop_result(
-    per_site = raw, pooled = pooled,
+    per_site = raw, pooled = pooled, schema = list(),
     meta = list(
       call_code = .build_code("ds.omop.dp.release", x = x,
                               privacy = "<omop_privacy>",

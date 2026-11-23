@@ -380,9 +380,9 @@ ds.omop.concept.expand <- function(concept_set,
 #' Vocabulary/CDM metadata is reference data: a given concept, vocabulary,
 #' domain, or concept class exists independently on each server, so the cross-
 #' site view is simply their set union (not a sum). This helper row-binds the
-#' per-site data frames (intersecting on common columns so heterogeneous schemas
-#' still combine) and drops duplicate rows. Empty / non-data-frame entries are
-#' skipped. A partial server response returns \code{NULL} rather than claiming
+#' per-site data frames (retaining every column and filling absent fields with
+#' typed \code{NA}) and drops duplicate rows. Empty frames retain their schema.
+#' A partial or malformed server response returns \code{NULL} rather than claiming
 #' an incomplete union is federation-wide. Returns \code{NULL} when there is
 #' nothing to pool.
 #'
@@ -391,11 +391,9 @@ ds.omop.concept.expand <- function(concept_set,
 #' @keywords internal
 .pool_vocab_union <- function(per_site) {
   if (length(attr(per_site, "ds_errors")) > 0L) return(NULL)
-  dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
-  if (length(dfs) == 0) return(.empty_metadata_union(per_site))
-  common <- Reduce(intersect, lapply(dfs, names))
-  if (length(common) == 0) return(NULL)
-  combined <- do.call(rbind, lapply(dfs, function(d) d[, common, drop = FALSE]))
+  if (length(per_site) == 0L ||
+      !all(vapply(per_site, is.data.frame, logical(1)))) return(NULL)
+  combined <- .bind_result_frames(per_site)
   combined <- unique(combined)
   rownames(combined) <- NULL
   combined
@@ -664,7 +662,10 @@ ds.omop.concept.relationships <- function(concept_ids,
 #'   \code{total_count} (the sum of the per-site totals, an upper bound of the
 #'   distinct concepts), \code{total_count_max} (the largest per-site total,
 #'   a lower bound), \code{total_count_basis} (that label), \code{offset}
-#'   and \code{limit}.
+#'   and \code{limit}. Page rows retain all released metadata columns, with
+#'   \code{NA} for fields absent on a server. Missing page rows or totals
+#'   prevent pooling: \code{"both"} records \code{meta$pooling_reason} and
+#'   \code{"combine"} stops.
 #' @examples
 #' \dontrun{
 #' # First page of SNOMED conditions, with the total available count
@@ -714,14 +715,18 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
   names(page_rows) <- names(raw)
   attr(page_rows, "ds_errors") <- attr(raw, "ds_errors")
   totals <- vapply(raw, function(s) {
-    if (is.list(s) && !is.null(s$total_count)) as.numeric(s$total_count)
-    else NA_real_
+    value <- if (is.list(s)) s$total_count else NULL
+    if (!is.numeric(value) || length(value) != 1L || !is.finite(value) ||
+        value < 0) NA_real_ else as.numeric(value)
   }, numeric(1))
-  incomplete <- length(attr(raw, "ds_errors")) > 0L || all(is.na(totals))
-  pooled <- if (.result_type_wants_combine(result_type)) list(
+  incomplete <- length(raw) == 0L ||
+    length(attr(raw, "ds_errors")) > 0L ||
+    !all(names(conns) %in% names(raw)) || anyNA(totals) ||
+    !all(vapply(page_rows, is.data.frame, logical(1)))
+  pooled <- if (.result_type_wants_combine(result_type) && !incomplete) list(
     rows = .pool_vocab_union(page_rows),
-    total_count = if (incomplete) NA_real_ else sum(totals, na.rm = TRUE),
-    total_count_max = if (incomplete) NA_real_ else max(totals, na.rm = TRUE),
+    total_count = sum(totals),
+    total_count_max = max(totals),
     total_count_basis = paste0(
       "total_count sums the per-site totals (a concept on several servers ",
       "counts once per server); total_count_max is the largest per-site ",
@@ -766,6 +771,8 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
 #'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's
 #'   vocabulary frame; \code{pooled} is the de-duplicated union across servers.
+#'   It retains every released column, using \code{NA} for metadata missing
+#'   from a server's fallback frame.
 #' @examples
 #' \dontrun{
 #' vocabs <- ds.omop.vocab.vocabularies()
@@ -824,6 +831,8 @@ ds.omop.vocab.vocabularies <- function(symbol = "omop", conns = NULL,
 #'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's domain
 #'   frame; \code{pooled} is the de-duplicated union across servers.
+#'   It retains every released column, using \code{NA} for metadata missing
+#'   from a server's fallback frame.
 #' @examples
 #' \dontrun{
 #' domains <- ds.omop.vocab.domains()
@@ -882,6 +891,8 @@ ds.omop.vocab.domains <- function(symbol = "omop", conns = NULL,
 #'   answer. See \link{dsomop_conventions}.
 #' @return A \code{dsomop_result}. \code{per_site} holds each server's concept
 #'   class frame; \code{pooled} is the de-duplicated union across servers.
+#'   It retains every released column, using \code{NA} for metadata missing
+#'   from a server's fallback frame.
 #' @examples
 #' \dontrun{
 #' classes <- ds.omop.vocab.classes()

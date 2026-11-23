@@ -46,6 +46,14 @@ Every pooled result records how it was pooled in \code{meta$pooling}
 (\code{method} and \code{estimand}). Pooled counts are sums of the servers'
 banded counts: a person present in several databases counts once per
 database.
+A present pooled result keeps released fields with typed \code{NA} when
+no complete statistic or pooling rule is available. Such fields are never
+implicitly summed. The metadata warnings explain unavailable fields;
+individual readers document non-additive statistics and bounds.
+\code{as.data.frame()} converts scalar summaries to one row, named vectors
+to one-row summaries and matrices to frames. Nested components are preserved
+in list columns. Split views stack these conversions with a \code{server}
+column. The same conversion works directly on pooled list summaries.
 }
 
 \section{Pooling policy}{

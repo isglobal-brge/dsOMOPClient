@@ -1584,7 +1584,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     ))
   }
   result <- dsomop_result(
-    per_site = raw, pooled = pooled,
+    per_site = raw, pooled = pooled, schema = list(),
     meta = list(
       call_code = .build_code("ds.omop.dp.release", x = x,
                               privacy = "<omop_privacy>",

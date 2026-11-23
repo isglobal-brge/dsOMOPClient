@@ -61,9 +61,15 @@ A \code{dsomop_result}. Each \code{$per_site} entry is a list with
   \code{n_total}, \code{n_missing}, \code{n_distinct} and, for person
   tables, \code{n_persons} (counts banded; a suppressed value is
   \code{NA}), plus \code{mean} and \code{sd} for numeric columns.
-  \code{$pooled} sums the counts, weights the mean by the contributing
-  persons and pools the SD; the distinct count is not additive and is not
-  pooled.
+  \code{$pooled} retains the fields for that column type, sums the banded
+  counts, weights numeric means by contributing persons and pools the SD.
+  Unavailable statistics are typed \code{NA}. Cross-site overlap is unknown:
+  \code{n_distinct} is \code{NA}; \code{n_distinct_max} (maximum of site
+  cardinalities) is a lower bound and \code{n_distinct_sum} (their sum) an
+  upper bound on the union cardinality. Both bounds are \code{NA} if any
+  site cardinality is unavailable, under either pooling policy.
+  \code{n_distinct_basis} explains these bounds. \code{as.data.frame()}
+  returns one row per summary (with a server column for split results).
 }
 \description{
 Returns statistics for a single column in an OMOP CDM table: banded row,

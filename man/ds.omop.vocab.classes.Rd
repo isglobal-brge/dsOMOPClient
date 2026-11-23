@@ -37,6 +37,8 @@ no session exists. See \link{dsomop_conventions}.}
 \value{
 A \code{dsomop_result}. \code{per_site} holds each server's concept
   class frame; \code{pooled} is the de-duplicated union across servers.
+  It retains every released column, using \code{NA} for metadata missing
+  from a server's fallback frame.
 }
 \description{
 Returns the distinct concept classes from the OMOP \code{concept_class} table

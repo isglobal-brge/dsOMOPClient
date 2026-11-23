@@ -36,6 +36,10 @@ A table's schema describes its fields, even when the table is empty. The
 metadata returned by `ds.omop.columns()` help you decide which field to use.
 We display only the rows and columns needed for each decision.
 
+In a federation, `columns$pooled` lists the columns present on every server.
+Metadata that differs between servers, or is missing from one, is `NA` in
+that view. Inspect `columns$per_site` for the individual definitions.
+
 | Metadata | How to read it |
 |:--|:--|
 | `cdm_datatype`, `is_date` | The field's expected type and whether it represents a date. |
@@ -293,6 +297,15 @@ The public GiBleed data contain no numeric lab values. Use Synthea27Nj for the l
 there before fitting a model.
 
 </details>
+
+For a combined view, use `type = "both"` and convert the result with
+`as.data.frame()`. Column summaries retain their released count fields for
+numeric and categorical columns. The exact cross-site `n_distinct` is `NA`:
+`n_distinct_max` is a lower bound and `n_distinct_sum` an upper bound, because
+the sites' distinct counts do not reveal their overlap. A suppressed site
+cardinality makes both bounds unavailable. Value-count frames retain
+`n_persons` wherever a site releases it; an unavailable contributing count
+stays `NA` in the pooled result.
 
 ## Recap
 

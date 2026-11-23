@@ -1,6 +1,130 @@
 # Module: Result Objects
 # dsomop_result construction, printing, and utility functions.
 
+# A missing released field is unknown, never zero. Indexing preserves Date,
+# integer, factor and other atomic column types, including empty prototypes.
+.result_na_like <- function(template, n = 1L) {
+  if (is.null(template)) return(rep(NA, n))
+  if (is.list(template)) return(rep(list(NA), n))
+  template[rep(NA_integer_, n)]
+}
+
+# Shared union for released frames; it does not infer aggregation semantics.
+.bind_result_frames <- function(frames) {
+  frames <- Filter(is.data.frame, frames)
+  if (!length(frames)) return(data.frame())
+  columns <- unique(unlist(lapply(frames, names), use.names = FALSE))
+  prototypes <- setNames(lapply(columns, function(column) {
+    frames[[which(vapply(frames, function(x) column %in% names(x),
+                         logical(1)))[[1L]]]][[column]]
+  }), columns)
+  frames <- lapply(frames, function(frame) {
+    for (column in setdiff(columns, names(frame))) {
+      frame[[column]] <- .result_na_like(prototypes[[column]], nrow(frame))
+    }
+    frame[, columns, drop = FALSE]
+  })
+  out <- do.call(rbind, frames)
+  rownames(out) <- NULL
+  out
+}
+
+# One boundary for all pooled readers. Preserve the released schema, filling
+# unavailable/unimplemented statistics with typed NA, never an inferred sum.
+# A NULL root still means pooling was refused or not requested. Wire envelopes
+# (DP) can supply an empty schema when their display is a different contract.
+.complete_pooled_shape <- function(pooled, per_site = list()) {
+  missing <- character(0)
+  complete <- function(value, templates, path) {
+    templates <- Filter(Negate(is.null), templates)
+    prototype <- if (length(templates)) templates[[1L]] else NULL
+    if (is.null(value)) {
+      missing <<- c(missing, path)
+      if (is.data.frame(prototype)) {
+        value <- prototype[NA_integer_, , drop = FALSE]
+        rownames(value) <- NULL
+      } else if (is.list(prototype) && !is.null(names(prototype))) {
+        value <- list()
+      } else {
+        return(.result_na_like(prototype))
+      }
+    }
+    if (is.data.frame(value)) {
+      frames <- Filter(is.data.frame, templates)
+      columns <- setdiff(unique(unlist(lapply(frames, names),
+                                      use.names = FALSE)), "suppressed")
+      for (column in setdiff(columns, names(value))) {
+        template <- frames[[which(vapply(frames, function(x) {
+          column %in% names(x)
+        }, logical(1)))[[1L]]]][[column]]
+        value[[column]] <- .result_na_like(template, nrow(value))
+        missing <<- c(missing, paste0(path, "$", column))
+      }
+      for (column in names(value)) {
+        if (is.list(value[[column]])) {
+          value[[column]] <- lapply(value[[column]], function(cell) {
+            complete(cell, list(), paste0(path, "$", column))
+          })
+        }
+      }
+    } else if (is.list(value)) {
+      templates <- Filter(function(x) is.list(x) && !is.data.frame(x), templates)
+      unnamed <- if (is.null(names(value))) seq_along(value) else
+        which(is.na(names(value)) | !nzchar(names(value)))
+      for (i in unnamed) {
+        value[i] <- list(complete(value[[i]], list(),
+                                  paste0(path, "[[", i, "]]")))
+      }
+      fields <- unique(c(names(value), unlist(lapply(templates, names),
+                                              use.names = FALSE)))
+      fields <- fields[!is.na(fields) & nzchar(fields)]
+      if (length(fields)) {
+        for (field in fields) {
+          value[field] <- list(complete(value[[field]],
+            lapply(templates, `[[`, field), paste0(path, "$", field)))
+        }
+      } else {
+        value <- lapply(value, complete, templates = list(), path = path)
+      }
+    }
+    value
+  }
+  if (is.null(pooled)) return(list(result = NULL, warnings = character(0)))
+  out <- complete(pooled, per_site, "pooled")
+  if (is.list(out) && !is.data.frame(out)) {
+    class(out) <- unique(c("dsomop_summary", class(out)))
+  }
+  list(result = out, warnings = if (length(missing)) paste0(
+    "Unavailable fields are NA; no pooled statistic is inferred from missing ",
+    "releases or without a pooling rule: ", paste(unique(missing), collapse = ", "),
+    ".") else character(0))
+}
+
+# Scalar summaries are one row. Nested components remain intact in list
+# columns, avoiding Cartesian expansion/recycling of unrelated table rows.
+.result_frame <- function(x) {
+  if (is.null(x)) return(data.frame())
+  if (is.data.frame(x)) return(x)
+  if (is.matrix(x)) return(as.data.frame(x, stringsAsFactors = FALSE))
+  if (is.atomic(x) && is.null(names(x))) {
+    return(data.frame(value = x, stringsAsFactors = FALSE))
+  }
+  if (is.atomic(x)) x <- as.list(x)
+  if (!is.list(x)) return(data.frame(value = I(list(x))))
+  if (!length(x)) return(data.frame())
+  if (is.null(names(x))) names(x) <- paste0("V", seq_along(x))
+  unnamed <- is.na(names(x)) | !nzchar(names(x))
+  names(x)[unnamed] <- paste0("V", which(unnamed))
+  columns <- lapply(x, function(value) {
+    if (is.null(value)) return(NA)
+    if (is.atomic(value) && length(value) == 1L && is.null(dim(value))) {
+      return(value)
+    }
+    I(list(value))
+  })
+  as.data.frame(columns, optional = TRUE, stringsAsFactors = FALSE)
+}
+
 # Disclosure: never surface suppressed rows. A row flagged `suppressed` reveals
 # that a rare concept/value EXISTS (with too few persons) -- which is itself
 # disclosive. Drop such rows entirely (indistinguishable from absent) and remove
@@ -136,6 +260,9 @@
 #'   (data frames, lists, or scalars).
 #' @param pooled \code{NULL} (default) or a single aggregated result
 #'   (typically a data frame) combining all servers.
+#' @param schema Per-site prototypes for the pooled output, defaulting to
+#'   \code{per_site}. Use an empty list for a derived display whose schema
+#'   differs from the server wire payload (for example a DP release).
 #' @param meta Named list of metadata. Recognised elements:
 #'   \code{call_code} (character; reproducible R code),
 #'   \code{scope} (character; \code{"per_site"} or \code{"pooled"}),
@@ -148,9 +275,12 @@
 #'   result) and \code{pooling_reason} (why no pooled result was formed),
 #'   are kept as given.
 #' @return A \code{dsomop_result} object (a list with class
-#'   \code{c("dsomop_result", "list")}).
+#'   \code{c("dsomop_result", "list")}). A present pooled result has no
+#'   NULL leaves. Fields without a released value or a pooling rule are typed
+#'   \code{NA}, with a warning; non-additive fields are never implicitly summed.
+#'   List summaries support direct \code{as.data.frame()} conversion.
 #' @keywords internal
-dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
+dsomop_result <- function(per_site, pooled = NULL, meta = list(), schema = per_site) {
   # Drop suppressed rows/column from every per-site + pooled table, but PRESERVE
   # list attributes -- lapply() drops them, and per_site carries a `ds_errors`
   # attribute with per-server error messages that must survive.
@@ -165,6 +295,8 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
   per_site <- lapply(per_site, .hide_suppressed)
   for (a in setdiff(names(ps_attrs), "names")) attr(per_site, a) <- ps_attrs[[a]]
   pooled   <- .hide_suppressed(pooled)
+  shaped <- .complete_pooled_shape(pooled, schema)
+  pooled <- shaped$result
   obj <- list(
     per_site = per_site,
     pooled   = pooled,
@@ -180,7 +312,7 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
       },
       pooling_policy = meta$pooling_policy %||% "strict",
       warnings       = unique(c(meta$warnings %||% character(0),
-                                error_warnings))
+                                error_warnings, shaped$warnings))
     )
   )
   # Keep any further metadata (pooling, pooling_reason, protection, ...).
@@ -366,13 +498,16 @@ print.dsomop_result <- function(x, ...) {
 #' Extracts one data frame from a \code{dsomop_result} object. A split result
 #' (\code{type = "split"}) stacks the per-server data frames into one frame
 #' with a leading \code{server} column, so no site is dropped silently.
-#' A \code{"combine"} or \code{"both"} result returns its pooled data frame;
-#' when no pooled value could be formed, it returns an empty
+#' A \code{"combine"} or \code{"both"} result converts its pooled value;
+#' scalar summaries become one row and nested components become list columns.
+#' Matrices become frames and named vectors become one-row summaries. Split
+#' results use the same conversion for each site before stacking the rows.
+#' When no pooled value could be formed, it returns an empty
 #' \code{data.frame()} so a failed strict federation never degrades to a
 #' partial view (use \code{type = "split"} or \code{$per_site} for the
 #' per-server results).
 #'
-#' @param x A \code{dsomop_result} object.
+#' @param x A \code{dsomop_result} object or its pooled list summary.
 #' @param ... Additional arguments (ignored).
 #' @return A data frame: the pooled result, the stacked per-server results
 #'   with a \code{server} column for split results, or an empty data frame.
@@ -385,8 +520,8 @@ print.dsomop_result <- function(x, ...) {
 #' @export
 as.data.frame.dsomop_result <- function(x, ...) {
   pooled <- .subset2(x, "pooled")
-  if (!is.null(pooled) && is.data.frame(pooled)) {
-    return(pooled)
+  if (!is.null(pooled)) {
+    return(.result_frame(pooled))
   }
   meta <- .subset2(x, "meta")
   type <- meta$type %||% if (identical(meta$scope, "pooled")) "both" else
@@ -394,6 +529,10 @@ as.data.frame.dsomop_result <- function(x, ...) {
   if (!identical(type, "split")) return(data.frame())
   .stack_per_site(.subset2(x, "per_site"))
 }
+
+#' @rdname as.data.frame.dsomop_result
+#' @export
+as.data.frame.dsomop_summary <- function(x, ...) .result_frame(x)
 
 #' Get the R code that produced a result
 #'

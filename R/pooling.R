@@ -1,6 +1,12 @@
 # Module: Result Pooling
 # Functions for pooling per-site results into combined summaries.
 
+.pool_numeric_values <- function(x) {
+  vapply(as.list(x), function(value) {
+    if (length(value) == 1L) as.numeric(value) else NA_real_
+  }, numeric(1))
+}
+
 #' Pool counts by summing across servers
 #' @param per_site_counts Named numeric vector or list of counts
 #' @param policy Character; "strict" or "pooled_only_ok"
@@ -8,7 +14,7 @@
 #' @keywords internal
 .pool_counts <- function(per_site_counts, policy = "strict") {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
-  vals <- unlist(per_site_counts)
+  vals <- .pool_numeric_values(per_site_counts)
   warnings <- character(0)
 
   has_na <- is.na(vals)
@@ -41,12 +47,12 @@
 #' @keywords internal
 .pool_means <- function(per_site_means, per_site_counts, policy = "strict") {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
-  means <- unlist(per_site_means)
-  counts <- unlist(per_site_counts)
+  means <- .pool_numeric_values(per_site_means)
+  counts <- .pool_numeric_values(per_site_counts)
   warnings <- character(0)
 
-  # Align by common names
-  common <- intersect(names(means), names(counts))
+  # Align every named contributor; an absent component is unknown.
+  common <- union(names(means), names(counts))
   means <- means[common]
   counts <- counts[common]
 
@@ -82,12 +88,12 @@
 .pool_variance <- function(per_site_var, per_site_means, per_site_counts,
                            policy = "strict") {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
-  vars <- unlist(per_site_var)
-  means <- unlist(per_site_means)
-  counts <- unlist(per_site_counts)
+  vars <- .pool_numeric_values(per_site_var)
+  means <- .pool_numeric_values(per_site_means)
+  counts <- .pool_numeric_values(per_site_counts)
   warnings <- character(0)
 
-  common <- Reduce(intersect, list(names(vars), names(means), names(counts)))
+  common <- Reduce(union, list(names(vars), names(means), names(counts)))
   vars <- vars[common]
   means <- means[common]
   counts <- counts[common]
@@ -151,11 +157,11 @@
 .pool_effect_estimate <- function(per_site_logest, per_site_se,
                                   policy = "strict") {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
-  logest <- unlist(per_site_logest)
-  se <- unlist(per_site_se)
+  logest <- .pool_numeric_values(per_site_logest)
+  se <- .pool_numeric_values(per_site_se)
   warnings <- character(0)
 
-  common <- intersect(names(logest), names(se))
+  common <- union(names(logest), names(se))
   logest <- logest[common]
   se <- se[common]
 
@@ -233,11 +239,11 @@
 #' @keywords internal
 .pool_proportions <- function(per_site_num, per_site_denom, policy = "strict") {
   policy <- match.arg(policy, c("strict", "pooled_only_ok"))
-  nums <- unlist(per_site_num)
-  denoms <- unlist(per_site_denom)
+  nums <- .pool_numeric_values(per_site_num)
+  denoms <- .pool_numeric_values(per_site_denom)
   warnings <- character(0)
 
-  common <- intersect(names(nums), names(denoms))
+  common <- union(names(nums), names(denoms))
   nums <- nums[common]
   denoms <- denoms[common]
 
@@ -430,11 +436,17 @@
     return(list(result = NULL, warnings = c(warnings, "No valid data for top-K pooling")))
   }
 
-  # Additive columns: the metric plus every requested count column that all
-  # contributing servers return.
+  # Keep every released count column. Missing columns remain unknown on that
+  # server, so their pooled cells are NA rather than disappearing or using zero.
   sum_cols <- unique(c(metric_col, intersect(
-    sum_cols, Reduce(intersect, lapply(valid, names))
+    sum_cols, unique(unlist(lapply(valid, names), use.names = FALSE))
   )))
+  incomplete_cols <- sum_cols[vapply(sum_cols, function(column) {
+    any(!vapply(valid, function(df) column %in% names(df), logical(1)))
+  }, logical(1))]
+  if (length(incomplete_cols)) warnings <- c(warnings, paste0(
+    "Count columns absent on a server are NA in the pool: ",
+    paste(incomplete_cols, collapse = ", "), "."))
   label_cols <- setdiff(
     unique(unlist(lapply(valid, names), use.names = FALSE)),
     c(key_cols, sum_cols)
@@ -459,6 +471,7 @@
   site_values <- function(column) {
     values <- vapply(names(valid), function(srv) {
       at <- match(all_keys, site_keys[[srv]])
+      if (!column %in% names(valid[[srv]])) return(rep(NA_real_, length(at)))
       out <- suppressWarnings(as.numeric(valid[[srv]][[column]]))[at]
       out[is.na(at)] <- NA_real_
       out
@@ -1326,7 +1339,7 @@
         names(counts) <- names(per_site)
         pooled_stat <- .pool_counts(counts, policy)
         warnings <- c(warnings, pooled_stat$warnings)
-        if (!is.null(pooled_stat$result)) result[[stat]] <- pooled_stat$result
+        result[[stat]] <- pooled_stat$result %||% NA_real_
       }
       ranges <- lapply(per_site, function(s) {
         if (is.list(s) && is.list(s$date_range)) s$date_range else NULL
@@ -1344,7 +1357,8 @@
             "date_range was not pooled: servers use different date columns."))
         } else {
           months <- function(field) {
-            unlist(lapply(ranges[has_range], `[[`, field), use.names = FALSE)
+            vapply(ranges[has_range], function(r) r[[field]] %||% NA_character_,
+                   character(1))
           }
           result$date_range <- list(
             column = columns,
@@ -1394,7 +1408,7 @@
 
       missing_counts <- vapply(per_site, function(s) {
         if (!is.list(s)) return(NA_real_)
-        if (is.null(s$n_missing)) return(0)
+        if (is.null(s$n_missing)) return(NA_real_)
         as.numeric(s$n_missing)
       }, numeric(1))
       names(missing_counts) <- names(per_site)
@@ -1406,7 +1420,9 @@
       n_eff <- ifelse(has_person_counts, person_counts, counts) - missing_counts
       n_eff[!is.finite(n_eff) | n_eff < 0] <- NA_real_
       names(n_eff) <- names(per_site)
-      pool_mean <- .pool_means(means, n_eff, policy)
+      has_mean <- any(vapply(per_site, function(s) "mean" %in% names(s), logical(1)))
+      pool_mean <- if (has_mean) .pool_means(means, n_eff, policy) else
+        list(result = NULL, warnings = character(0))
 
       # Pooled SD via the sum-of-squares identity (delegated to .pool_variance):
       #   pooled_var = (Σ(n_i-1)·var_i + Σ n_i·(mean_i - mean_pool)^2) / (N-1)
@@ -1419,7 +1435,8 @@
 
       pooled_sd <- NULL
       sd_warnings <- character(0)
-      if (any(!is.na(sds))) {
+      has_sd <- any(vapply(per_site, function(s) "sd" %in% names(s), logical(1)))
+      if (has_sd) {
         vars <- sds^2
         pool_var <- .pool_variance(vars, means, n_eff, policy = policy)
         if (!is.null(pool_var$result)) {
@@ -1431,12 +1448,27 @@
       warnings <- c(pool_n$warnings, pool_persons$warnings,
                     pool_missing$warnings, pool_mean$warnings, sd_warnings)
       result <- if (!is.null(pool_n$result)) {
-        out <- list(n_total = pool_n$result, mean = pool_mean$result)
+        out <- list(n_total = pool_n$result)
+        if (has_mean) out$mean <- pool_mean$result %||% NA_real_
         if (any(has_person_counts)) {
           out$n_persons <- pool_persons$result %||% NA_real_
         }
         out$n_missing <- pool_missing$result %||% NA_real_
-        if (!is.null(pooled_sd)) out$sd <- pooled_sd
+        if (has_sd) out$sd <- pooled_sd %||% NA_real_
+        if (any(vapply(per_site, function(s) "n_distinct" %in% names(s), logical(1)))) {
+          distinct <- vapply(per_site, function(s) {
+            if (is.null(s$n_distinct)) NA_real_ else as.numeric(s$n_distinct)
+          }, numeric(1))
+          complete <- length(aggregate_errors) == 0L &&
+            all(is.finite(distinct) & distinct >= 0)
+          out$n_distinct <- NA_real_
+          out$n_distinct_max <- if (complete) max(distinct) else NA_real_
+          out$n_distinct_sum <- if (complete) sum(distinct) else NA_real_
+          out$n_distinct_basis <- paste0(
+            "Cross-site overlap is unknown: n_distinct is NA; n_distinct_max ",
+            "is a lower bound and n_distinct_sum an upper bound. Both bounds ",
+            "are NA unless every site released its cardinality.")
+        }
         out
       } else NULL
 
@@ -1464,7 +1496,7 @@
       if (length(all_dfs) == 0) {
         return(list(result = NULL, warnings = "No valid domain coverage data"))
       }
-      combined <- do.call(rbind, all_dfs)
+      combined <- .bind_result_frames(all_dfs)
       rownames(combined) <- NULL
 
       # Sum counts per table (propagate NA if any server has NA)
@@ -1544,7 +1576,7 @@
       }
 
       # Pool per column: sum n_missing / sum n_total
-      combined <- do.call(rbind, all_dfs)
+      combined <- .bind_result_frames(all_dfs)
       cols <- unique(combined$column_name)
       pooled_rows <- list()
       incomplete <- character(0)
@@ -1585,7 +1617,7 @@
       adapted <- Filter(function(df) is.data.frame(df) && nrow(df) > 0,
                         per_site)
       k <- if (length(adapted) > 0) max(vapply(adapted, nrow, integer(1))) else 20
-      .pool_top_k(adapted, metric, k, policy, key_cols = "value",
+      .pool_top_k(per_site, metric, k, policy, key_cols = "value",
                   sum_cols = c("n", "n_persons", "n_records", "count"))
     },
 
@@ -1667,18 +1699,24 @@
 
       count_cols <- c("n_records", "n_persons")
       count_cols <- count_cols[vapply(count_cols, function(column) {
-        all(vapply(valid, function(df) column %in% names(df), logical(1)))
+        any(vapply(valid, function(df) column %in% names(df), logical(1)))
       }, logical(1))]
       pooled <- data.frame(period = periods, stringsAsFactors = FALSE)
       safe <- rep(TRUE, length(periods))
       for (column in count_cols) {
         matrix_values <- vapply(valid, function(df) {
+          if (!column %in% names(df)) return(rep(NA_real_, length(periods)))
           as.numeric(df[[column]][match(periods, as.character(df$period))])
         }, numeric(length(periods)))
         if (is.null(dim(matrix_values))) {
           matrix_values <- matrix(matrix_values, nrow = length(periods))
         }
-        safe <- safe & apply(matrix_values, 1L, function(x) !anyNA(x))
+        if (identical(column, "n_records")) {
+          safe <- safe & apply(matrix_values, 1L, function(x) !anyNA(x))
+        } else if (anyNA(matrix_values)) {
+          warnings <- c(warnings, paste0(column,
+            " is NA for periods with an unavailable per-site count."))
+        }
         pooled[[column]] <- rowSums(matrix_values, na.rm = FALSE)
       }
       if (policy == "strict" && !all(safe)) {
@@ -1716,8 +1754,10 @@
       pool_per <- .pool_counts(summary_count("n_persons"), policy)
       warnings <- c(warnings, pool_rec$warnings, pool_per$warnings)
       consensus <- function(field) {
-        values <- unique(unlist(lapply(summaries, `[[`, field)))
-        if (length(values) == 1L) values else NA
+        values <- lapply(summaries, `[[`, field)
+        if (length(values) && all(vapply(values, function(x) {
+          length(x) == 1L && identical(x, values[[1L]])
+        }, logical(1)))) values[[1L]] else NA
       }
       pooled_summary <- if (!is.null(pool_rec$result)) {
         n_persons <- pool_per$result %||% NA_real_
@@ -1740,35 +1780,22 @@
       }
 
       # Pool histograms if present
-      hist_data <- list()
-      for (srv in names(per_site)) {
-        s <- per_site[[srv]]
-        if (is.list(s) && !is.null(s$numeric_summary) &&
-            !is.null(s$numeric_summary$histogram)) {
-          hist_data[[srv]] <- s$numeric_summary$histogram
-        }
-      }
+      hist_data <- lapply(per_site, function(s) s$numeric_summary$histogram)
       pooled_histogram <- NULL
-      if (length(hist_data) > 0) {
+      if (any(!vapply(hist_data, is.null, logical(1)))) {
         ph <- .pool_histograms(hist_data, policy)
         pooled_histogram <- ph$result
         warnings <- c(warnings, ph$warnings)
       }
 
       # Pool categorical values if present
-      cat_data <- list()
-      for (srv in names(per_site)) {
-        s <- per_site[[srv]]
-        if (is.list(s) && !is.null(s$categorical_values) &&
-            is.data.frame(s$categorical_values) && nrow(s$categorical_values) > 0) {
-          cat_data[[srv]] <- s$categorical_values
-        }
-      }
+      cat_data <- lapply(per_site, function(s) s$categorical_values)
+      cat_frames <- Filter(is.data.frame, cat_data)
       pooled_categorical <- NULL
-      if (length(cat_data) > 0) {
-        metric <- if ("n" %in% names(cat_data[[1]])) "n" else "count"
-        k <- max(vapply(cat_data, nrow, integer(1)))
-        key <- if (all(vapply(cat_data, function(df) {
+      if (length(cat_frames) > 0) {
+        metric <- if ("n" %in% names(cat_frames[[1]])) "n" else "count"
+        k <- max(vapply(cat_frames, nrow, integer(1)))
+        key <- if (all(vapply(cat_frames, function(df) {
           "value_as_concept_id" %in% names(df)
         }, logical(1)))) "value_as_concept_id" else "concept_id"
         pc <- .pool_top_k(cat_data, metric, k, policy, key_cols = key,
@@ -1796,8 +1823,8 @@
             "date_range was not pooled: servers use different date columns.")
         } else {
           months <- function(field) {
-            as.character(unlist(lapply(ranges[has_range], `[[`, field),
-                                use.names = FALSE))
+            vapply(ranges[has_range], function(r) r[[field]] %||% NA_character_,
+                   character(1))
           }
           yearly <- lapply(ranges[has_range], `[[`, "date_counts")
           pooled_years <- if (all(vapply(yearly, is.data.frame, logical(1)))) {
@@ -1815,13 +1842,12 @@
       }
 
       # Missingness: a ratio of sums needs the counts behind each rate.
-      miss <- Filter(function(df) is.data.frame(df) && nrow(df) > 0,
-                     lapply(per_site, function(s) {
+      miss <- lapply(per_site, function(s) {
                        if (is.list(s)) s$missingness else NULL
-                     }))
+                     })
       pooled_missingness <- NULL
-      if (length(miss) > 0L) {
-        if (all(vapply(miss, function(df) {
+      if (any(vapply(miss, is.data.frame, logical(1)))) {
+        if (all(vapply(Filter(is.data.frame, miss), function(df) {
           all(c("n_total", "n_missing") %in% names(df))
         }, logical(1)))) {
           pm <- .pool_result(miss, "missingness", policy)
@@ -1876,7 +1902,7 @@
       if (length(all_dfs) == 0) {
         return(list(result = NULL, warnings = "No valid locator data"))
       }
-      combined <- do.call(rbind, all_dfs)
+      combined <- .bind_result_frames(all_dfs)
       rownames(combined) <- NULL
 
       # Aggregate by concept_id + table_name + concept_column
@@ -1942,7 +1968,7 @@
         return(list(result = NULL, warnings = "No valid Achilles results to pool"))
       }
 
-      combined <- do.call(rbind, all_dfs)
+      combined <- .bind_result_frames(all_dfs)
       rownames(combined) <- NULL
 
       # Group by analysis_id + all strata
@@ -2016,7 +2042,7 @@
         return(list(result = NULL, warnings = c(warnings, "No valid Achilles distributions to pool")))
       }
 
-      combined <- do.call(rbind, all_dfs)
+      combined <- .bind_result_frames(all_dfs)
       rownames(combined) <- NULL
 
       key_cols <- c("analysis_id", "stratum_1", "stratum_2", "stratum_3",
@@ -2123,6 +2149,9 @@
     }
   )
   if (is.list(out)) {
+    shaped <- .complete_pooled_shape(out$result, per_site)
+    out["result"] <- list(shaped$result)
+    out$warnings <- unique(c(out$warnings, shaped$warnings))
     out$harmonization <- harmonization
     if (length(per_site) > 1L && !is.null(harmonization) &&
         is.finite(harmonization$count_band_width %||% NA_real_) &&
@@ -2277,7 +2306,7 @@
   if (length(per_site) == 0L || length(frames) != length(per_site)) {
     return(NULL)
   }
-  out <- frames[[1L]][0, , drop = FALSE]
+  out <- .bind_result_frames(lapply(frames, function(x) x[0, , drop = FALSE]))
   rownames(out) <- NULL
   out
 }
@@ -2296,11 +2325,10 @@
 #' @keywords internal
 .pool_concept_metadata <- function(per_site) {
   if (length(attr(per_site, "ds_errors")) > 0L) return(NULL)
+  if (!all(vapply(per_site, is.data.frame, logical(1)))) return(NULL)
   dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
   if (length(dfs) == 0) return(.empty_metadata_union(per_site))
-  cols <- Reduce(intersect, lapply(dfs, names))
-  if (length(cols) == 0) return(NULL)
-  combined <- do.call(rbind, lapply(dfs, function(d) d[, cols, drop = FALSE]))
+  combined <- .bind_result_frames(Filter(is.data.frame, per_site))
   combined <- unique(combined)
   rownames(combined) <- NULL
   combined

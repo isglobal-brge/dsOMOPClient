@@ -160,6 +160,8 @@ ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL,
 #' @return A \code{dsomop_result}. \code{$pooled} stacks the servers'
 #'   catalogs with a \code{.server} column; it is \code{NULL} (with
 #'   \code{meta$pooling_reason}) when a server is unavailable.
+#'   All released columns are retained, with typed \code{NA} where a server's
+#'   catalog omits a field.
 #' @examples
 #' \dontrun{
 #' tables <- ds.omop.ohdsi.tables()
@@ -206,7 +208,7 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL,
       )
       NULL
     } else if (length(all_dfs) > 0L) {
-      result <- do.call(rbind, all_dfs)
+      result <- .bind_result_frames(all_dfs)
       rownames(result) <- NULL
       result
     } else NULL

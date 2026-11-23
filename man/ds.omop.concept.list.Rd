@@ -69,7 +69,10 @@ A \code{dsomop_result}. \code{per_site} holds each server's
   \code{total_count} (the sum of the per-site totals, an upper bound of the
   distinct concepts), \code{total_count_max} (the largest per-site total,
   a lower bound), \code{total_count_basis} (that label), \code{offset}
-  and \code{limit}.
+  and \code{limit}. Page rows retain all released metadata columns, with
+  \code{NA} for fields absent on a server. Missing page rows or totals
+  prevent pooling: \code{"both"} records \code{meta$pooling_reason} and
+  \code{"combine"} stops.
 }
 \description{
 Pages through the OMOP \code{concept} catalog on each connected server,

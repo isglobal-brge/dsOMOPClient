@@ -37,7 +37,9 @@ A \code{dsomop_result} object. The pooled
   element is a named list with the entry's \code{name}, \code{description},
   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
   \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
-  \code{plot} recipe (\code{NULL} when the entry ships none). External packs
+  \code{plot} recipe (\code{NA} in the pooled view when the entry ships none).
+  Other unavailable optional metadata fields likewise remain \code{NA}.
+  External packs
   also expose their pinned package/version and closed output contract, so
   federated execution can require exact metadata equality across nodes.
 }

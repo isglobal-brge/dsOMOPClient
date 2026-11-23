@@ -53,12 +53,14 @@ session's connections, or \code{DSI::datashield.connections_find()} when
 no session exists. See \link{dsomop_conventions}.}
 }
 \value{
-A named list with \code{table}, \code{concept_id},
+A named \code{dsomop_summary} list with \code{table}, \code{concept_id},
   \code{numeric} (named-by-column list where each element is a list with
   \code{stats} and \code{quantiles} \code{dsomop_result} objects, or
   NULL when no numeric value column applies), and \code{categorical}
   (named-by-column list of \code{dsomop_result} objects from value
   counts, or NULL when no categorical value column applies).
+  \code{as.data.frame()} returns one row with the nested summaries in
+  list columns and \code{NA} for an inapplicable component.
 }
 \description{
 Type-aware orchestrator that summarises a value column for a single

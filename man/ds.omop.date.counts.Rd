@@ -68,7 +68,8 @@ A \code{dsomop_result}. Each \code{$per_site} entry is a data
   frame with \code{period}, \code{n_records} and \code{n_persons}
   (banded; periods below the threshold are left out). \code{$pooled} sums
   the counts per period; a period missing on a server is not treated as
-  zero.
+  zero. An optional count column unavailable on a server is retained as
+  \code{NA}; the released record counts can still be summed.
 }
 \description{
 Aggregates records in an OMOP CDM table by time period (year, quarter,

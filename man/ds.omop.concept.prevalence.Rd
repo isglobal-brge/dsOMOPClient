@@ -82,7 +82,8 @@ A \code{dsomop_result}. Each \code{$per_site} entry is a data
   ranking. \code{$pooled} sums \code{n_persons} and \code{n_records} per
   concept (and source table) over the servers, ranks by \code{metric}
   and keeps the first \code{top_n}; a concept must be released by every
-  server.
+  server. An optional count column absent on any site remains \code{NA}
+  in the pooled frame.
 }
 \description{
 Retrieves the most frequent concepts in the specified OMOP CDM table,

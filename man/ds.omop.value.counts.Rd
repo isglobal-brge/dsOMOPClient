@@ -66,6 +66,8 @@ A \code{dsomop_result}. Each \code{$per_site} entry is a data
   (banded distinct persons, person tables) and \code{concept_name}
   (concept columns). \code{$pooled} sums \code{n} and \code{n_persons} per
   value over the servers; a value must be released by every server.
+  A count column returned by only some servers is retained with \code{NA}
+  pooled cells, under either policy: missing contributions are unknown.
 }
 \description{
 Returns the top-N most frequent distinct values for a column in an

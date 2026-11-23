@@ -2,12 +2,15 @@
 % Please edit documentation in R/result.R
 \name{as.data.frame.dsomop_result}
 \alias{as.data.frame.dsomop_result}
+\alias{as.data.frame.dsomop_summary}
 \title{Convert dsomop_result to data.frame}
 \usage{
 \method{as.data.frame}{dsomop_result}(x, ...)
+
+\method{as.data.frame}{dsomop_summary}(x, ...)
 }
 \arguments{
-\item{x}{A \code{dsomop_result} object.}
+\item{x}{A \code{dsomop_result} object or its pooled list summary.}
 
 \item{...}{Additional arguments (ignored).}
 }
@@ -19,8 +22,11 @@ A data frame: the pooled result, the stacked per-server results
 Extracts one data frame from a \code{dsomop_result} object. A split result
 (\code{type = "split"}) stacks the per-server data frames into one frame
 with a leading \code{server} column, so no site is dropped silently.
-A \code{"combine"} or \code{"both"} result returns its pooled data frame;
-when no pooled value could be formed, it returns an empty
+A \code{"combine"} or \code{"both"} result converts its pooled value;
+scalar summaries become one row and nested components become list columns.
+Matrices become frames and named vectors become one-row summaries. Split
+results use the same conversion for each site before stacking the rows.
+When no pooled value could be formed, it returns an empty
 \code{data.frame()} so a failed strict federation never degrades to a
 partial view (use \code{type = "split"} or \code{$per_site} for the
 per-server results).

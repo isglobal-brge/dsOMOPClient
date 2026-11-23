@@ -37,7 +37,9 @@
 #'   suppressed is absent) and, when requested, \code{date_range}
 #'   (\code{column}, \code{min_month}, \code{max_month}). \code{$pooled} has
 #'   the same fields: counts summed over the servers and the date range
-#'   spanning them.
+#'   spanning them. A field released by only some sites remains \code{NA}
+#'   under strict pooling. Scalar summaries convert to one-row data frames;
+#'   nested date ranges are retained in list columns.
 #' @examples
 #' \dontrun{
 #' result <- ds.omop.table.stats("condition_occurrence")
@@ -113,9 +115,15 @@ ds.omop.table.stats <- function(table,
 #'   \code{n_total}, \code{n_missing}, \code{n_distinct} and, for person
 #'   tables, \code{n_persons} (counts banded; a suppressed value is
 #'   \code{NA}), plus \code{mean} and \code{sd} for numeric columns.
-#'   \code{$pooled} sums the counts, weights the mean by the contributing
-#'   persons and pools the SD; the distinct count is not additive and is not
-#'   pooled.
+#'   \code{$pooled} retains the fields for that column type, sums the banded
+#'   counts, weights numeric means by contributing persons and pools the SD.
+#'   Unavailable statistics are typed \code{NA}. Cross-site overlap is unknown:
+#'   \code{n_distinct} is \code{NA}; \code{n_distinct_max} (maximum of site
+#'   cardinalities) is a lower bound and \code{n_distinct_sum} (their sum) an
+#'   upper bound on the union cardinality. Both bounds are \code{NA} if any
+#'   site cardinality is unavailable, under either pooling policy.
+#'   \code{n_distinct_basis} explains these bounds. \code{as.data.frame()}
+#'   returns one row per summary (with a server column for split results).
 #' @examples
 #' \dontrun{
 #' col_info <- ds.omop.column.stats("measurement", "value_as_number")
@@ -316,6 +324,8 @@ ds.omop.missingness <- function(table, columns = NULL, cohort = NULL,
 #'   (banded distinct persons, person tables) and \code{concept_name}
 #'   (concept columns). \code{$pooled} sums \code{n} and \code{n_persons} per
 #'   value over the servers; a value must be released by every server.
+#'   A count column returned by only some servers is retained with \code{NA}
+#'   pooled cells, under either policy: missing contributions are unknown.
 #' @examples
 #' \dontrun{
 #' vc <- ds.omop.value.counts("condition_occurrence",

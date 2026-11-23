@@ -4,7 +4,7 @@
 \alias{dsomop_result}
 \title{Create a dsomop_result object}
 \usage{
-dsomop_result(per_site, pooled = NULL, meta = list())
+dsomop_result(per_site, pooled = NULL, meta = list(), schema = per_site)
 }
 \arguments{
 \item{per_site}{Named list mapping server names to their raw results
@@ -24,10 +24,17 @@ dsomop_result(per_site, pooled = NULL, meta = list())
 elements, such as \code{pooling} (method and estimand of the pooled
 result) and \code{pooling_reason} (why no pooled result was formed),
 are kept as given.}
+
+\item{schema}{Per-site prototypes for the pooled output, defaulting to
+\code{per_site}. Use an empty list for a derived display whose schema
+differs from the server wire payload (for example a DP release).}
 }
 \value{
 A \code{dsomop_result} object (a list with class
-  \code{c("dsomop_result", "list")}).
+  \code{c("dsomop_result", "list")}). A present pooled result has no
+  NULL leaves. Fields without a released value or a pooling rule are typed
+  \code{NA}, with a warning; non-additive fields are never implicitly summed.
+  List summaries support direct \code{as.data.frame()} conversion.
 }
 \description{
 Constructs a standardised \code{dsomop_result} S3 object that wraps every
